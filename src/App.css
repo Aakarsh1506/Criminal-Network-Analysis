@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --board: #1B1712;
+  --board-grain: #241E17;
+  --paper: #EFE6CC;
+  --paper-shadow: #C9BD98;
+  --ink: #26211B;
+  --ink-dim: #6B6250;
+  --stamp: #8C2F2F;
+  --thread: #C1453F;
+  --brass: #A98544;
+  --font-type: 'Courier Prime', monospace;
+  --font-body: 'IBM Plex Sans', sans-serif;
+}
+
+html, body {
+  background: var(--board);
+  background-image: repeating-linear-gradient(135deg, var(--board-grain) 0px, var(--board-grain) 2px, transparent 2px, transparent 60px);
+  color: var(--paper);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  width: 100%;
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+a { color: inherit; text-decoration: none; }
+input { font-family: inherit; }
+
+.stamp-btn {
+  font-family: var(--font-type);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  color: var(--stamp);
+  border: 2px solid var(--stamp);
+  padding: 12px 30px;
+  background: transparent;
+  transition: transform 0.15s, background 0.15s, color 0.15s;
+}
+
+.stamp-btn:hover {
+  background: var(--stamp);
+  color: var(--paper);
+  transform: rotate(-1deg);
+}
+
+.full-width { width: 100%; text-align: center; }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.tag-stamp {
+  border: 1.5px solid var(--stamp);
+  color: var(--stamp);
+  font-size: 0.7rem;
+  padding: 3px 9px;
+  font-family: var(--font-type);
+}
+
+.empty-note { color: var(--paper); opacity: 0.6; text-align: center; padding: 50px 0; }
