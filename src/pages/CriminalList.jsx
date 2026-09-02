@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { criminalsDB } from "../data/criminals";
+import { getWorkingList, addToWorkingList, removeFromWorkingList } from "../utils/workspace";
 import "./CriminalList.css";
 
 function CriminalList() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const [listedIds, setListedIds] = useState(() => getWorkingList().map((c) => c.id));
 
   const q = (searchParams.get("q") || "").toLowerCase().trim();
   const tags = (searchParams.get("tags") || "")
@@ -20,12 +24,21 @@ function CriminalList() {
     return nameMatch || tagMatch || queryAsTagMatch;
   });
 
+  const handleToggleList = (e, criminal) => {
+    e.stopPropagation();
+    if (listedIds.includes(criminal.id)) {
+      removeFromWorkingList(criminal.id);
+      setListedIds((prev) => prev.filter((id) => id !== criminal.id));
+    } else {
+      addToWorkingList(criminal);
+      setListedIds((prev) => [...prev, criminal.id]);
+    }
+  };
+
   return (
     <div className="list-page">
       <header className="list-top">
-        <button className="link-back" onClick={() => navigate("/dashboard")}>
-          Back to dashboard
-        </button>
+        <button className="link-back" onClick={() => navigate("/dashboard")}>Back to dashboard</button>
         <h2>{results.length} file{results.length !== 1 ? "s" : ""} matched</h2>
       </header>
 
@@ -45,11 +58,15 @@ function CriminalList() {
               <h3>{c.name}</h3>
               <p className="folder-alias">Known as "{c.alias}", based in {c.location.city}</p>
               <div className="tag-row">
-                {c.crimeTags.map((tag) => (
-                  <span key={tag} className="tag-stamp">{tag}</span>
-                ))}
+                {c.crimeTags.map((tag) => <span key={tag} className="tag-stamp">{tag}</span>)}
               </div>
             </div>
+            <button
+              className={`list-toggle-btn ${listedIds.includes(c.id) ? "list-toggle-active" : ""}`}
+              onClick={(e) => handleToggleList(e, c)}
+            >
+              {listedIds.includes(c.id) ? "Remove from list" : "Add to list"}
+            </button>
           </div>
         ))}
       </div>

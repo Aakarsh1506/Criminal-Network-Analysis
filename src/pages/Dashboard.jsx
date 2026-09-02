@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { criminalsDB, presetTags } from "../data/criminals";
+import { criminalsDB, presetTags, getCriminalById, getRelationsForCriminal } from "../data/criminals";
+import { getPinnedId, clearPinnedId, getWorkingList, removeFromWorkingList } from "../utils/workspace";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -8,6 +9,9 @@ function Dashboard() {
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  const [pinnedId, setPinnedIdState] = useState(() => getPinnedId());
+  const [workingList, setWorkingList] = useState(() => getWorkingList());
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
@@ -24,6 +28,16 @@ function Dashboard() {
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") handleSearch();
+  };
+
+  const handleUnpin = () => {
+    clearPinnedId();
+    setPinnedIdState(null);
+  };
+
+  const handleRemoveFromList = (id) => {
+    const updated = removeFromWorkingList(id);
+    setWorkingList(updated);
   };
 
   const totalCriminals = criminalsDB.length;
@@ -47,6 +61,9 @@ function Dashboard() {
   }, []);
 
   const maxTagCount = Math.max(...tagCounts.map((t) => t[1]), 1);
+
+  const pinnedCriminal = pinnedId ? getCriminalById(pinnedId) : null;
+  const pinnedRelations = pinnedCriminal ? getRelationsForCriminal(pinnedCriminal.id) : [];
 
   return (
     <div className="board-page">
@@ -134,6 +151,109 @@ function Dashboard() {
           <h3>Traced connections</h3>
           <div className="pin-number">5</div>
           <p className="pin-note">Links between known associates</p>
+        </div>
+      </div>
+
+      <div className="working-section">
+        <h3 className="working-heading">Currently working on / researching</h3>
+
+        <div className="working-grid">
+          <div className="working-col working-map-col">
+            {pinnedCriminal ? (
+              <div className="string-board mini-board">
+                <svg className="string-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  {pinnedRelations.map((r) => (
+                    <line
+                      key={r.criminal.id}
+                      x1={pinnedCriminal.location.x}
+                      y1={pinnedCriminal.location.y}
+                      x2={r.criminal.location.x}
+                      y2={r.criminal.location.y}
+                      className="string-line"
+                    />
+                  ))}
+                </svg>
+
+                <div
+                  className="board-pin main-pin"
+                  style={{ left: `${pinnedCriminal.location.x}%`, top: `${pinnedCriminal.location.y}%` }}
+                >
+                  <img src={pinnedCriminal.photo} alt={pinnedCriminal.name} />
+                  <span className="pin-label">{pinnedCriminal.name}</span>
+                </div>
+
+                {pinnedRelations.map((r) => (
+                  <div
+                    key={r.criminal.id}
+                    className="board-pin"
+                    style={{ left: `${r.criminal.location.x}%`, top: `${r.criminal.location.y}%` }}
+                    onClick={() => navigate(`/criminal/${r.criminal.id}`)}
+                  >
+                    <img src={r.criminal.photo} alt={r.criminal.name} />
+                    <span className="pin-label">{r.criminal.name}</span>
+                    <span className="pin-relation">{r.type}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="working-empty">
+                <p className="empty-note">Not working on anyone currently</p>
+              </div>
+            )}
+          </div>
+
+          <div className="working-col working-profile-col">
+            {pinnedCriminal ? (
+              <div className="mini-dossier">
+                <img src={pinnedCriminal.photo} alt={pinnedCriminal.name} className="mini-photo" />
+                <h4>{pinnedCriminal.name}</h4>
+                <p className="dossier-alias">Known as "{pinnedCriminal.alias}"</p>
+                <div className="dossier-row"><span>Last seen</span><span>{pinnedCriminal.lastSeen}</span></div>
+                <div className="tag-row">
+                  {pinnedCriminal.crimeTags.map((tag) => (
+                    <span key={tag} className="tag-stamp">{tag}</span>
+                  ))}
+                </div>
+                <div className="mini-actions">
+                  <button className="stamp-btn small" onClick={() => navigate(`/criminal/${pinnedCriminal.id}`)}>
+                    Open file
+                  </button>
+                  <button className="stamp-btn small" onClick={handleUnpin}>
+                    Unpin
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="working-empty">
+                <p className="empty-note">Not working on anyone currently</p>
+              </div>
+            )}
+          </div>
+
+          <div className="working-col working-list-col">
+            <h4 className="working-list-title">On the list</h4>
+            {workingList.length === 0 ? (
+              <p className="empty-note">No cases added yet</p>
+            ) : (
+              <ul className="working-list-items">
+                {workingList.map((c) => (
+                  <li key={c.id}>
+                    <div className="working-list-info" onClick={() => navigate(`/criminal/${c.id}`)}>
+                      <strong>{c.name}</strong>
+                      <div className="tag-row">
+                        {c.crimeTags.map((tag) => (
+                          <span key={tag} className="tag-stamp small">{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <button className="list-remove-btn" onClick={() => handleRemoveFromList(c.id)}>
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </div>

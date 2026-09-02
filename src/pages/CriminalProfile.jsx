@@ -1,5 +1,10 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCriminalById, getRelationsForCriminal } from "../data/criminals";
+import {
+  getPinnedId, setPinnedId, clearPinnedId,
+  isInWorkingList, addToWorkingList, removeFromWorkingList,
+} from "../utils/workspace";
 import "./CriminalProfile.css";
 
 function CriminalProfile() {
@@ -8,16 +13,39 @@ function CriminalProfile() {
   const criminal = getCriminalById(id);
   const relations = getRelationsForCriminal(id);
 
+  const [pinnedId, setPinnedIdState] = useState(() => getPinnedId());
+  const [inList, setInList] = useState(() => (criminal ? isInWorkingList(criminal.id) : false));
+
   if (!criminal) {
     return (
       <div className="dossier-page">
         <p className="empty-note">This file does not exist.</p>
-        <button className="stamp-btn" onClick={() => navigate("/dashboard")}>
-          Back to dashboard
-        </button>
+        <button className="stamp-btn" onClick={() => navigate("/dashboard")}>Back to dashboard</button>
       </div>
     );
   }
+
+  const isPinned = pinnedId === criminal.id;
+
+  const handlePinToggle = () => {
+    if (isPinned) {
+      clearPinnedId();
+      setPinnedIdState(null);
+    } else {
+      setPinnedId(criminal.id);
+      setPinnedIdState(criminal.id);
+    }
+  };
+
+  const handleListToggle = () => {
+    if (inList) {
+      removeFromWorkingList(criminal.id);
+      setInList(false);
+    } else {
+      addToWorkingList(criminal);
+      setInList(true);
+    }
+  };
 
   return (
     <div className="dossier-page">
@@ -47,16 +75,21 @@ function CriminalProfile() {
             <div className="dossier-section">
               <h4>Crimes committed</h4>
               <div className="tag-row">
-                {criminal.crimeTags.map((tag) => (
-                  <span key={tag} className="tag-stamp">{tag}</span>
-                ))}
+                {criminal.crimeTags.map((tag) => <span key={tag} className="tag-stamp">{tag}</span>)}
               </div>
+            </div>
+
+            <div className="dossier-actions">
+              <button className={`stamp-btn small ${isPinned ? "stamp-btn-active" : ""}`} onClick={handlePinToggle}>
+                {isPinned ? "Unpin from dashboard" : "Pin to dashboard"}
+              </button>
+              <button className={`stamp-btn small ${inList ? "stamp-btn-active" : ""}`} onClick={handleListToggle}>
+                {inList ? "Remove from list" : "Add to list"}
+              </button>
             </div>
           </div>
 
-          <button className="stamp-btn full-width" onClick={() => navigate("/dashboard")}>
-            Close file
-          </button>
+          <button className="stamp-btn full-width" onClick={() => navigate("/dashboard")}>Close file</button>
         </div>
 
         <div className="dossier-right">
@@ -66,10 +99,8 @@ function CriminalProfile() {
               {relations.map((r) => (
                 <line
                   key={r.criminal.id}
-                  x1={criminal.location.x}
-                  y1={criminal.location.y}
-                  x2={r.criminal.location.x}
-                  y2={r.criminal.location.y}
+                  x1={criminal.location.x} y1={criminal.location.y}
+                  x2={r.criminal.location.x} y2={r.criminal.location.y}
                   className="string-line"
                 />
               ))}
