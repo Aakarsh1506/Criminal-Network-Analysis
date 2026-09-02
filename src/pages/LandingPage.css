@@ -1,70 +1,306 @@
 .landing-page {
+  position: relative;
   min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% 8%, rgba(120, 140, 170, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(6, 7, 8, 0.55) 0%, rgba(8, 9, 11, 0.7) 45%, rgba(4, 5, 6, 0.92) 100%),
+    var(--bg-image);
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  transform-origin: 50% 45%;
+}
+
+.landing-page.breaching {
+  animation: push-forward 0.65s cubic-bezier(0.65, 0, 0.85, 0.35) forwards;
+  animation-delay: 0.5s;
+  pointer-events: none;
+}
+
+@keyframes push-forward {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  55% {
+    transform: scale(1.18);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(2.8);
+    filter: brightness(0.15);
+  }
+}
+
+/* ---------- Forward tunnel overlay ---------- */
+
+.forward-tunnel {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 45%,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 50%,
+    rgba(0, 0, 0, 0.97) 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transform: scale(1.4);
+}
+
+.landing-page.breaching .forward-tunnel {
+  animation: tunnel-in 0.65s ease-in forwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes tunnel-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(0.82);
+  }
+}
+
+/* ---------- Crossed crime scene tape (clickable) ---------- */
+
+.tape-hero {
+  position: relative;
+  width: 100%;
+  flex: 0 0 58vh;
+  min-height: 340px;
+  max-height: 520px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.tape-hero:focus-visible {
+  outline: 2px solid #eab72e;
+  outline-offset: -4px;
+}
+
+.crime-tape {
+  position: absolute;
+  top: 68%;
+  left: 50%;
+  width: 140%;
+  height: 68px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+}
+
+.tape-1 {
+  transform: translate(-50%, -50%) rotate(-7deg);
+}
+
+.tape-2 {
+  transform: translate(-50%, -50%) rotate(7deg);
+}
+
+.tape-hero:hover .tape-half {
+  filter: brightness(1.08);
+}
+
+/* Each tape is built from two halves, clipped along a jagged seam,
+   overlaid so it reads as one solid strip until it tears. */
+
+.tape-half {
+  position: absolute;
+  inset: 0;
+  background: #eab72e;
+  border-top: 2px solid rgba(0, 0, 0, 0.35);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
+  overflow: hidden;
+  transition: filter 0.2s ease;
 }
 
-.cover-sheet {
-  position: relative;
-  background: var(--paper);
-  color: var(--ink);
+.tape-half-left {
+  clip-path: polygon(
+    0% 0%,
+    53% 0%,
+    49% 12%,
+    55% 22%,
+    47% 34%,
+    56% 46%,
+    46% 58%,
+    54% 70%,
+    48% 82%,
+    57% 92%,
+    50% 100%,
+    0% 100%
+  );
+}
+
+.tape-half-right {
+  clip-path: polygon(
+    53% 0%,
+    100% 0%,
+    100% 100%,
+    50% 100%,
+    57% 92%,
+    48% 82%,
+    54% 70%,
+    46% 58%,
+    56% 46%,
+    47% 34%,
+    55% 22%,
+    49% 12%
+  );
+}
+
+.tape-text {
+  display: block;
   width: 100%;
-  max-width: 460px;
-  padding: 56px 44px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--paper-shadow);
-  transform: rotate(-0.6deg);
-}
-
-.cover-sheet::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 40px;
-  width: 60px;
-  height: 22px;
-  background: var(--brass);
-  opacity: 0.85;
-  clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
-}
-
-.cover-stamp {
-  position: absolute;
-  top: 40px;
-  right: 36px;
-  border: 3px solid var(--stamp);
-  color: var(--stamp);
-  font-family: var(--font-type);
-  font-weight: 700;
-  font-size: 0.78rem;
-  padding: 6px 10px;
-  transform: rotate(9deg);
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--font-type, "Arial Narrow", sans-serif);
+  font-weight: 800;
+  font-size: 1.9rem;
   letter-spacing: 1px;
-  opacity: 0.85;
+  text-transform: uppercase;
+  color: #111;
 }
 
-.cover-case-no {
-  font-family: var(--font-type);
-  font-size: 0.8rem;
-  color: var(--ink-dim);
-  margin-bottom: 18px;
-  margin-top: 14px;
+/* ---------- Tear animation ---------- */
+
+.tape-hero.breaking .tape-half-left {
+  animation: tear-left 0.6s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+}
+
+.tape-hero.breaking .tape-half-right {
+  animation: tear-right 0.6s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+}
+
+.tape-hero.breaking .tape-2 .tape-half-left,
+.tape-hero.breaking .tape-2 .tape-half-right {
+  animation-delay: 0.06s;
+}
+
+@keyframes tear-left {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  18% {
+    transform: translate(-2%, -1%) rotate(-3deg) scaleY(1.08);
+  }
+  100% {
+    transform: translate(-75%, -230%) rotate(-52deg);
+    opacity: 0;
+  }
+}
+
+@keyframes tear-right {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  18% {
+    transform: translate(2%, 1%) rotate(3deg) scaleY(1.08);
+  }
+  100% {
+    transform: translate(75%, 230%) rotate(52deg);
+    opacity: 0;
+  }
+}
+
+.snap-flash {
+  position: absolute;
+  inset: 0;
+  background: #fdf6e3;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.tape-hero.breaking .snap-flash {
+  animation: snap-flash-pop 0.3s ease-out forwards;
+  animation-delay: 0.18s;
+}
+
+@keyframes snap-flash-pop {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Content below the crossing ---------- */
+
+.cover-content {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 24px 56px;
+}
+
+.cover-eyebrow {
+  font-family: var(--font-type, sans-serif);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--ink-dim, #9aa3af);
+  margin-bottom: 10px;
 }
 
 .cover-title {
-  font-family: var(--font-type);
-  font-size: 2.1rem;
-  line-height: 1.2;
+  font-family: var(--font-type, sans-serif);
+  font-size: 1.7rem;
+  line-height: 1.35;
   font-weight: 700;
-  margin-bottom: 18px;
-  max-width: 340px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--paper, #f4f4f2);
+  margin-bottom: 14px;
 }
 
 .cover-subtitle {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--ink-dim);
-  max-width: 340px;
-  margin-bottom: 36px;
+  font-size: 0.82rem;
+  letter-spacing: 0.4px;
+  color: var(--ink-dim, #9aa3af);
+  max-width: 380px;
+  margin-bottom: 26px;
+}
+
+.tear-hint {
+  font-family: var(--font-type, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #eab72e;
+  animation: hint-pulse 1.8s ease-in-out infinite;
+  transition: opacity 0.3s ease;
+}
+
+.landing-page.breaching .tear-hint {
+  opacity: 0;
+}
+
+@keyframes hint-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
 }
