@@ -21,31 +21,9 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
---
--- TOC entry 2 (class 3079 OID 24577)
--- Name: postgis; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
-
-
---
--- TOC entry 5963 (class 0 OID 0)
--- Dependencies: 2
--- Name: EXTENSION postgis; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION postgis IS 'PostGIS geometry and geography spatial types and functions';
-
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
-
---
--- TOC entry 228 (class 1259 OID 25689)
--- Name: cases; Type: TABLE; Schema: public; Owner: postgres
---
 
 CREATE TABLE public.cases (
     case_id character varying(20) NOT NULL,
@@ -60,11 +38,6 @@ CREATE TABLE public.cases (
 
 ALTER TABLE public.cases OWNER TO postgres;
 
---
--- TOC entry 227 (class 1259 OID 25676)
--- Name: crime_types; Type: TABLE; Schema: public; Owner: postgres
---
-
 CREATE TABLE public.crime_types (
     crime_id integer NOT NULL,
     crime_name character varying(100) NOT NULL,
@@ -73,11 +46,6 @@ CREATE TABLE public.crime_types (
 
 
 ALTER TABLE public.crime_types OWNER TO postgres;
-
---
--- TOC entry 226 (class 1259 OID 25675)
--- Name: crime_types_crime_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
 
 CREATE SEQUENCE public.crime_types_crime_id_seq
     AS integer
@@ -90,36 +58,18 @@ CREATE SEQUENCE public.crime_types_crime_id_seq
 
 ALTER SEQUENCE public.crime_types_crime_id_seq OWNER TO postgres;
 
---
--- TOC entry 5964 (class 0 OID 0)
--- Dependencies: 226
--- Name: crime_types_crime_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
 ALTER SEQUENCE public.crime_types_crime_id_seq OWNED BY public.crime_types.crime_id;
-
-
---
--- TOC entry 230 (class 1259 OID 25707)
--- Name: locations; Type: TABLE; Schema: public; Owner: postgres
---
 
 CREATE TABLE public.locations (
     location_id integer NOT NULL,
     city character varying(100) NOT NULL,
     state character varying(100) NOT NULL,
     latitude numeric(10,7),
-    longitude numeric(10,7),
-    geom public.geometry(Point,4326)
+    longitude numeric(10,7)
 );
 
 
 ALTER TABLE public.locations OWNER TO postgres;
-
---
--- TOC entry 229 (class 1259 OID 25706)
--- Name: locations_location_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
 
 CREATE SEQUENCE public.locations_location_id_seq
     AS integer
@@ -132,19 +82,7 @@ CREATE SEQUENCE public.locations_location_id_seq
 
 ALTER SEQUENCE public.locations_location_id_seq OWNER TO postgres;
 
---
--- TOC entry 5965 (class 0 OID 0)
--- Dependencies: 229
--- Name: locations_location_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
 ALTER SEQUENCE public.locations_location_id_seq OWNED BY public.locations.location_id;
-
-
---
--- TOC entry 225 (class 1259 OID 25665)
--- Name: persons; Type: TABLE; Schema: public; Owner: postgres
---
 
 CREATE TABLE public.persons (
     person_id character varying(20) NOT NULL,
@@ -164,27 +102,9 @@ CREATE TABLE public.persons (
 
 ALTER TABLE public.persons OWNER TO postgres;
 
---
--- TOC entry 5782 (class 2604 OID 25679)
--- Name: crime_types crime_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.crime_types ALTER COLUMN crime_id SET DEFAULT nextval('public.crime_types_crime_id_seq'::regclass);
 
-
---
--- TOC entry 5783 (class 2604 OID 25710)
--- Name: locations location_id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.locations ALTER COLUMN location_id SET DEFAULT nextval('public.locations_location_id_seq'::regclass);
-
-
---
--- TOC entry 5955 (class 0 OID 25689)
--- Dependencies: 228
--- Data for Name: cases; Type: TABLE DATA; Schema: public; Owner: postgres
---
 
 COPY public.cases (case_id, person_id, crime_id, case_month, location_name, case_status, location_id) FROM stdin;
 C058	P043	1	2025-08-01	Mumbai	Open	1
@@ -255,12 +175,6 @@ C057	P042	7	2025-07-19	Amritsar	Closed	14
 \.
 
 
---
--- TOC entry 5954 (class 0 OID 25676)
--- Dependencies: 227
--- Data for Name: crime_types; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
 COPY public.crime_types (crime_id, crime_name, description) FROM stdin;
 1	Robbery	Theft involving force, threat, or intimidation.
 2	Fraud	Deception or misrepresentation carried out for financial or personal gain.
@@ -275,35 +189,23 @@ COPY public.crime_types (crime_id, crime_name, description) FROM stdin;
 \.
 
 
---
--- TOC entry 5957 (class 0 OID 25707)
--- Dependencies: 230
--- Data for Name: locations; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.locations (location_id, city, state, latitude, longitude, geom) FROM stdin;
-1	Mumbai	Maharashtra	19.0760000	72.8777000	0101000020E6100000C0EC9E3C2C385240FA7E6ABC74133340
-2	New Delhi	Delhi	28.6139000	77.2090000	0101000020E61000004C378941604D5340B003E78C289D3C40
-3	Bengaluru	Karnataka	12.9716000	77.5946000	0101000020E6100000E78C28ED0D6653405396218E75F12940
-4	Ahmedabad	Gujarat	23.0225000	72.5714000	0101000020E6100000CD3B4ED191245240F6285C8FC2053740
-5	Kolkata	West Bengal	22.5726000	88.3639000	0101000020E6100000ECC039234A1756408AB0E1E995923640
-6	Pune	Maharashtra	18.5204000	73.8567000	0101000020E6100000ED9E3C2CD4765240A1D634EF38853240
-7	Jaipur	Rajasthan	26.9124000	75.7873000	0101000020E610000003098A1F63F25240D3DEE00B93E93A40
-8	Gurugram	Haryana	28.4595000	77.0266000	0101000020E6100000B6847CD0B34153401283C0CAA1753C40
-9	Kochi	Kerala	9.9312000	76.2673000	0101000020E6100000228E75711B1153400612143FC6DC2340
-10	Hyderabad	Telangana	17.3850000	78.4867000	0101000020E6100000A5BDC117269F5340C3F5285C8F623140
-11	Lucknow	Uttar Pradesh	26.8467000	80.9462000	0101000020E61000006ADE718A8E3C5440F085C954C1D83A40
-12	Patna	Bihar	25.5941000	85.1376000	0101000020E61000007FFB3A70CE485540B98D06F016983940
-13	Indore	Madhya Pradesh	22.7196000	75.8577000	0101000020E6100000DE718A8EE4F652409C33A2B437B83640
-14	Amritsar	Punjab	31.6340000	74.8723000	0101000020E6100000401361C3D3B75240FCA9F1D24DA23F40
+COPY public.locations (location_id, city, state, latitude, longitude) FROM stdin;
+1	Mumbai	Maharashtra	19.0760000	72.8777000
+2	New Delhi	Delhi	28.6139000	77.2090000
+3	Bengaluru	Karnataka	12.9716000	77.5946000
+4	Ahmedabad	Gujarat	23.0225000	72.5714000
+5	Kolkata	West Bengal	22.5726000	88.3639000
+6	Pune	Maharashtra	18.5204000	73.8567000
+7	Jaipur	Rajasthan	26.9124000	75.7873000
+8	Gurugram	Haryana	28.4595000	77.0266000
+9	Kochi	Kerala	9.9312000	76.2673000
+10	Hyderabad	Telangana	17.3850000	78.4867000
+11	Lucknow	Uttar Pradesh	26.8467000	80.9462000
+12	Patna	Bihar	25.5941000	85.1376000
+13	Indore	Madhya Pradesh	22.7196000	75.8577000
+14	Amritsar	Punjab	31.6340000	74.8723000
 \.
 
-
---
--- TOC entry 5952 (class 0 OID 25665)
--- Dependencies: 225
--- Data for Name: persons; Type: TABLE DATA; Schema: public; Owner: postgres
---
 
 COPY public.persons (person_id, name, alias, dob, age, height_cm, state, city, last_seen, family_known, photo, record_status) FROM stdin;
 P001	Arjun Mehta	Shadow	1988-04-12	38	178	Maharashtra	Mumbai	2025-08-15	Mother and younger brother	\N	Active
@@ -359,111 +261,38 @@ P050	Amit Solanki	AS2	1993-05-08	33	176	Gujarat	Ahmedabad	2025-08-10	Parents kno
 \.
 
 
---
--- TOC entry 5781 (class 0 OID 24896)
--- Dependencies: 221
--- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) FROM stdin;
-\.
-
-
---
--- TOC entry 5966 (class 0 OID 0)
--- Dependencies: 226
--- Name: crime_types_crime_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
 SELECT pg_catalog.setval('public.crime_types_crime_id_seq', 1, false);
 
-
---
--- TOC entry 5967 (class 0 OID 0)
--- Dependencies: 229
--- Name: locations_location_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
 SELECT pg_catalog.setval('public.locations_location_id_seq', 14, true);
-
-
---
--- TOC entry 5794 (class 2606 OID 25695)
--- Name: cases cases_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.cases
     ADD CONSTRAINT cases_pkey PRIMARY KEY (case_id);
 
-
---
--- TOC entry 5790 (class 2606 OID 25687)
--- Name: crime_types crime_types_crime_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.crime_types
     ADD CONSTRAINT crime_types_crime_name_key UNIQUE (crime_name);
-
-
---
--- TOC entry 5792 (class 2606 OID 25685)
--- Name: crime_types crime_types_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.crime_types
     ADD CONSTRAINT crime_types_pkey PRIMARY KEY (crime_id);
 
-
---
--- TOC entry 5796 (class 2606 OID 25717)
--- Name: locations locations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.locations
     ADD CONSTRAINT locations_pkey PRIMARY KEY (location_id);
-
-
---
--- TOC entry 5788 (class 2606 OID 25674)
--- Name: persons persons_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.persons
     ADD CONSTRAINT persons_pkey PRIMARY KEY (person_id);
 
-
---
--- TOC entry 5797 (class 2606 OID 25701)
--- Name: cases fk_case_crime; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.cases
     ADD CONSTRAINT fk_case_crime FOREIGN KEY (crime_id) REFERENCES public.crime_types(crime_id);
-
-
---
--- TOC entry 5798 (class 2606 OID 25719)
--- Name: cases fk_case_location; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
 
 ALTER TABLE ONLY public.cases
     ADD CONSTRAINT fk_case_location FOREIGN KEY (location_id) REFERENCES public.locations(location_id);
 
-
---
--- TOC entry 5799 (class 2606 OID 25696)
--- Name: cases fk_case_person; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
 ALTER TABLE ONLY public.cases
     ADD CONSTRAINT fk_case_person FOREIGN KEY (person_id) REFERENCES public.persons(person_id);
 
-
--- Completed on 2026-09-05 15:27:23
+-- Completed
 
 --
 -- PostgreSQL database dump complete
 --
 
 \unrestrict FdNCXUVUdDbakaX7DJfgiyXNY2uFLkeaA0hpf9hzox0VWXdjXeSxkVuYLb7gUbu
-
