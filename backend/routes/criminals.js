@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "../db.js";
+import { runCypher } from "../neo4jDriver.js";
 import { initialsAvatar, colorForId } from "../utils/avatar.js";
 import { coordinatesForCity } from "../utils/mapCoordinates.js";
 
@@ -54,33 +55,46 @@ function mapPerson(row) {
   };
 }
 
-// Known associates, drawn from an optional `associations` table (see
-// database/associations.sql). Returns [] gracefully if that table doesn't
-// exist yet — the DB dump you gave me doesn't include one.
+// Known associates, computed from the Neo4j graph instead of an explicit
+// Postgres associations table. Two people are "related" if they share a
+// case's location or crime type. Falls back to [] on any Neo4j error so
+// the profile page still renders if the graph DB is unreachable.
 async function fetchAssociates(id) {
   try {
-    const { rows } = await pool.query(
-      `SELECT a.relation_type,
-              p.person_id AS other_id, p.name AS other_name,
-              p.alias AS other_alias, p.photo AS other_photo
-       FROM associations a
-       JOIN persons p
-         ON p.person_id = (CASE WHEN a.person_id_a = $1 THEN a.person_id_b ELSE a.person_id_a END)
-       WHERE a.person_id_a = $1 OR a.person_id_b = $1`,
-      [id]
+    const records = await runCypher(
+      `
+      MATCH (p1:Person {person_id: $id})-[:INVOLVED_IN]->(c1:Case)
+      MATCH (p2:Person)-[:INVOLVED_IN]->(c2:Case)
+      WHERE p1 <> p2
+      OPTIONAL MATCH (c1)-[:OCCURRED_AT]->(l:Location)<-[:OCCURRED_AT]-(c2)
+      OPTIONAL MATCH (c1)-[:OF_TYPE]->(crime:CrimeType)<-[:OF_TYPE]-(c2)
+      WITH p2, l, crime
+      WHERE l IS NOT NULL OR crime IS NOT NULL
+      RETURN DISTINCT
+        p2.person_id AS other_id,
+        p2.name AS other_name,
+        p2.alias AS other_alias,
+        l.city AS shared_location,
+        crime.crime_name AS shared_crime
+      LIMIT 25
+      `,
+      { id }
     );
-    return rows.map((r) => ({
+
+    return records.map((r) => ({
       criminal: {
         id: r.other_id,
         name: r.other_name,
         alias: r.other_alias,
-        photo: r.other_photo || initialsAvatar(r.other_name, colorForId(r.other_id)),
+        photo: initialsAvatar(r.other_name, colorForId(r.other_id)),
       },
-      type: r.relation_type,
+      type: r.shared_crime
+        ? `Shared Crime: ${r.shared_crime}`
+        : `Shared Location: ${r.shared_location}`,
     }));
   } catch (err) {
-    if (err.code === "42P01") return []; // associations table not created yet
-    throw err;
+    console.error(`Neo4j lookup failed for ${id}`, err);
+    return [];
   }
 }
 
