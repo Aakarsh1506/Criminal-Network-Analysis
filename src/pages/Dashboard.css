@@ -184,16 +184,6 @@
 .working-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .working-empty .empty-note { padding: 0; color: var(--text-dim); opacity: 1; }
 
-.mini-board {
-  position: relative;
-  flex: 1;
-  min-height: 300px;
-  background: #0d0d0d;
-  border-radius: 10px;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
-  overflow: hidden;
-}
-
 .working-profile-col { padding: 22px; }
 
 .mini-photo { width: 64px; height: 64px; object-fit: cover; border: 2px solid var(--accent-dim); border-radius: 6px; margin-bottom: 12px; }
@@ -231,11 +221,32 @@
 .list-remove-btn { color: var(--btn); font-size: 1.1rem; line-height: 1; padding: 2px 6px; flex-shrink: 0; background: none; border: none; cursor: pointer; }
 .list-remove-btn:hover { opacity: 0.7; }
 
-.board-page .string-line { stroke: var(--btn); opacity: 0.75; }
-.board-page .board-pin img { border-color: var(--accent); border-radius: 50%; }
-.board-page .main-pin img { border-color: var(--btn); }
-.board-page .pin-label { background: rgba(0, 0, 0, 0.85); color: var(--text); border-radius: 3px; }
-.board-page .pin-relation { color: var(--accent); }
+/* Cytoscape graph frame with India map background */
+.graph-frame {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #0d0d0d;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  /* Lightens a black/dark map silhouette so it's visible against the dark theme.
+     Remove this line if your map file is already a light/gold outline. */
+  filter: brightness(0) invert(1) opacity(0.15);
+}
+
+.graph-frame.mini {
+  flex: 1;
+  display: flex;
+}
+
+.network-graph {
+  background: transparent;
+}
+
+.network-graph canvas {
+  background: transparent !important;
+}
 
 @media (max-width: 900px) {
   .working-grid { grid-template-columns: 1fr; }

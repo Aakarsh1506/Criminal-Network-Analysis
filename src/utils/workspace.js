@@ -6,8 +6,7 @@ const PIN_KEY = "cna_pinned_criminal_id";
 const LIST_KEY = "cna_working_list";
 
 export function getPinnedId() {
-  const raw = localStorage.getItem(PIN_KEY);
-  return raw ? Number(raw) : null;
+  return localStorage.getItem(PIN_KEY) || null;
 }
 
 export function setPinnedId(id) {

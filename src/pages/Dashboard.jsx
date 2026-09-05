@@ -1,7 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { criminalsDB, presetTags, getCriminalById, getRelationsForCriminal } from "../data/criminals";
+import { fetchCriminalById, fetchCrimeTypes } from "../api/criminals";
+import { fetchStats } from "../api/stats";
 import { getPinnedId, clearPinnedId, getWorkingList, removeFromWorkingList } from "../utils/workspace";
+import NetworkGraph from "../components/NetworkGraph";
+import indiaMap from "/images/India.svg";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -9,9 +12,36 @@ function Dashboard() {
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [presetTags, setPresetTags] = useState([]);
+
+  const [stats, setStats] = useState(null);
 
   const [pinnedId, setPinnedIdState] = useState(() => getPinnedId());
+  const [pinnedCriminal, setPinnedCriminal] = useState(null);
+  const [pinnedRelations, setPinnedRelations] = useState([]);
   const [workingList, setWorkingList] = useState(() => getWorkingList());
+
+  useEffect(() => {
+    fetchStats().then(setStats).catch(() => setStats(null));
+    fetchCrimeTypes().then(setPresetTags).catch(() => setPresetTags([]));
+  }, []);
+
+  useEffect(() => {
+    if (!pinnedId) {
+      setPinnedCriminal(null);
+      setPinnedRelations([]);
+      return;
+    }
+    let cancelled = false;
+    fetchCriminalById(pinnedId).then((data) => {
+      if (cancelled || !data) return;
+      setPinnedCriminal(data.criminal);
+      setPinnedRelations(data.relations);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pinnedId]);
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
@@ -40,30 +70,9 @@ function Dashboard() {
     setWorkingList(updated);
   };
 
-  const totalCriminals = criminalsDB.length;
-
-  const tagCounts = useMemo(() => {
-    const counts = {};
-    criminalsDB.forEach((c) =>
-      c.crimeTags.forEach((tag) => {
-        counts[tag] = (counts[tag] || 0) + 1;
-      })
-    );
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, []);
-
-  const cityCounts = useMemo(() => {
-    const counts = {};
-    criminalsDB.forEach((c) => {
-      counts[c.location.city] = (counts[c.location.city] || 0) + 1;
-    });
-    return Object.entries(counts);
-  }, []);
-
+  const tagCounts = stats?.tagCounts || [];
+  const cityCounts = stats?.cityCounts || [];
   const maxTagCount = Math.max(...tagCounts.map((t) => t[1]), 1);
-
-  const pinnedCriminal = pinnedId ? getCriminalById(pinnedId) : null;
-  const pinnedRelations = pinnedCriminal ? getRelationsForCriminal(pinnedCriminal.id) : [];
 
   return (
     <div className="board-page">
@@ -77,7 +86,7 @@ function Dashboard() {
           <input
             type="text"
             className="search-input"
-            placeholder="Search a name, or type a crime — murder, theft..."
+            placeholder="Search a name, or type a crime — robbery, fraud..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setShowDropdown(true)}
@@ -113,7 +122,7 @@ function Dashboard() {
         <div className="pin-card card-1">
           <span className="pin" />
           <h3>Records on file</h3>
-          <div className="pin-number">{totalCriminals}</div>
+          <div className="pin-number">{stats ? stats.totalCriminals : "…"}</div>
           <p className="pin-note">Criminals currently tracked</p>
         </div>
 
@@ -149,7 +158,7 @@ function Dashboard() {
         <div className="pin-card card-4">
           <span className="pin" />
           <h3>Traced connections</h3>
-          <div className="pin-number">5</div>
+          <div className="pin-number">{stats ? stats.tracedConnections : "…"}</div>
           <p className="pin-note">Links between known associates</p>
         </div>
       </div>
@@ -160,40 +169,16 @@ function Dashboard() {
         <div className="working-grid">
           <div className="working-col working-map-col">
             {pinnedCriminal ? (
-              <div className="string-board mini-board">
-                <svg className="string-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  {pinnedRelations.map((r) => (
-                    <line
-                      key={r.criminal.id}
-                      x1={pinnedCriminal.location.x}
-                      y1={pinnedCriminal.location.y}
-                      x2={r.criminal.location.x}
-                      y2={r.criminal.location.y}
-                      className="string-line"
-                    />
-                  ))}
-                </svg>
-
-                <div
-                  className="board-pin main-pin"
-                  style={{ left: `${pinnedCriminal.location.x}%`, top: `${pinnedCriminal.location.y}%` }}
-                >
-                  <img src={pinnedCriminal.photo} alt={pinnedCriminal.name} />
-                  <span className="pin-label">{pinnedCriminal.name}</span>
-                </div>
-
-                {pinnedRelations.map((r) => (
-                  <div
-                    key={r.criminal.id}
-                    className="board-pin"
-                    style={{ left: `${r.criminal.location.x}%`, top: `${r.criminal.location.y}%` }}
-                    onClick={() => navigate(`/criminal/${r.criminal.id}`)}
-                  >
-                    <img src={r.criminal.photo} alt={r.criminal.name} />
-                    <span className="pin-label">{r.criminal.name}</span>
-                    <span className="pin-relation">{r.type}</span>
-                  </div>
-                ))}
+              <div
+                className="graph-frame mini"
+                style={{ "--india-map-url": `url(${indiaMap})` }}
+              >
+                <NetworkGraph
+                  mainCriminal={pinnedCriminal}
+                  relations={pinnedRelations}
+                  onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
+                  height={300}
+                />
               </div>
             ) : (
               <div className="working-empty">

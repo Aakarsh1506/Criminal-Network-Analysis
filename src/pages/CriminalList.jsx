@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { criminalsDB } from "../data/criminals";
+import { fetchCriminals } from "../api/criminals";
 import { getWorkingList, addToWorkingList, removeFromWorkingList } from "../utils/workspace";
 import "./CriminalList.css";
 
@@ -9,20 +9,33 @@ function CriminalList() {
   const navigate = useNavigate();
 
   const [listedIds, setListedIds] = useState(() => getWorkingList().map((c) => c.id));
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const q = (searchParams.get("q") || "").toLowerCase().trim();
-  const tags = (searchParams.get("tags") || "")
-    .split(",")
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
+  const q = (searchParams.get("q") || "").trim();
+  const tags = (searchParams.get("tags") || "").split(",").map((t) => t.trim()).filter(Boolean);
 
-  const results = criminalsDB.filter((c) => {
-    const nameMatch = q && (c.name.toLowerCase().includes(q) || c.alias.toLowerCase().includes(q));
-    const tagMatch = tags.length > 0 && c.crimeTags.some((tag) => tags.includes(tag.toLowerCase()));
-    const queryAsTagMatch = q && c.crimeTags.some((tag) => tag.toLowerCase().includes(q));
-    if (!q && tags.length === 0) return false;
-    return nameMatch || tagMatch || queryAsTagMatch;
-  });
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    fetchCriminals({ q, tags })
+      .then((data) => {
+        if (!cancelled) setResults(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not reach the case database.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [q, tags.join(",")]);
 
   const handleToggleList = (e, criminal) => {
     e.stopPropagation();
@@ -39,11 +52,14 @@ function CriminalList() {
     <div className="list-page">
       <header className="list-top">
         <button className="link-back" onClick={() => navigate("/dashboard")}>Back to dashboard</button>
-        <h2>{results.length} file{results.length !== 1 ? "s" : ""} matched</h2>
+        <h2>{loading ? "Searching…" : `${results.length} file${results.length !== 1 ? "s" : ""} matched`}</h2>
       </header>
 
       <div className="folder-stack">
-        {results.length === 0 && <p className="empty-note">No case file matches that search.</p>}
+        {error && <p className="empty-note">{error}</p>}
+        {!loading && !error && results.length === 0 && (
+          <p className="empty-note">No case file matches that search.</p>
+        )}
 
         {results.map((c, i) => (
           <div
@@ -52,7 +68,7 @@ function CriminalList() {
             style={{ transform: `rotate(${i % 2 === 0 ? -0.5 : 0.5}deg)` }}
             onClick={() => navigate(`/criminal/${c.id}`)}
           >
-            <span className="folder-tab">{c.id.toString().padStart(3, "0")}</span>
+            <span className="folder-tab">{c.id}</span>
             <img src={c.photo} alt={c.name} className="folder-photo" />
             <div className="folder-info">
               <h3>{c.name}</h3>
