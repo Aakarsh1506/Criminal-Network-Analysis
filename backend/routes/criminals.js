@@ -74,6 +74,8 @@ async function fetchAssociates(id) {
         p2.person_id AS other_id,
         p2.name AS other_name,
         p2.alias AS other_alias,
+        p2.city AS other_city,
+        p2.state AS other_state,
         l.city AS shared_location,
         crime.crime_name AS shared_crime
       LIMIT 25
@@ -86,6 +88,7 @@ async function fetchAssociates(id) {
         id: r.other_id,
         name: r.other_name,
         alias: r.other_alias,
+        location: { city: r.other_city, state: r.other_state },
         photo: initialsAvatar(r.other_name, colorForId(r.other_id)),
       },
       type: r.shared_crime

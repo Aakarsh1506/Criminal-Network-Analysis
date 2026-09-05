@@ -230,9 +230,6 @@
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  /* Lightens a black/dark map silhouette so it's visible against the dark theme.
-     Remove this line if your map file is already a light/gold outline. */
-  filter: brightness(0) invert(1) opacity(0.15);
 }
 
 .graph-frame.mini {
