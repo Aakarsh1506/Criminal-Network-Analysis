@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite frontend",
     "server": "node backend/server.js",
-    "build": "vite build",
+    "build": "vite build frontend",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview frontend"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -2,6 +2,12 @@
 
 React/Vite frontend with an Express API backed by PostgreSQL and Neo4j.
 
+## Project structure
+
+- `frontend/`: React source (`src/`), static assets (`public/`), HTML entry point, and Vite configuration. Builds output to `frontend/dist/`.
+- `backend/`: Express server, routes, services, utilities, database connections, Neo4j scripts (`neo4j/`), and the database folder (`database/`).
+- Shared npm dependencies, scripts, and lint configuration remain at the repository root. Run all commands below from the root.
+
 ## Run locally
 
 Use Node.js 22.12 or newer. Install dependencies with `npm install`.
