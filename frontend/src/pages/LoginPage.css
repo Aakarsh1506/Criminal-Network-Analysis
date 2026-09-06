@@ -1,19 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Courier+Prime:wght@400;700&display=swap');
+
 :root {
-  --bg: #000000;
-  --card: #131313;
-  --card-border: #262626;
-  --text: #f2f2f2;
-  --text-dim: #8f8f8f;
-  --accent: #c9a463;       /* muted gold — icon border / input focus glow */
-  --accent-dim: #8a744a;
-
-  --btn: #d93636;          /* authenticate button */
-  --btn-dim: #a92a2a;
-
-  --error: #e5484d;
-  --error-glow: rgba(229, 72, 77, 0.28);
-  --success: #46a758;
-  --success-glow: rgba(70, 167, 88, 0.28);
+  --bg: #050505;
+  --panel: #111110;
+  --panel-edge: #262421;
+  --ink: #f4efe2;       /* brightened — was too dim to read */
+  --ink-dim: #b5ad9b;    /* brightened — was too dim to read */
+  --red: #d1453c;
 }
 
 body {
@@ -21,207 +14,432 @@ body {
 }
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(201, 164, 99, 0.08), transparent 55%),
-    var(--bg);
+  padding: 32px 20px;
+  background: radial-gradient(circle at 50% -10%, rgba(209, 69, 60, 0.08), transparent 50%), var(--bg);
+  perspective: 1800px;
 }
 
-.login-card {
+/* --- flip mechanics --- */
+
+.case-flip-wrapper {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  background: linear-gradient(180deg, #161616 0%, #101010 100%);
-  color: var(--text);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 44px 36px 36px;
+  max-width: 440px;
+}
+
+.case-flip-inner {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 1s cubic-bezier(0.4, 0.15, 0.2, 1);
+}
+
+.case-flip-wrapper.is-flipped .case-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.case-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background:
+    repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.015) 0px, transparent 2px, transparent 6px),
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.03), transparent 35%),
+    radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.5), transparent 50%),
+    var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  padding: 26px 24px 22px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  box-shadow:
-    0 20px 45px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  gap: 16px;
+  color: var(--ink);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.75);
 }
 
-.login-card.status-error {
-  border-color: var(--error);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), 0 0 0 3px var(--error-glow);
-  animation: shake 0.3s ease;
+.case-face-front {
+  position: relative;
 }
 
-.login-card.status-success {
-  border-color: var(--success);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), 0 0 0 3px var(--success-glow);
+.case-face-front.status-denied {
+  animation: shake 0.35s ease;
 }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
 
-.login-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(201, 164, 99, 0.1);
-  border: 1px solid rgba(201, 164, 99, 0.35);
-  color: var(--accent);
-  display: flex;
+.case-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+  text-align: center;
 }
 
-.login-heading {
-  font-size: 1.35rem;
-  font-weight: 600;
-  margin: 0;
-  letter-spacing: 0.2px;
+/* --- shared bits --- */
+
+.case-meta {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
 }
 
-.login-instruction {
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  margin: -14px 0 0;
-}
-
-.field {
+.case-meta-left {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
+  font-family: "Courier Prime", monospace;
   font-size: 0.72rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
 }
 
-.field input {
-  border: 1px solid var(--card-border);
-  border-radius: 7px;
-  background: #0d0d0d;
-  color: var(--text);
-  padding: 11px 13px;
-  font-size: 0.95rem;
+.meta-row {
+  display: flex;
+  gap: 6px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.meta-row span:first-child {
+  width: 96px;
+  flex-shrink: 0;
+}
+
+.meta-row span:last-child {
+  color: var(--ink);
+}
+
+em.pending {
+  font-style: italic;
+  color: var(--ink);
+}
+
+.hot {
+  font-style: normal;
+  color: var(--red);
+}
+
+.scales-box {
+  width: 110px;
+  flex-shrink: 0;
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.scales-box p {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.4px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.subject-block {
+  display: flex;
+  gap: 16px;
+}
+
+.subject-photo {
+  position: relative;
+  width: 96px;
+  height: 116px;
+  flex-shrink: 0;
+  border: 1px solid var(--panel-edge);
+  overflow: hidden;
+}
+
+.tape {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 46px;
+  height: 16px;
+  background: rgba(244, 239, 226, 0.18);
+  z-index: 2;
+}
+
+.stamp {
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border: 2px solid var(--red);
+  color: var(--red);
+  padding: 2px 6px;
+  border-radius: 3px;
+  transform: rotate(-10deg);
+  opacity: 0.9;
+}
+
+.stamp-photo {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.subject-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subject-label {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.subject-name {
+  margin: 0 0 6px;
+  font-family: "Oswald", sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.subject-line {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.7rem;
+  color: red;
+  text-transform: uppercase;
+}
+
+.subject-line span {
+  color: var(--ink-dim);
+  margin-right: 5px;
+}
+
+.unlock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+
+.unlock-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  color: red;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.unlock-label input {
+  border: none;
+  border-bottom: 1px solid var(--red);
+  background: transparent;
+  color: #ffffff;       /* was var(--ink) — bumped to pure white so typed text is clearly visible */
+  caret-color: #ffffff; /* makes the cursor visible against the dark background too */
+  padding: 8px 2px;
+  font-size: 1rem;
+  font-family: "Courier Prime", monospace;
   letter-spacing: normal;
   text-transform: none;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s;
 }
 
-.field input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(201, 164, 99, 0.15);
+.unlock-label input:focus {
+  border-bottom: 2px solid var(--red);
 }
 
-.login-btn {
-  margin-top: 6px;
-  padding: 13px;
-  border: none;
-  border-radius: 7px;
-  background: linear-gradient(180deg, var(--btn), var(--btn-dim));
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0.4px;
+.unlock-btn {
+  padding: 12px;
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--red);
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.login-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(217, 54, 54, 0.3);
+.unlock-btn:hover {
+  background: var(--red);
+  color: #0a0a0a;
 }
 
-.login-btn:active {
-  transform: translateY(0);
-}
-
-.full-width {
-  width: 100%;
-}
-
-.status-message {
-  margin: -8px 0 0;
-  font-size: 0.85rem;
+.denied-text {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  color: var(--red);
   text-align: center;
-  animation: fadeIn 0.2s ease;
 }
 
-.status-message.error {
-  color: var(--error);
-}
-
-.status-message.success {
-  color: var(--success);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-2px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.login-footnote {
-  margin: 4px 0 0;
-  font-size: 0.7rem;
-  color: #5a5a5a;
-  text-align: center;
-  letter-spacing: 0.3px;
-}
-
-/* .login-page needs position: relative so .top-bar can anchor to it */
-.login-page {
-  position: relative; /* add this line to your existing .login-page rule */
-}
-
-.top-bar {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  right: 24px;
+.warning-strip {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
 }
 
-.brand-logo {
-  background: none;
-  border: none;
-  color: var(--accent);
+.warn-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ink-dim);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Oswald", sans-serif;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+.warning-strip p {
+  flex: 1;
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  letter-spacing: 0.2px;
+}
+
+.lock-icon {
+  flex-shrink: 0;
   font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  cursor: pointer;
-  padding: 4px 8px;
-  transition: opacity 0.2s;
-}
-
-.brand-logo:hover {
   opacity: 0.75;
 }
 
-.go-back-btn {
+/* --- back face (confirmation) --- */
+
+.seal {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-dim);
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: none;
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  font-size: 0.8rem;
-  padding: 7px 12px;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  justify-content: center;
+  font-family: "Oswald", sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: var(--ink);
+  background: repeating-radial-gradient(circle, transparent 0, transparent 8px, rgba(255, 255, 255, 0.03) 9px);
 }
 
-.go-back-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
+.back-title {
+  margin: 0;
+  font-family: "Oswald", sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.back-subtitle {
+  margin: -8px 0 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}
+
+.back-summary {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0;
+  border-top: 1px solid var(--panel-edge);
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.summary-row span:first-child {
+  color: var(--ink-dim);
+}
+
+.summary-row span:last-child {
+  color: red;
+  letter-spacing: 0.5px;
+}
+
+.enter-btn {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  background: var(--red);
+  color: #0a0a0a;
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.enter-btn:hover {
+  opacity: 0.85;
+}
+
+.back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 2px;
+  background: rgba(17, 17, 16, 0.6);
+  color: var(--ink-dim);
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.back-btn:hover {
+  color: var(--ink);
+  border-color: var(--red);
 }
