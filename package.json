@@ -6,15 +6,19 @@
   "scripts": {
     "dev": "vite frontend",
     "server": "node backend/server.js",
+    "add-officer": "node backend/scripts/addOfficer.js",
     "build": "vite build frontend",
     "lint": "oxlint",
     "preview": "vite preview frontend"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cytoscape": "^3.30.4",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
     "neo4j-driver": "^6.2.0",
     "pg": "^8.13.1",
     "react": "^19.2.8",

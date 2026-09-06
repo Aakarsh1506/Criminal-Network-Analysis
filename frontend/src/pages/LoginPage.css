@@ -294,6 +294,17 @@ em.pending {
   color: #0a0a0a;
 }
 
+.unlock-btn:disabled,
+.unlock-label input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.unlock-btn:disabled:hover {
+  background: transparent;
+  color: var(--red);
+}
+
 .denied-text {
   margin: 0;
   font-family: "Courier Prime", monospace;

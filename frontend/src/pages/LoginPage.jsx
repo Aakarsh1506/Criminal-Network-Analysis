@@ -1,23 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { login } from "../api/auth";
 import "./LoginPage.css";
 
-// TODO: replace with a real backend call once available.
-const MOCK_VALID_CODE = "CNA-1234"; // temporary — remove when backend exists
-
 const STEPS = [
-  { key: "name", label: "Officer name", type: "text", prompt: "State your full name for the record." },
-  { key: "dob", label: "Date of birth", type: "text", placeholder: "DD.MM.YYYY", prompt: "Confirm your date of birth." },
-  { key: "orgName", label: "Organisation name", type: "text", prompt: "Identify your organisation." },
-  { key: "orgCode", label: "Organisation access code", type: "password", prompt: "Enter your organisation access code to unlock this file." },
+  { key: "username", label: "Officer ID", type: "text", prompt: "Enter your officer ID." },
+  { key: "password", label: "Password", type: "password", prompt: "Enter your password." },
 ];
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", dob: "", orgName: "", orgCode: "" });
+  const [form, setForm] = useState({ username: "" });
+  const [officer, setOfficer] = useState(null); // set on successful login, shown on the back face
   const [stepIndex, setStepIndex] = useState(0);
   const [value, setValue] = useState("");
-  const [status, setStatus] = useState("idle"); // "idle" | "denied" | "flipped"
+  const [status, setStatus] = useState("idle"); // "idle" | "checking" | "denied" | "flipped"
 
   const step = STEPS[stepIndex];
   const isLastStep = stepIndex === STEPS.length - 1;
@@ -27,18 +24,20 @@ function LoginPage() {
     if (status === "denied") setStatus("idle");
   };
 
-  const handleSubmitStep = (e) => {
+  const handleSubmitStep = async (e) => {
     e.preventDefault();
-    if (!value.trim()) return;
+    if (!value.trim() || status === "checking") return;
 
     if (isLastStep) {
-      // TODO: swap for a real API call, e.g. const ok = await api.login({ ...form, orgCode: value });
-      const ok = value === MOCK_VALID_CODE;
-      if (ok) {
-        setForm((f) => ({ ...f, orgCode: value }));
+      setStatus("checking");
+      try {
+        const result = await login(form.username, value);
+        setOfficer(result);
         setStatus("flipped"); // triggers the page-turn reveal, waits for "Enter"
-      } else {
+      } catch {
         setStatus("denied");
+      } finally {
+        setValue(""); // never keep the password around longer than needed
       }
       return;
     }
@@ -52,7 +51,11 @@ function LoginPage() {
   const handleBack = () => navigate("/");
 
   const statusLabel =
-    status === "denied" ? "ACCESS DENIED" : `AWAITING ${step.label.toUpperCase()}`;
+    status === "denied"
+      ? "ACCESS DENIED"
+      : status === "checking"
+        ? "VERIFYING..."
+        : `AWAITING ${step.label.toUpperCase()}`;
 
   return (
     <div className="login-page">
@@ -102,11 +105,10 @@ function LoginPage() {
 
               <div className="subject-info">
                 <p className="subject-label">Subject</p>
-                <p className="subject-name">{form.name ? form.name.toUpperCase() : "UNKNOWN"}</p>
+                <p className="subject-name">{form.username ? form.username.toUpperCase() : "UNKNOWN"}</p>
 
-                <p className="subject-line"><span>DOB</span>{form.dob || "UNKNOWN"}</p>
-                <p className="subject-line"><span>ORGANISATION</span>{form.orgName || "UNKNOWN"}</p>
-                <p className="subject-line"><span>THREAT LEVEL</span><em className="hot">EXTREME</em></p>
+                <p className="subject-line"><span>OFFICER ID</span>{form.username || "UNKNOWN"}</p>
+                <p className="subject-line"><span>CLEARANCE</span><em className="hot">PENDING</em></p>
               </div>
             </div>
 
@@ -116,18 +118,18 @@ function LoginPage() {
                 <input
                   type={step.type}
                   value={value}
-                  placeholder={step.placeholder}
                   onChange={handleChange}
                   autoFocus
                   required
+                  disabled={status === "checking"}
                 />
               </label>
 
-              <button type="submit" className="unlock-btn">
-                {isLastStep ? "Unlock file" : "Continue"}
+              <button type="submit" className="unlock-btn" disabled={status === "checking"}>
+                {status === "checking" ? "Verifying..." : isLastStep ? "Unlock file" : "Continue"}
               </button>
 
-              {status === "denied" && <p className="denied-text">Access code rejected. Try again.</p>}
+              {status === "denied" && <p className="denied-text">Access denied. Check your ID and password.</p>}
             </form>
 
             <div className="warning-strip">
@@ -140,7 +142,8 @@ function LoginPage() {
             </div>
           </div>
 
-          {/* BACK — confirmation, revealed by the page turn */}
+          {/* BACK — confirmation, revealed by the page turn. Everything here
+              comes from the server's response, not from what was typed in. */}
           <div className="case-face case-face-back">
             <div className="seal" aria-hidden="true">
               <span>CNA</span>
@@ -149,10 +152,10 @@ function LoginPage() {
             <p className="back-subtitle">Identity confirmed. Review before entering the case system.</p>
 
             <div className="back-summary">
-              <div className="summary-row"><span>Officer name</span><span>{form.name}</span></div>
-              <div className="summary-row"><span>Date of birth</span><span>{form.dob}</span></div>
-              <div className="summary-row"><span>Organisation</span><span>{form.orgName}</span></div>
-              <div className="summary-row"><span>Access code</span><span>••••••••</span></div>
+              <div className="summary-row"><span>Officer name</span><span>{officer?.name}</span></div>
+              <div className="summary-row"><span>Officer ID</span><span>{officer?.username}</span></div>
+              <div className="summary-row"><span>Organisation</span><span>{officer?.orgName}</span></div>
+              <div className="summary-row"><span>Role</span><span>{officer?.role}</span></div>
             </div>
 
             <button type="button" className="enter-btn" onClick={handleEnter}>

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import RequireAuth from "./components/RequireAuth";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
@@ -22,11 +23,14 @@ function AppLayout() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/search" element={<CriminalList />} />
-        <Route path="/criminal/:id" element={<CriminalProfile />} />
-        <Route path="/upload" element={<UploadDoc />} />
-        <Route path="/criminal-list" element={<CriminalListPage />} />
+
+        <Route element={<RequireAuth />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/search" element={<CriminalList />} />
+          <Route path="/criminal/:id" element={<CriminalProfile />} />
+          <Route path="/upload" element={<UploadDoc />} />
+          <Route path="/criminal-list" element={<CriminalListPage />} />
+        </Route>
       </Routes>
     </>
   );

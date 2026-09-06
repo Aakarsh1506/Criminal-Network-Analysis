@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { logout } from "../api/auth";
 import "./Navbar.css";
 
 const NAV_LINKS = [
@@ -8,6 +9,13 @@ const NAV_LINKS = [
 ];
 
 function Navbar() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-brand">
@@ -28,6 +36,11 @@ function Navbar() {
             </NavLink>
           </li>
         ))}
+        <li>
+          <button type="button" className="navbar-logout" onClick={handleLogout}>
+            Log out
+          </button>
+        </li>
       </ul>
     </nav>
   );
