@@ -1,0 +1,19 @@
+.back-button {
+  display: inline-block;
+  font-family: var(--font-type);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent, #c9a463);
+  border: 1.5px solid var(--accent, #c9a463);
+  border-radius: 6px;
+  padding: 7px 14px;
+  background: transparent;
+  margin-bottom: 24px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.back-button:hover {
+  background: var(--accent, #c9a463);
+  color: #101010;
+}
