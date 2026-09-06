@@ -114,6 +114,7 @@ router.get("/", async (req, res) => {
       .split(",")
       .map((t) => t.trim().toLowerCase())
       .filter(Boolean);
+    const wantsAll = req.query.all === "true";
 
     if (q || tags.length) {
       results = results.filter((c) => {
@@ -122,7 +123,7 @@ router.get("/", async (req, res) => {
         const queryAsTagMatch = q && c.crimeTags.some((tag) => tag.toLowerCase().includes(q));
         return nameMatch || tagMatch || queryAsTagMatch;
       });
-    } else {
+    } else if (!wantsAll) {
       results = []; // matches old UI behaviour: no query/tags => no results shown
     }
 
