@@ -1,30 +1,26 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { fetchCriminals } from "../api/criminals";
+import { useNavigate } from "react-router-dom";
+import { fetchAllCriminals } from "../api/criminals";
 import { getWorkingList, addToWorkingList, removeFromWorkingList } from "../utils/workspace";
 import BackButton from "../components/BackButton";
 import "./CriminalList.css";
 
-function CriminalList() {
-  const [searchParams] = useSearchParams();
+function CriminalListPage() {
   const navigate = useNavigate();
 
   const [listedIds, setListedIds] = useState(() => getWorkingList().map((c) => c.id));
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [criminals, setCriminals] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const q = (searchParams.get("q") || "").trim();
-  const tags = (searchParams.get("tags") || "").split(",").map((t) => t.trim()).filter(Boolean);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    fetchCriminals({ q, tags })
+    fetchAllCriminals()
       .then((data) => {
-        if (!cancelled) setResults(data);
+        if (!cancelled) setCriminals(data);
       })
       .catch(() => {
         if (!cancelled) setError("Could not reach the case database.");
@@ -36,7 +32,7 @@ function CriminalList() {
     return () => {
       cancelled = true;
     };
-  }, [q, tags.join(",")]);
+  }, []);
 
   const handleToggleList = (e, criminal) => {
     e.stopPropagation();
@@ -54,16 +50,16 @@ function CriminalList() {
       <BackButton />
 
       <header className="list-top">
-        <h2>{loading ? "Searching…" : `${results.length} file${results.length !== 1 ? "s" : ""} matched`}</h2>
+        <h2>{loading ? "Loading records…" : `${criminals.length} criminal${criminals.length !== 1 ? "s" : ""} on file`}</h2>
       </header>
 
       <div className="folder-stack">
         {error && <p className="empty-note">{error}</p>}
-        {!loading && !error && results.length === 0 && (
-          <p className="empty-note">No case file matches that search.</p>
+        {!loading && !error && criminals.length === 0 && (
+          <p className="empty-note">No records found in the database.</p>
         )}
 
-        {results.map((c, i) => (
+        {criminals.map((c, i) => (
           <div
             key={c.id}
             className="folder"
@@ -92,4 +88,4 @@ function CriminalList() {
   );
 }
 
-export default CriminalList;
+export default CriminalListPage;

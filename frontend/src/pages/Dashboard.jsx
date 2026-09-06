@@ -76,11 +76,6 @@ function Dashboard() {
 
   return (
     <div className="board-page">
-      <header className="board-header">
-        <span className="header-mark">CNA</span>
-        <span className="header-title">Criminal Investigation</span>
-      </header>
-
       <div className="search-tab-wrapper">
         <div className="search-tab">
           <input

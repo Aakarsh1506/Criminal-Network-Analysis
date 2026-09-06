@@ -7,6 +7,7 @@ import {
 } from "../utils/workspace";
 import NetworkExplanation from "../components/NetworkExplanation";
 import NetworkGraph from "../components/NetworkGraph";
+import BackButton from "../components/BackButton";
 import indiaMap from "/images/India.svg";
 import "./CriminalProfile.css";
 
@@ -57,8 +58,8 @@ function CriminalProfile() {
   if (notFound || !criminal) {
     return (
       <div className="dossier-page">
+        <BackButton />
         <p className="empty-note">This file does not exist.</p>
-        <button className="stamp-btn" onClick={() => navigate("/dashboard")}>Back to dashboard</button>
       </div>
     );
   }
@@ -87,6 +88,8 @@ function CriminalProfile() {
 
   return (
     <div className="dossier-page">
+      <BackButton />
+
       <div className="dossier-grid">
         <div className="dossier-left">
           <div className="dossier-sheet">

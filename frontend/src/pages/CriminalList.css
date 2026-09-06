@@ -13,9 +13,6 @@
 
 .list-top { max-width: 720px; margin: 0 auto 30px; }
 
-.link-back { color: var(--accent); font-size: 0.82rem; margin-bottom: 14px; display: inline-block; transition: opacity 0.2s; }
-.link-back:hover { opacity: 0.75; }
-
 .list-top h2 { font-family: var(--font-type); font-size: 1.2rem; color: var(--text); letter-spacing: 0.5px; }
 
 .folder-stack { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
