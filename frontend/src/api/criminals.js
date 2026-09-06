@@ -13,6 +13,14 @@ export async function fetchCriminals({ q = "", tags = [] } = {}) {
   return res.json();
 }
 
+// Returns every criminal on file — used by the full database listing page,
+// unlike fetchCriminals() which returns [] with no query/tags.
+export async function fetchAllCriminals() {
+  const res = await fetch(`${BASE}?all=true`);
+  if (!res.ok) throw new Error("Failed to load criminals");
+  return res.json();
+}
+
 // Returns { criminal, relations } or null if not found
 export async function fetchCriminalById(id) {
   const res = await fetch(`${BASE}/${id}`);
