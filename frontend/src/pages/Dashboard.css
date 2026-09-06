@@ -76,11 +76,13 @@
 .tag-chip:hover { border-color: var(--accent); color: var(--text); }
 .tag-chip-active { background: var(--btn); border-color: var(--btn); color: #fff; }
 
+/* max-width/padding now matches .working-section so the stats cards line up
+   with the "currently working on / researching" block below them */
 .pinboard {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 1fr));
   gap: 24px;
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 20px 32px;
 }
@@ -157,7 +159,14 @@
   letter-spacing: 1px;
 }
 
-.working-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; align-items: stretch; }
+/* Two columns instead of three: map gets the wide 2fr column,
+   profile + list share the narrow 1fr column stacked on top of each other */
+.working-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
 
 .working-col {
   background: linear-gradient(180deg, #161616 0%, #101010 100%);
@@ -167,13 +176,42 @@
   box-shadow: 0 16px 26px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  min-height: 300px;
+  min-height: 420px;
 }
 
 .working-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .working-empty .empty-note { padding: 0; color: var(--text-dim); opacity: 1; }
 
-.working-profile-col { padding: 22px; }
+/* Map column: no padding/gap so the graph frame fills the entire card */
+.working-map-col {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Side column: stacked profile (top) + list (bottom), each roughly half the height */
+.working-side-col {
+  padding: 0;
+}
+
+.working-side-top {
+  flex: 0 0 auto;
+  padding: 22px;
+}
+
+.working-side-divider {
+  border-top: 1px solid var(--card-border);
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.working-side-bottom {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
 
 .mini-photo { width: 64px; height: 64px; object-fit: cover; border: 2px solid var(--accent-dim); border-radius: 6px; margin-bottom: 12px; }
 .mini-dossier h4 { font-size: 1.05rem; margin-bottom: 4px; color: var(--text); }
@@ -187,10 +225,16 @@
 }
 .mini-actions .stamp-btn:hover { background: var(--accent); color: #101010; }
 
-.working-list-col { padding: 20px; }
 .working-list-title { font-family: var(--font-type); font-size: 0.8rem; color: var(--text-dim); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1px; }
 
-.working-list-items { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 420px; }
+.working-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
 
 .working-list-items li {
   display: flex;
@@ -210,30 +254,39 @@
 .list-remove-btn { color: var(--btn); font-size: 1.1rem; line-height: 1; padding: 2px 6px; flex-shrink: 0; background: none; border: none; cursor: pointer; }
 .list-remove-btn:hover { opacity: 0.7; }
 
-/* Cytoscape graph frame with India map background */
+/* Cytoscape graph frame with India map background — now uses cover + fills the whole card */
 .graph-frame {
-  border: 1px solid var(--card-border);
+  border: none;
   border-radius: 10px;
   overflow: hidden;
   background-color: #0d0d0d;
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain;
+  background-size: cover;
+  width: 100%;
+  height: 100%;
 }
 
 .graph-frame.mini {
   flex: 1;
   display: flex;
+  width: 100%;
+  height: 100%;
 }
 
 .network-graph {
   background: transparent;
+  width: 100%;
+  height: 100%;
 }
 
 .network-graph canvas {
   background: transparent !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 @media (max-width: 900px) {
   .working-grid { grid-template-columns: 1fr; }
+  .working-col { min-height: 320px; }
 }
