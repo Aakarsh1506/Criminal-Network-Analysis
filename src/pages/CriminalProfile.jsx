@@ -5,6 +5,7 @@ import {
   getPinnedId, setPinnedId, clearPinnedId,
   isInWorkingList, addToWorkingList, removeFromWorkingList,
 } from "../utils/workspace";
+import NetworkExplanation from "../components/NetworkExplanation";
 import NetworkGraph from "../components/NetworkGraph";
 import indiaMap from "/images/India.svg";
 import "./CriminalProfile.css";
@@ -154,6 +155,7 @@ function CriminalProfile() {
               height={520}
             />
           </div>
+          <NetworkExplanation key={id} id={id} />
         </div>
       </div>
     </div>

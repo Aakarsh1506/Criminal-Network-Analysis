@@ -136,3 +136,12 @@
 @media (max-width: 900px) {
   .dossier-grid { grid-template-columns: 1fr; }
 }
+.network-ai { margin-top: 20px; padding: 24px; border: 1px solid var(--card-border); border-radius: 12px; background: #111; color: var(--text); }
+.network-ai h3 { margin: 0 0 12px; color: var(--accent); }
+.network-ai p { color: var(--text-dim); font-size: .85rem; line-height: 1.6; margin: 12px 0; }
+.network-ai .stamp-btn { color: var(--accent); border-color: var(--accent); border-radius: 7px; }
+.network-ai .stamp-btn:disabled { opacity: .55; cursor: wait; }
+.network-ai .stamp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.network-ai-answer { margin-top: 20px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; font-size: .9rem; }
+.network-ai p.network-ai-error { color: #ff9999; }
+.network-ai p.network-ai-note { font-size: .75rem; margin-bottom: 0; }

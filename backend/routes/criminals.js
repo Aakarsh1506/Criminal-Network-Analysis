@@ -4,6 +4,8 @@ import { runCypher } from "../neo4jDriver.js";
 import { initialsAvatar, colorForId } from "../utils/avatar.js";
 import { coordinatesForCity } from "../utils/mapCoordinates.js";
 
+import { explainNetwork, AIError } from "../services/groq.js";
+
 const router = Router();
 
 function personsQuery(whereClause = "", params = []) {
@@ -135,8 +137,18 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
+    const profile = await loadProfile(id);
+    if (!profile) return res.status(404).json({ error: "Not found" });
+    res.json(profile);
+  } catch (err) {
+    console.error(`GET /api/criminals/${id} failed`, err);
+    res.status(500).json({ error: "Failed to load criminal" });
+  }
+});
+
+async function loadProfile(id) {
     const { rows } = await pool.query(personsQuery("WHERE p.person_id = $1", [id]));
-    if (rows.length === 0) return res.status(404).json({ error: "Not found" });
+    if (rows.length === 0) return null;
 
     const criminal = mapPerson(rows[0]);
     const [{ rows: caseRows }, relations] = await Promise.all([
@@ -152,10 +164,29 @@ router.get("/:id", async (req, res) => {
       month: c.case_month ? new Date(c.case_month).toISOString().slice(0, 10) : null,
     }));
 
-    res.json({ criminal, relations });
+    return { criminal, relations };
+}
+
+let activeExplanations = 0;
+router.post("/:id/explain", async (req, res) => {
+  if (!process.env.GROQ_API_KEY?.trim()) {
+    return res.status(503).json({ error: "AI is not configured. Add GROQ_API_KEY to backend/.env and restart the server." });
+  }
+  if (activeExplanations >= 3) {
+    return res.status(429).json({ error: "AI is busy. Please try again shortly." });
+  }
+  activeExplanations++;
+  try {
+    const profile = await loadProfile(req.params.id);
+    if (!profile) return res.status(404).json({ error: "Profile not found." });
+    const explanation = await explainNetwork(profile);
+    res.json({ explanation });
   } catch (err) {
-    console.error(`GET /api/criminals/${id} failed`, err);
-    res.status(500).json({ error: "Failed to load criminal" });
+    res.status(err instanceof AIError ? err.status : 500).json({
+      error: err instanceof AIError ? err.message : "Unable to load records for the AI summary. Please try again.",
+    });
+  } finally {
+    activeExplanations--;
   }
 });
 
