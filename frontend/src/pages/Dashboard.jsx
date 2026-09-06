@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchCriminalById, fetchCrimeTypes } from "../api/criminals";
 import { fetchStats } from "../api/stats";
-import { getPinnedId, clearPinnedId, getWorkingList, removeFromWorkingList } from "../utils/workspace";
+import { fetchWorkspace, unpinCriminal, removeFromWorkingList } from "../api/workspace";
 import NetworkGraph from "../components/NetworkGraph";
 import indiaMap from "/images/India.svg";
 import "./Dashboard.css";
@@ -16,14 +16,23 @@ function Dashboard() {
 
   const [stats, setStats] = useState(null);
 
-  const [pinnedId, setPinnedIdState] = useState(() => getPinnedId());
+  const [pinnedId, setPinnedIdState] = useState(null);
   const [pinnedCriminal, setPinnedCriminal] = useState(null);
   const [pinnedRelations, setPinnedRelations] = useState([]);
-  const [workingList, setWorkingList] = useState(() => getWorkingList());
+  const [workingList, setWorkingList] = useState([]);
 
   useEffect(() => {
     fetchStats().then(setStats).catch(() => setStats(null));
     fetchCrimeTypes().then(setPresetTags).catch(() => setPresetTags([]));
+    fetchWorkspace()
+      .then(({ pinnedId, workingList }) => {
+        setPinnedIdState(pinnedId);
+        setWorkingList(workingList);
+      })
+      .catch(() => {
+        setPinnedIdState(null);
+        setWorkingList([]);
+      });
   }, []);
 
   useEffect(() => {
@@ -60,14 +69,22 @@ function Dashboard() {
     if (e.key === "Enter") handleSearch();
   };
 
-  const handleUnpin = () => {
-    clearPinnedId();
-    setPinnedIdState(null);
+  const handleUnpin = async () => {
+    try {
+      await unpinCriminal();
+      setPinnedIdState(null);
+    } catch (err) {
+      console.error("Failed to unpin criminal", err);
+    }
   };
 
-  const handleRemoveFromList = (id) => {
-    const updated = removeFromWorkingList(id);
-    setWorkingList(updated);
+  const handleRemoveFromList = async (id) => {
+    try {
+      await removeFromWorkingList(id);
+      setWorkingList((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      console.error("Failed to remove from list", err);
+    }
   };
 
   const tagCounts = stats?.tagCounts || [];

@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchCriminalById } from "../api/criminals";
 import {
-  getPinnedId, setPinnedId, clearPinnedId,
-  isInWorkingList, addToWorkingList, removeFromWorkingList,
-} from "../utils/workspace";
+  fetchWorkspace, pinCriminal, unpinCriminal,
+  addToWorkingList, removeFromWorkingList,
+} from "../api/workspace";
 import NetworkExplanation from "../components/NetworkExplanation";
 import NetworkGraph from "../components/NetworkGraph";
 import BackButton from "../components/BackButton";
@@ -20,7 +20,7 @@ function CriminalProfile() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const [pinnedId, setPinnedIdState] = useState(() => getPinnedId());
+  const [pinnedId, setPinnedIdState] = useState(null);
   const [inList, setInList] = useState(false);
 
   useEffect(() => {
@@ -28,8 +28,8 @@ function CriminalProfile() {
     setLoading(true);
     setNotFound(false);
 
-    fetchCriminalById(id)
-      .then((data) => {
+    Promise.all([fetchCriminalById(id), fetchWorkspace()])
+      .then(([data, workspace]) => {
         if (cancelled) return;
         if (!data) {
           setNotFound(true);
@@ -37,7 +37,8 @@ function CriminalProfile() {
         }
         setCriminal(data.criminal);
         setRelations(data.relations);
-        setInList(isInWorkingList(data.criminal.id));
+        setPinnedIdState(workspace.pinnedId);
+        setInList(workspace.workingList.some((c) => c.id === data.criminal.id));
       })
       .catch(() => {
         if (!cancelled) setNotFound(true);
@@ -66,23 +67,31 @@ function CriminalProfile() {
 
   const isPinned = pinnedId === criminal.id;
 
-  const handlePinToggle = () => {
-    if (isPinned) {
-      clearPinnedId();
-      setPinnedIdState(null);
-    } else {
-      setPinnedId(criminal.id);
-      setPinnedIdState(criminal.id);
+  const handlePinToggle = async () => {
+    try {
+      if (isPinned) {
+        await unpinCriminal();
+        setPinnedIdState(null);
+      } else {
+        await pinCriminal(criminal.id);
+        setPinnedIdState(criminal.id);
+      }
+    } catch (err) {
+      console.error("Failed to update pin", err);
     }
   };
 
-  const handleListToggle = () => {
-    if (inList) {
-      removeFromWorkingList(criminal.id);
-      setInList(false);
-    } else {
-      addToWorkingList(criminal);
-      setInList(true);
+  const handleListToggle = async () => {
+    try {
+      if (inList) {
+        await removeFromWorkingList(criminal.id);
+        setInList(false);
+      } else {
+        await addToWorkingList(criminal.id);
+        setInList(true);
+      }
+    } catch (err) {
+      console.error("Failed to update working list", err);
     }
   };
 

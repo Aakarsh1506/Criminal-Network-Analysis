@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAllCriminals } from "../api/criminals";
-import { getWorkingList, addToWorkingList, removeFromWorkingList } from "../utils/workspace";
+import { fetchWorkspace, addToWorkingList, removeFromWorkingList } from "../api/workspace";
 import BackButton from "../components/BackButton";
 import "./CriminalList.css";
 
 function CriminalListPage() {
   const navigate = useNavigate();
 
-  const [listedIds, setListedIds] = useState(() => getWorkingList().map((c) => c.id));
+  const [listedIds, setListedIds] = useState([]);
   const [criminals, setCriminals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,9 +18,11 @@ function CriminalListPage() {
     setLoading(true);
     setError(null);
 
-    fetchAllCriminals()
-      .then((data) => {
-        if (!cancelled) setCriminals(data);
+    Promise.all([fetchAllCriminals(), fetchWorkspace()])
+      .then(([data, workspace]) => {
+        if (cancelled) return;
+        setCriminals(data);
+        setListedIds(workspace.workingList.map((c) => c.id));
       })
       .catch(() => {
         if (!cancelled) setError("Could not reach the case database.");
@@ -34,14 +36,18 @@ function CriminalListPage() {
     };
   }, []);
 
-  const handleToggleList = (e, criminal) => {
+  const handleToggleList = async (e, criminal) => {
     e.stopPropagation();
-    if (listedIds.includes(criminal.id)) {
-      removeFromWorkingList(criminal.id);
-      setListedIds((prev) => prev.filter((id) => id !== criminal.id));
-    } else {
-      addToWorkingList(criminal);
-      setListedIds((prev) => [...prev, criminal.id]);
+    try {
+      if (listedIds.includes(criminal.id)) {
+        await removeFromWorkingList(criminal.id);
+        setListedIds((prev) => prev.filter((id) => id !== criminal.id));
+      } else {
+        await addToWorkingList(criminal.id);
+        setListedIds((prev) => [...prev, criminal.id]);
+      }
+    } catch (err) {
+      console.error("Failed to update working list", err);
     }
   };
 

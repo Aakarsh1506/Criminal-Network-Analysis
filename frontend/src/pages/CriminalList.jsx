@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { fetchCriminals } from "../api/criminals";
-import { getWorkingList, addToWorkingList, removeFromWorkingList } from "../utils/workspace";
+import { fetchWorkspace, addToWorkingList, removeFromWorkingList } from "../api/workspace";
 import BackButton from "../components/BackButton";
 import "./CriminalList.css";
 
@@ -9,7 +9,7 @@ function CriminalList() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [listedIds, setListedIds] = useState(() => getWorkingList().map((c) => c.id));
+  const [listedIds, setListedIds] = useState([]);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,9 +22,11 @@ function CriminalList() {
     setLoading(true);
     setError(null);
 
-    fetchCriminals({ q, tags })
-      .then((data) => {
-        if (!cancelled) setResults(data);
+    Promise.all([fetchCriminals({ q, tags }), fetchWorkspace()])
+      .then(([data, workspace]) => {
+        if (cancelled) return;
+        setResults(data);
+        setListedIds(workspace.workingList.map((c) => c.id));
       })
       .catch(() => {
         if (!cancelled) setError("Could not reach the case database.");
@@ -38,14 +40,18 @@ function CriminalList() {
     };
   }, [q, tags.join(",")]);
 
-  const handleToggleList = (e, criminal) => {
+  const handleToggleList = async (e, criminal) => {
     e.stopPropagation();
-    if (listedIds.includes(criminal.id)) {
-      removeFromWorkingList(criminal.id);
-      setListedIds((prev) => prev.filter((id) => id !== criminal.id));
-    } else {
-      addToWorkingList(criminal);
-      setListedIds((prev) => [...prev, criminal.id]);
+    try {
+      if (listedIds.includes(criminal.id)) {
+        await removeFromWorkingList(criminal.id);
+        setListedIds((prev) => prev.filter((id) => id !== criminal.id));
+      } else {
+        await addToWorkingList(criminal.id);
+        setListedIds((prev) => [...prev, criminal.id]);
+      }
+    } catch (err) {
+      console.error("Failed to update working list", err);
     }
   };
 

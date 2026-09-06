@@ -5,6 +5,7 @@ import authRouter from "./routes/auth.js";
 import criminalsRouter from "./routes/criminals.js";
 import crimeTypesRouter from "./routes/crimeTypes.js";
 import statsRouter from "./routes/stats.js";
+import workspaceRouter from "./routes/workspace.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 
 const app = express();
@@ -30,6 +31,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/criminals", requireAuth, criminalsRouter);
 app.use("/api/crime-types", requireAuth, crimeTypesRouter);
 app.use("/api/stats", requireAuth, statsRouter);
+app.use("/api/workspace", requireAuth, workspaceRouter);
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
