@@ -12,17 +12,34 @@ const IS_PROD = process.env.NODE_ENV === "production";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: "lax",
-  secure: IS_PROD, // requires HTTPS in production; fine over plain HTTP in dev
-  maxAge: 12 * 60 * 60 * 1000, // 12h — keep roughly in sync with JWT_EXPIRES_IN
+  secure: IS_PROD,
+  maxAge: 12 * 60 * 60 * 1000,
 };
 
-// New accounts never get created here — only checked. New officers are added
-// with `npm run add-officer` (backend/scripts/addOfficer.js).
+// New officer accounts never get created here — only checked. They're added
+// either via `npm run add-officer` or, now, via the admin panel (POST /api/officers).
 router.post("/login", async (req, res) => {
   const { username, password } = req.body || {};
 
   if (!username || !password) {
     return res.status(400).json({ error: "Username and password are required" });
+  }
+
+  // Single hardcoded admin account, read from env — not a row in `officers`.
+  // Checked first, and only ever matches on the exact env credentials.
+  const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+  if (ADMIN_USERNAME && ADMIN_PASSWORD && username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const adminProfile = {
+      officerId: null,
+      username: ADMIN_USERNAME,
+      name: "Administrator",
+      orgName: "System",
+      role: "admin",
+    };
+    const token = signOfficerToken(adminProfile);
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+    return res.json(adminProfile);
   }
 
   try {
@@ -33,8 +50,6 @@ router.post("/login", async (req, res) => {
     );
     const officer = rows[0];
 
-    // Same generic error whether the username doesn't exist or the password
-    // is wrong — don't let the response reveal which one it was.
     if (!officer || !officer.is_active) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
@@ -71,7 +86,6 @@ router.post("/logout", (req, res) => {
   res.json({ ok: true });
 });
 
-// Lets the frontend check "am I still logged in?" on page load/refresh.
 router.get("/me", requireAuth, (req, res) => {
   const { officerId, username, name, orgName, role } = req.officer;
   res.json({ officerId, username, name, orgName, role });
