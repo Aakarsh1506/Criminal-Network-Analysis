@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BackButton from "../components/BackButton";
+import { fetchDocuments, uploadDocument, documentFileUrl } from "../api/documents";
 import "./UploadDoc.css";
 
 function formatSize(bytes) {
@@ -13,24 +14,34 @@ function UploadDoc() {
 
   const [documents, setDocuments] = useState([]);
   const [activeDoc, setActiveDoc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDocuments()
+      .then(setDocuments)
+      .catch(() => setError("Could not load your documents."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleUploadClick = () => fileInputRef.current?.click();
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
-    const doc = {
-      id: `${Date.now()}-${file.name}`,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      url: URL.createObjectURL(file),
-      uploadedAt: new Date(),
-    };
-
-    setDocuments((prev) => [doc, ...prev]);
-    e.target.value = "";
+    setUploading(true);
+    setError(null);
+    try {
+      const doc = await uploadDocument(file);
+      setDocuments((prev) => [doc, ...prev]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const openPreview = (doc) => setActiveDoc(doc);
@@ -38,11 +49,7 @@ function UploadDoc() {
 
   return (
     <div className="upload-page">
-      {activeDoc ? (
-        <BackButton label="← Back to documents" onClick={closePreview} />
-      ) : (
-        <BackButton />
-      )}
+      {!activeDoc && <BackButton />}
 
       <input
         type="file"
@@ -52,22 +59,31 @@ function UploadDoc() {
         onChange={handleFileChange}
       />
 
+      {error && <p className="empty-note upload-error">{error}</p>}
+
       {activeDoc ? (
         <div className="doc-preview">
           <div className="doc-preview-header">
-            <h2>{activeDoc.name}</h2>
-            <span className="doc-preview-meta">{formatSize(activeDoc.size)}</span>
+            <div>
+              <h2>{activeDoc.name}</h2>
+              <span className="doc-preview-meta">{formatSize(activeDoc.size)}</span>
+            </div>
+            <button className="doc-preview-close" onClick={closePreview} aria-label="Close preview">
+              ✕ Close
+            </button>
           </div>
 
           <div className="doc-preview-body">
-            <iframe src={activeDoc.url} title={activeDoc.name} className="doc-preview-frame" />
+            <iframe src={documentFileUrl(activeDoc.id)} title={activeDoc.name} className="doc-preview-frame" />
           </div>
         </div>
+      ) : loading ? (
+        <p className="empty-note">Loading documents…</p>
       ) : documents.length === 0 ? (
         <div className="upload-empty">
           <p className="empty-note">No documents uploaded yet</p>
-          <button className="stamp-btn upload-btn-center" onClick={handleUploadClick}>
-            Upload Document
+          <button className="stamp-btn upload-btn-center" onClick={handleUploadClick} disabled={uploading}>
+            {uploading ? "Uploading..." : "Upload Document"}
           </button>
         </div>
       ) : (
@@ -82,7 +98,7 @@ function UploadDoc() {
                 <span className="doc-card-tag">{doc.name.split(".").pop().toUpperCase()}</span>
                 <h3>{doc.name}</h3>
                 <p className="doc-card-meta">
-                  {formatSize(doc.size)} · {doc.uploadedAt.toLocaleDateString("en-IN", {
+                  {formatSize(doc.size)} · {new Date(doc.uploadedAt).toLocaleDateString("en-IN", {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
@@ -92,8 +108,8 @@ function UploadDoc() {
             ))}
           </div>
 
-          <button className="stamp-btn upload-btn-fab" onClick={handleUploadClick}>
-            Upload Document
+          <button className="stamp-btn upload-btn-fab" onClick={handleUploadClick} disabled={uploading}>
+            {uploading ? "Uploading..." : "Upload Document"}
           </button>
         </>
       )}

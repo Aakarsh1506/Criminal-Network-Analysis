@@ -132,3 +132,19 @@
 @media (max-width: 640px) {
   .upload-btn-fab { right: 16px; bottom: 16px; padding: 12px 20px; font-size: 0.78rem; }
 }
+
+.upload-error { color: var(--btn); }
+
+.doc-preview-close {
+  flex-shrink: 0;
+  font-family: var(--font-type);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  border: 1.5px solid var(--card-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.doc-preview-close:hover { color: var(--btn); border-color: var(--btn); }
