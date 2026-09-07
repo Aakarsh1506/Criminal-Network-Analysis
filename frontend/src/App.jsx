@@ -8,10 +8,10 @@ import CriminalList from "./pages/CriminalList";
 import CriminalProfile from "./pages/CriminalProfile";
 import UploadDoc from "./pages/UploadDoc";
 import CriminalListPage from "./pages/CriminalListPage";
+import AdminPanel from "./pages/AdminPanel";
 import "./App.css";
 
-// Navbar is hidden on these routes (pre-login / pre-dashboard pages)
-const NO_NAVBAR_PATHS = ["/", "/login"];
+const NO_NAVBAR_PATHS = ["/", "/login", "/admin"];
 
 function AppLayout() {
   const location = useLocation();
@@ -30,6 +30,7 @@ function AppLayout() {
           <Route path="/criminal/:id" element={<CriminalProfile />} />
           <Route path="/upload" element={<UploadDoc />} />
           <Route path="/criminal-list" element={<CriminalListPage />} />
+          <Route path="/admin" element={<AdminPanel />} />
         </Route>
       </Routes>
     </>

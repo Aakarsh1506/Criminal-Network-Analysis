@@ -47,7 +47,7 @@ function LoginPage() {
     setStepIndex((i) => i + 1);
   };
 
-  const handleEnter = () => navigate("/dashboard");
+  const handleEnter = () => navigate(officer?.role === "admin" ? "/admin" : "/dashboard");
   const handleBack = () => navigate("/");
 
   const statusLabel =
