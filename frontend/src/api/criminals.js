@@ -29,6 +29,13 @@ export async function fetchCriminalById(id) {
   return res.json();
 }
 
+export async function fetchCriminalNetwork(id, { signal } = {}) {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/network`, { signal });
+  if (res.status === 404) throw new Error("Network not found for this person");
+  if (!res.ok) throw new Error("Failed to load criminal network");
+  return res.json();
+}
+
 export async function fetchCrimeTypes() {
   const res = await fetch("/api/crime-types");
   if (!res.ok) throw new Error("Failed to load crime types");

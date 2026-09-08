@@ -8,8 +8,8 @@ import {
 import NetworkExplanation from "../components/NetworkExplanation";
 import NetworkGraph from "../components/NetworkGraph";
 import BackButton from "../components/BackButton";
-import indiaMap from "/images/India.svg";
 import "./CriminalProfile.css";
+import RelationGraph from "../components/RelationGraph";
 
 function CriminalProfile() {
   const { id } = useParams();
@@ -158,11 +158,9 @@ function CriminalProfile() {
           <p className="board-caption">Traced associates across India</p>
           <div
             className="graph-frame"
-            style={{ "--india-map-url": `url(${indiaMap})` }}
           >
-            <NetworkGraph
+            <RelationGraph
               mainCriminal={criminal}
-              relations={relations}
               onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
               height={520}
             />

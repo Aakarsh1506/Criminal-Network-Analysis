@@ -6,19 +6,6 @@
   background-color: #0d0d0d;
 }
 
-/* Filter only the map so graph nodes and labels retain their colors. */
-.graph-frame::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: var(--india-map-url);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  filter: brightness(0) invert(1) opacity(0.15);
-  pointer-events: none;
-}
-
 .network-graph {
   position: relative;
   z-index: 1;
@@ -34,9 +21,6 @@
 /* Keep the map and its markers in one shared geographic coordinate space. */
 .graph-frame:has(.geographic-network) {
   filter: none;
-}
-.graph-frame:has(.geographic-network)::before {
-  display: none;
 }
 .geographic-network svg { display: block; }
 .geographic-map { filter: brightness(0) invert(1); opacity: 0.22; }

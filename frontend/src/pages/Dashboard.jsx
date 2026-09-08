@@ -4,7 +4,6 @@ import { fetchCriminalById, fetchCrimeTypes } from "../api/criminals";
 import { fetchStats } from "../api/stats";
 import { fetchWorkspace, unpinCriminal, removeFromWorkingList } from "../api/workspace";
 import NetworkGraph from "../components/NetworkGraph";
-import indiaMap from "/images/India.svg";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -184,7 +183,6 @@ function Dashboard() {
             {pinnedCriminal ? (
               <div
                 className="graph-frame mini"
-                style={{ "--india-map-url": `url(${indiaMap})` }}
               >
                 <NetworkGraph
                   mainCriminal={pinnedCriminal}

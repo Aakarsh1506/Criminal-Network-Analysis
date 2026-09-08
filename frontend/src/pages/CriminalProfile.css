@@ -93,10 +93,7 @@
 .dossier-page .stamp-btn.full-width { color: var(--accent); border-color: var(--accent); border-radius: 7px; }
 .dossier-page .stamp-btn.full-width:hover { background: var(--accent); color: #101010; }
 
-/* Cytoscape graph frame with India map background.
-   IMPORTANT: the map's lightening filter lives on ::before now, not on
-   .graph-frame itself — a filter on the parent would also wash out the
-   Cytoscape canvas rendered inside it (that was the "blank map" bug). */
+/* Cytoscape graph frame. */
 .graph-frame {
   position: relative;
   border: 1px solid var(--card-border);
@@ -105,20 +102,6 @@
   background-color: #0d0d0d;
   flex: 1;
   min-height: 520px;
-}
-
-.graph-frame::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: var(--india-map-url);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
-  /* Lightens a black/dark map silhouette so it's visible against the dark
-     theme. Remove this line if your map file is already a light/gold outline. */
-  filter: brightness(0) invert(1) opacity(0.15);
-  pointer-events: none;
 }
 
 .network-graph {

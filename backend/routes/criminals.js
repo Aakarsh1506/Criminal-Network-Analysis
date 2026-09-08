@@ -5,6 +5,7 @@ import { initialsAvatar, colorForId } from "../utils/avatar.js";
 import { coordinatesForCity } from "../utils/mapCoordinates.js";
 
 import { explainNetwork, AIError } from "../services/groq.js";
+import { fetchNetwork } from "../services/network.js";
 
 const router = Router();
 
@@ -144,6 +145,19 @@ router.get("/:id", async (req, res) => {
   } catch (err) {
     console.error(`GET /api/criminals/${id} failed`, err);
     res.status(500).json({ error: "Failed to load criminal" });
+  }
+});
+
+// GET /api/criminals/:id/network — recorded relationships within two hops
+router.get("/:id/network", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const network = await fetchNetwork(id, runCypher);
+    if (!network) return res.status(404).json({ error: "Network not found for this person" });
+    res.json(network);
+  } catch (err) {
+    console.error(`GET /api/criminals/${id}/network failed`, err);
+    res.status(500).json({ error: "Failed to load criminal network" });
   }
 });
 
