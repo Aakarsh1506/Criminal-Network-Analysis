@@ -1,7 +1,7 @@
 -- Per-officer "currently working on" state.
 -- Replaces the old localStorage-based pin/list, which was shared by whoever
 -- was using the browser rather than scoped to the logged-in officer.
--- This file is here for reference / manual setup; db.py also
+-- This file is here for reference / manual setup; workspace.js also
 -- creates these tables itself on first run (CREATE TABLE IF NOT EXISTS),
 -- same convention as officers.sql.
 --

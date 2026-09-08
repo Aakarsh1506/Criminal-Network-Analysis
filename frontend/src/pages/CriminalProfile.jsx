@@ -155,7 +155,7 @@ function CriminalProfile() {
         </div>
 
         <div className="dossier-right">
-          <p className="board-caption">Traced associates across India</p>
+        
           <div
             className="graph-frame"
           >

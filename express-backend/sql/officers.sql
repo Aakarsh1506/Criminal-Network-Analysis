@@ -1,6 +1,6 @@
 -- Officer accounts for the login system.
 -- There is no public signup route — rows are only ever inserted by an admin
--- running `python -m backend1.scripts.add_officer`. This
+-- running `npm run add-officer` (see backend/scripts/addOfficer.js). This
 -- file is here for reference / manual setup; the CLI script also creates
 -- the table itself on first run (CREATE TABLE IF NOT EXISTS).
 

@@ -185,3 +185,7 @@ npm run build
 npm run lint
 node --test backend/services/groq.test.js
 ```
+
+## FastAPI alternative
+
+The Python backend is in [`backend1/`](backend1/README.md). It preserves the existing API routes and frontend proxy port. Follow its setup instructions, activate `backend1/.venv`, then run `npm run server:fastapi` from the repository root.

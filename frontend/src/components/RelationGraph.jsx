@@ -141,11 +141,7 @@ export default function RelationGraph({ mainCriminal, onNodeClick, height = 480 
         <div ref={container} style={{ height, width: '100%' }} role="img" aria-label={`Relationship graph centered on ${mainCriminal.name}. Use the selector below to inspect nodes and links.`} />
         {network.edges.length === 0 && <p>No relationships are recorded for this person.</p>}
         {network.truncated && <p role="status">Showing the first {network.pathLimit.toLocaleString()} paths; some connections are omitted.</p>}
-        <label>Inspect a node or link <select style={{ background: '#151515', color: '#f2f2f2', border: '1px solid #c9a463', borderRadius: 5, padding: 8, maxWidth: '100%' }} value={activeSelection?.id || ''} onChange={(event) => inspect(event.target.value)}>
-          <option value="">Choose a node or link</option>
-          <optgroup label="Nodes">{network.nodes.map((node) => <option key={node.id} value={node.id}>{node.label} · {node.kind}</option>)}</optgroup>
-          <optgroup label="Links">{network.edges.map((edge) => <option key={edge.id} value={edge.id}>{network.nodes.find((node) => node.id === edge.source)?.label} → {network.nodes.find((node) => node.id === edge.target)?.label}: {edge.label}</option>)}</optgroup>
-        </select></label>
+        
         <div aria-live="polite">{activeSelection && <div style={{ display: 'grid', gap: 8, marginTop: 12, borderTop: '1px solid #262626', paddingTop: 12, overflowWrap: 'anywhere' }}>
           <strong>{activeSelection.label}</strong>
           <span>{activeSelection.kind ? `${activeSelection.kind} · ${activeSelection.depth === 0 ? 'Selected person' : `${activeSelection.depth} graph steps away`}` : 'Recorded relationship'}</span>
