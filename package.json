@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite frontend",
-    "server": "node backend/server.js",
-    "add-officer": "node backend/scripts/addOfficer.js",
+    "server": "node express-backend/server.js",
+    "add-officer": "node express-backend/scripts/addOfficer.js",
     "build": "vite build frontend",
     "lint": "oxlint",
     "preview": "vite preview frontend",
