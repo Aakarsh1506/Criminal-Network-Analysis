@@ -4,6 +4,7 @@ import { fetchCriminalById, fetchCrimeTypes } from "../api/criminals";
 import { fetchStats } from "../api/stats";
 import { fetchWorkspace, unpinCriminal, removeFromWorkingList } from "../api/workspace";
 import NetworkGraph from "../components/NetworkGraph";
+import RelationGraph from "../components/RelationGraph";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -12,6 +13,7 @@ function Dashboard() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [presetTags, setPresetTags] = useState([]);
+  const [graphMode, setGraphMode] = useState("map"); // "map" | "network"
 
   const [stats, setStats] = useState(null);
 
@@ -129,51 +131,6 @@ function Dashboard() {
         )}
       </div>
 
-      <div className="pinboard">
-        <div className="pin-card card-1">
-          <span className="pin" />
-          <h3>Records on file</h3>
-          <div className="pin-number">{stats ? stats.totalCriminals : "…"}</div>
-          <p className="pin-note">Criminals currently tracked</p>
-        </div>
-
-        <div className="pin-card card-2 wide">
-          <span className="pin" />
-          <h3>Crime tag frequency</h3>
-          <div className="bar-list">
-            {tagCounts.map(([tag, count]) => (
-              <div className="bar-row" key={tag}>
-                <span className="bar-label">{tag}</span>
-                <div className="bar-track">
-                  <div className="bar-fill" style={{ width: `${(count / maxTagCount) * 100}%` }} />
-                </div>
-                <span className="bar-count">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="pin-card card-3">
-          <span className="pin" />
-          <h3>Cities under watch</h3>
-          <ul className="city-list">
-            {cityCounts.map(([city, count]) => (
-              <li key={city}>
-                <span>{city}</span>
-                <span>{count}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="pin-card card-4">
-          <span className="pin" />
-          <h3>Traced connections</h3>
-          <div className="pin-number">{stats ? stats.tracedConnections : "…"}</div>
-          <p className="pin-note">Links between known associates</p>
-        </div>
-      </div>
-
       <div className="working-section">
         <h3 className="working-heading">Currently working on / researching</h3>
 
@@ -181,16 +138,42 @@ function Dashboard() {
           {/* Map now occupies the full wide (2fr) column instead of a single narrow slot */}
           <div className="working-col working-map-col">
             {pinnedCriminal ? (
-              <div
-                className="graph-frame mini"
-              >
-                <NetworkGraph
-                  mainCriminal={pinnedCriminal}
-                  relations={pinnedRelations}
-                  onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
-                  height={560}
-                />
-              </div>
+              <>
+                <div className="working-map-toolbar">
+                  <div className="graph-toggle" role="tablist" aria-label="Graph view">
+                    <button
+                      type="button"
+                      className={`graph-toggle-btn ${graphMode === "map" ? "graph-toggle-active" : ""}`}
+                      onClick={() => setGraphMode("map")}
+                    >
+                      Map
+                    </button>
+                    <button
+                      type="button"
+                      className={`graph-toggle-btn ${graphMode === "network" ? "graph-toggle-active" : ""}`}
+                      onClick={() => setGraphMode("network")}
+                    >
+                      Network
+                    </button>
+                  </div>
+                </div>
+                <div className="graph-frame mini">
+                  {graphMode === "map" ? (
+                    <NetworkGraph
+                      mainCriminal={pinnedCriminal}
+                      relations={pinnedRelations}
+                      onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
+                      height={560}
+                    />
+                  ) : (
+                    <RelationGraph
+                      mainCriminal={pinnedCriminal}
+                      onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
+                      height={560}
+                    />
+                  )}
+                </div>
+              </>
             ) : (
               <div className="working-empty">
                 <p className="empty-note">Not working on anyone currently</p>
@@ -255,6 +238,51 @@ function Dashboard() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="pinboard">
+        <div className="pin-card card-1">
+          <span className="pin" />
+          <h3>Records on file</h3>
+          <div className="pin-number">{stats ? stats.totalCriminals : "…"}</div>
+          <p className="pin-note">Criminals currently tracked</p>
+        </div>
+
+        <div className="pin-card card-2 wide">
+          <span className="pin" />
+          <h3>Crime tag frequency</h3>
+          <div className="bar-list">
+            {tagCounts.map(([tag, count]) => (
+              <div className="bar-row" key={tag}>
+                <span className="bar-label">{tag}</span>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{ width: `${(count / maxTagCount) * 100}%` }} />
+                </div>
+                <span className="bar-count">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pin-card card-3">
+          <span className="pin" />
+          <h3>Cities under watch</h3>
+          <ul className="city-list">
+            {cityCounts.map(([city, count]) => (
+              <li key={city}>
+                <span>{city}</span>
+                <span>{count}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="pin-card card-4">
+          <span className="pin" />
+          <h3>Traced connections</h3>
+          <div className="pin-number">{stats ? stats.tracedConnections : "…"}</div>
+          <p className="pin-note">Links between known associates</p>
         </div>
       </div>
     </div>

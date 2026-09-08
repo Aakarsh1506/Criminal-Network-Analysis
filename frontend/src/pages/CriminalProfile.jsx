@@ -19,6 +19,7 @@ function CriminalProfile() {
   const [relations, setRelations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [graphMode, setGraphMode] = useState("network"); // "network" | "map"
 
   const [pinnedId, setPinnedIdState] = useState(null);
   const [inList, setInList] = useState(false);
@@ -155,15 +156,41 @@ function CriminalProfile() {
         </div>
 
         <div className="dossier-right">
-        
+
+          <div className="graph-toggle" role="tablist" aria-label="Graph view">
+            <button
+              type="button"
+              className={`graph-toggle-btn ${graphMode === "network" ? "graph-toggle-active" : ""}`}
+              onClick={() => setGraphMode("network")}
+            >
+              Network
+            </button>
+            <button
+              type="button"
+              className={`graph-toggle-btn ${graphMode === "map" ? "graph-toggle-active" : ""}`}
+              onClick={() => setGraphMode("map")}
+            >
+              Map
+            </button>
+          </div>
+
           <div
             className="graph-frame"
           >
-            <RelationGraph
-              mainCriminal={criminal}
-              onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
-              height={520}
-            />
+            {graphMode === "network" ? (
+              <RelationGraph
+                mainCriminal={criminal}
+                onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
+                height={520}
+              />
+            ) : (
+              <NetworkGraph
+                mainCriminal={criminal}
+                relations={relations}
+                onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
+                height={520}
+              />
+            )}
           </div>
           <NetworkExplanation key={id} id={id} />
         </div>

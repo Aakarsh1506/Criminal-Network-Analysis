@@ -77,14 +77,14 @@
 .tag-chip-active { background: var(--btn); border-color: var(--btn); color: #fff; }
 
 /* max-width/padding now matches .working-section so the stats cards line up
-   with the "currently working on / researching" block below them */
+   with the "currently working on / researching" block above them */
 .pinboard {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 1fr));
   gap: 24px;
   max-width: 1100px;
-  margin: 0 auto;
-  padding: 20px 32px;
+  margin: 44px auto 0;
+  padding: 20px 32px 40px;
 }
 
 .pin-card {
@@ -146,7 +146,7 @@
   .wide { grid-column: span 1; }
 }
 
-.working-section { max-width: 1100px; margin: 44px auto 0; padding: 0 32px 40px; }
+.working-section { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
 
 .working-heading {
   font-family: var(--font-type);
@@ -182,10 +182,47 @@
 .working-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .working-empty .empty-note { padding: 0; color: var(--text-dim); opacity: 1; }
 
-/* Map column: no padding/gap so the graph frame fills the entire card */
+/* Map column: no padding/gap so the graph frame fills the entire card,
+   except for the small toolbar strip that holds the view toggle */
 .working-map-col {
   padding: 0;
   overflow: hidden;
+}
+
+.working-map-toolbar {
+  flex: 0 0 auto;
+  padding: 14px 16px 0;
+}
+
+.graph-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #101010;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.graph-toggle-btn {
+  font-family: var(--font-type);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.graph-toggle-btn:hover { color: var(--text); }
+
+.graph-toggle-active {
+  background: var(--accent);
+  color: #101010;
 }
 
 /* Side column: stacked profile (top) + list (bottom), each roughly half the height */
