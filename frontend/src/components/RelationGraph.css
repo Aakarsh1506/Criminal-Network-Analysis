@@ -1,0 +1,172 @@
+.relation-graph {
+  --rg-panel: #0f141c;
+  --rg-panel-border: #262f3d;
+  --rg-text: #e7ecf3;
+  --rg-text-dim: #93a0b4;
+  --rg-accent: #e0b072;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  color: var(--rg-text);
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+/* ---------- toolbar ---------- */
+
+.relation-graph__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.relation-graph__controls {
+  display: flex;
+  gap: 8px;
+}
+
+.rg-btn {
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--rg-panel-border);
+  background: #161d28;
+  color: var(--rg-text);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 12px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.rg-btn:hover:not(:disabled) {
+  border-color: var(--rg-accent);
+  color: var(--rg-accent);
+}
+
+.rg-btn:active:not(:disabled) { transform: scale(0.94); }
+
+.rg-btn:focus-visible {
+  outline: 2px solid var(--rg-accent);
+  outline-offset: 2px;
+}
+
+.rg-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* ---------- legend ---------- */
+
+.relation-graph__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 0 2px;
+}
+
+.rg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--rg-text-dim);
+}
+
+.rg-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  flex: none;
+}
+
+/* ---------- canvas card ---------- */
+
+.relation-graph__canvas-wrap {
+  position: relative;
+  border-radius: 12px;
+  border: 1px solid var(--rg-panel-border);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 35%, #182130 0%, #0b0f16 72%);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.45);
+}
+
+.relation-graph__canvas-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.5;
+}
+
+.relation-graph__canvas {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.relation-graph__status {
+  padding: 20px 4px;
+  color: var(--rg-text-dim);
+}
+
+.relation-graph__empty {
+  padding: 10px 2px 0;
+  color: var(--rg-text-dim);
+  font-size: 0.82rem;
+}
+
+.relation-graph__truncated {
+  padding: 4px 2px 0;
+  color: var(--rg-accent);
+  font-size: 0.78rem;
+}
+
+/* ---------- selection detail panel ---------- */
+
+.relation-graph__panel {
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--rg-panel-border);
+  background: var(--rg-panel);
+  overflow-wrap: anywhere;
+  animation: rg-panel-in 0.15s ease-out;
+}
+
+@keyframes rg-panel-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.relation-graph__panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--rg-text);
+}
+
+.relation-graph__panel-meta {
+  font-size: 0.78rem;
+  color: var(--rg-text-dim);
+}
+
+.relation-graph__panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .relation-graph__panel { animation: none; }
+}

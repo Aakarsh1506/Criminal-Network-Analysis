@@ -1,34 +1,61 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import cytoscape from 'cytoscape';
 import { fetchCriminalNetwork } from '../api/criminals';
+import './RelationGraph.css';
+
+// Per-kind palette: a saturated fill plus a paler halo used for the border,
+// mirroring the soft-glow node treatment common to modern network charts.
+const KIND_STYLE = {
+  Person: { label: 'Person', fill: '#d9a94e', halo: '#f6d98b', shape: 'ellipse' },
+  Case: { label: 'Case', fill: '#4e8fc7', halo: '#a8d4ff', shape: 'round-rectangle' },
+  Location: { label: 'Location', fill: '#3fa893', halo: '#92e8d2', shape: 'diamond' },
+  CrimeType: { label: 'Crime type', fill: '#9678c9', halo: '#d3bff2', shape: 'hexagon' },
+};
+const ROOT_STYLE = { fill: '#d9614f', halo: '#ffb199' };
+const DEFAULT_STYLE = { fill: '#8f9bb0', halo: '#c7cfdc', shape: 'ellipse' };
 
 const stylesheet = [
   { selector: 'node', style: {
-    label: 'data(displayLabel)', width: 30, height: 30,
-    'background-color': '#a99acb', 'border-width': 2, 'border-color': '#d2c2f2',
-    color: '#d9e1ed', 'font-family': 'IBM Plex Sans, sans-serif', 'font-size': 11,
-    'text-valign': 'bottom', 'text-margin-y': 10, 'text-wrap': 'wrap', 'text-max-width': 120,
-    'text-outline-color': '#0b1018', 'text-outline-width': 3,
-    'overlay-opacity': 0, 'transition-property': 'opacity, border-color, background-color', 'transition-duration': '160ms',
+    label: 'data(displayLabel)', width: 32, height: 32, shape: 'ellipse',
+    'background-color': DEFAULT_STYLE.fill, 'border-width': 2.5, 'border-color': DEFAULT_STYLE.halo,
+    'border-opacity': 0.9, 'corner-radius': 10,
+    color: '#eef2f8', 'font-family': 'IBM Plex Sans, sans-serif', 'font-size': 11, 'font-weight': 500,
+    'text-valign': 'bottom', 'text-halign': 'center', 'text-margin-y': 9, 'text-wrap': 'wrap', 'text-max-width': 110,
+    'text-background-color': '#0d1219', 'text-background-opacity': 0.88, 'text-background-shape': 'roundrectangle',
+    'text-background-padding': 4,
+    'overlay-opacity': 0, 'overlay-color': DEFAULT_STYLE.halo, 'overlay-padding': 6, 'overlay-shape': 'ellipse',
+    'transition-property': 'overlay-opacity, overlay-padding, border-width, background-color, border-color',
+    'transition-duration': '160ms',
   } },
-  { selector: 'node[kind = "Person"]', style: { width: 42, height: 42, 'background-color': '#c6a368', 'border-color': '#f5dba9' } },
-  { selector: 'node[kind = "Case"]', style: { shape: 'round-rectangle', 'background-color': '#538ab4', 'border-color': '#8ac5ee' } },
-  { selector: 'node[kind = "Location"]', style: { shape: 'diamond', width: 36, height: 36, 'background-color': '#469e91', 'border-color': '#8be0c9' } },
-  { selector: 'node[kind = "CrimeType"]', style: { shape: 'hexagon', 'background-color': '#8c75ae', 'border-color': '#c8afe9' } },
+  ...Object.entries(KIND_STYLE).map(([kind, k]) => ({
+    selector: `node[kind = "${kind}"]`,
+    style: { shape: k.shape, 'background-color': k.fill, 'border-color': k.halo, 'overlay-color': k.halo },
+  })),
+  { selector: 'node[kind = "Person"]', style: { width: 40, height: 40 } },
+  { selector: 'node[kind = "Location"]', style: { width: 36, height: 36 } },
+  { selector: 'node[kind = "Case"], node[kind = "CrimeType"]', style: { width: 40, height: 34, padding: 4 } },
   { selector: 'node[depth = 0]', style: {
-    width: 60, height: 60, 'background-color': '#df6c64', 'border-color': '#ffb8a5', 'border-width': 3,
-    'font-size': 13, 'font-weight': 600, color: '#fff0dc', 'text-margin-y': 18, 'z-index': 10,
+    width: 62, height: 62, 'background-color': ROOT_STYLE.fill, 'border-color': ROOT_STYLE.halo,
+    'overlay-color': ROOT_STYLE.halo, 'border-width': 3.5,
+    'font-size': 13, 'font-weight': 700, color: '#fff5ea', 'text-margin-y': 14, 'z-index': 20,
+    'overlay-opacity': 0.14, 'overlay-padding': 8,
   } },
   { selector: 'edge', style: {
-    'curve-style': 'bezier', 'control-point-step-size': 45, width: 1.6,
-    'line-color': '#73839a', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#73839a',
-    'arrow-scale': 0.7, opacity: 0.82, label: '', 'font-size': 9, color: '#f0d9b2',
-    'text-rotation': 'autorotate', 'text-background-color': '#111923', 'text-background-opacity': 0.95,
-    'text-background-padding': 5, 'text-background-shape': 'roundrectangle', 'overlay-opacity': 0,
+    'curve-style': 'bezier', 'control-point-step-size': 42, width: 1.4, 'line-cap': 'round',
+    'line-color': '#5c6b82', 'target-arrow-shape': 'triangle', 'target-arrow-color': '#5c6b82',
+    'arrow-scale': 0.65, opacity: 0.55, label: '', 'font-size': 9, color: '#e7d3ab',
+    'text-rotation': 'autorotate', 'text-background-color': '#0d1219', 'text-background-opacity': 0.92,
+    'text-background-padding': 4, 'text-background-shape': 'roundrectangle', 'overlay-opacity': 0,
+    'transition-property': 'opacity, width, line-color, target-arrow-color', 'transition-duration': '160ms',
   } },
-  { selector: 'edge.focused, edge:selected, edge.hovered', style: { width: 2.5, 'line-color': '#d9b67a', 'target-arrow-color': '#d9b67a', opacity: 1, 'z-index': 5 } },
-  { selector: 'node:selected, node.hovered', style: { 'border-color': '#ffffff', 'border-width': 3 } },
-  { selector: '.muted', style: { opacity: 0.13 } },
+  { selector: 'node:selected, node.hovered', style: {
+    'border-width': 3.5, 'overlay-opacity': 0.22, 'overlay-padding': 7,
+  } },
+  { selector: 'edge.focused, edge:selected, edge.hovered', style: {
+    width: 2.6, 'line-color': '#e0b072', 'target-arrow-color': '#e0b072', opacity: 1, 'z-index': 15,
+  } },
+  { selector: 'node.focused', style: { 'z-index': 12 } },
+  { selector: '.muted', style: { opacity: 0.12 } },
 ];
 
 // Scatter starting positions so the force simulation can form natural clusters.
@@ -49,17 +76,10 @@ function networkElements(network) {
 }
 
 function fitAroundPerson(cy) {
-  const root = cy.nodes('[depth = 0]').first();
-  if (root.empty()) { cy.fit(undefined, 60); return; }
-  const center = root.position();
-  const bounds = cy.elements().boundingBox();
-  // Use symmetric bounds so fitting an uneven network still centers the person.
-  const halfWidth = Math.max(60, center.x - bounds.x1, bounds.x2 - center.x);
-  const halfHeight = Math.max(60, center.y - bounds.y1, bounds.y2 - center.y);
-  const zoom = Math.max(cy.minZoom(), Math.min(cy.maxZoom(),
-    Math.max(1, cy.width() - 100) / (2 * halfWidth),
-    Math.max(1, cy.height() - 100) / (2 * halfHeight)));
-  cy.viewport({ zoom, pan: { x: cy.width() / 2 - center.x * zoom, y: cy.height() / 2 - center.y * zoom } });
+  // Fit the whole graph snugly into the frame. (A symmetric fit around the
+  // selected person was tried here, but it wastes space whenever that
+  // person sits near one edge of the graph instead of its middle.)
+  cy.fit(cy.elements(), 60);
 }
 
 export default function RelationGraph({ mainCriminal, onNodeClick, height = 480 }) {
@@ -127,29 +147,53 @@ export default function RelationGraph({ mainCriminal, onNodeClick, height = 480 
     const cy = cyRef.current;
     if (cy) cy.zoom({ level: Math.max(cy.minZoom(), Math.min(cy.maxZoom(), cy.zoom() * factor)), renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
   }
+
   const activeSelection = network && selected && [...network.nodes, ...network.edges].find((item) => item.id === selected.id);
 
-  return <div className="relation-graph" style={{ width: '100%', minWidth: 0, position: 'relative', padding: 12, color: '#f2f2f2' }}>
-    <div role="group" aria-label="Graph controls" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      <button className="stamp-btn small" type="button" aria-label="Zoom in" disabled={!network} onClick={() => zoom(1.3)}>+</button>
-      <button className="stamp-btn small" type="button" aria-label="Zoom out" disabled={!network} onClick={() => zoom(1 / 1.3)}>−</button>
-      <button className="stamp-btn small" type="button" disabled={!network} onClick={() => { if (cyRef.current) fitAroundPerson(cyRef.current); }}>Fit</button>
+  // Legend only lists the node kinds actually present in this network.
+  const legendKinds = useMemo(() => {
+    if (!network) return [];
+    const present = new Set(network.nodes.map((node) => node.kind).filter(Boolean));
+    return Object.keys(KIND_STYLE).filter((kind) => present.has(kind));
+  }, [network]);
+
+  return <div className="relation-graph">
+    <div className="relation-graph__toolbar">
+      <div role="group" aria-label="Graph controls" className="relation-graph__controls">
+        <button className="rg-btn" type="button" aria-label="Zoom in" disabled={!network} onClick={() => zoom(1.3)}>+</button>
+        <button className="rg-btn" type="button" aria-label="Zoom out" disabled={!network} onClick={() => zoom(1 / 1.3)}>−</button>
+        <button className="rg-btn" type="button" disabled={!network} onClick={() => { if (cyRef.current) fitAroundPerson(cyRef.current); }}>Fit</button>
+      </div>
     </div>
-    {error ? <p role="alert" style={{ padding: '20px 0' }}>{error} <button className="stamp-btn small" type="button" onClick={() => { setResult(null); setSelected(null); setRetry((value) => value + 1); }}>Retry</button></p>
-      : !network ? <p role="status" style={{ padding: '20px 0' }}>Loading relationships…</p>
+
+    {legendKinds.length > 0 && <div className="relation-graph__legend" aria-hidden="true">
+      <span className="rg-legend-item"><span className="rg-legend-swatch" style={{ background: ROOT_STYLE.fill }} />Selected person</span>
+      {legendKinds.map((kind) => (
+        <span key={kind} className="rg-legend-item">
+          <span className="rg-legend-swatch" style={{ background: KIND_STYLE[kind].fill }} />{KIND_STYLE[kind].label}
+        </span>
+      ))}
+    </div>}
+
+    {error ? <p role="alert" className="relation-graph__status">{error} <button className="rg-btn" type="button" onClick={() => { setResult(null); setSelected(null); setRetry((value) => value + 1); }}>Retry</button></p>
+      : !network ? <p role="status" className="relation-graph__status">Loading relationships…</p>
       : <>
-        <div ref={container} style={{ height, width: '100%' }} role="img" aria-label={`Relationship graph centered on ${mainCriminal.name}. Use the selector below to inspect nodes and links.`} />
-        {network.edges.length === 0 && <p>No relationships are recorded for this person.</p>}
-        {network.truncated && <p role="status">Showing the first {network.pathLimit.toLocaleString()} paths; some connections are omitted.</p>}
-        
-        <div aria-live="polite">{activeSelection && <div style={{ display: 'grid', gap: 8, marginTop: 12, borderTop: '1px solid #262626', paddingTop: 12, overflowWrap: 'anywhere' }}>
-          <strong>{activeSelection.label}</strong>
-          <span>{activeSelection.kind ? `${activeSelection.kind} · ${activeSelection.depth === 0 ? 'Selected person' : `${activeSelection.depth} graph steps away`}` : 'Recorded relationship'}</span>
-          {activeSelection.personId && <span>{activeSelection.alias ? `“${activeSelection.alias}” · ` : ''}{activeSelection.personId} · {activeSelection.city || 'City unavailable'}</span>}
-          {activeSelection.reason && <span>{activeSelection.reason}</span>}
-          {activeSelection.provenance && <span>Source: {activeSelection.provenance}</span>}
-          {activeSelection.personId && activeSelection.personId !== String(mainCriminal.id) && onNodeClick && <button className="stamp-btn small" type="button" onClick={() => onNodeClick(activeSelection.personId)}>Open profile</button>}
-          <button className="stamp-btn small" type="button" onClick={() => inspect('')}>Clear selection</button>
+        <div className="relation-graph__canvas-wrap">
+          <div ref={container} className="relation-graph__canvas" style={{ height }} role="img" aria-label={`Relationship graph centered on ${mainCriminal.name}. Use the selector below to inspect nodes and links.`} />
+        </div>
+        {network.edges.length === 0 && <p className="relation-graph__empty">No relationships are recorded for this person.</p>}
+        {network.truncated && <p role="status" className="relation-graph__truncated">Showing the first {network.pathLimit.toLocaleString()} paths; some connections are omitted.</p>}
+
+        <div aria-live="polite">{activeSelection && <div className="relation-graph__panel">
+          <span className="relation-graph__panel-title">{activeSelection.label}</span>
+          <span className="relation-graph__panel-meta">{activeSelection.kind ? `${activeSelection.kind} · ${activeSelection.depth === 0 ? 'Selected person' : `${activeSelection.depth} graph steps away`}` : 'Recorded relationship'}</span>
+          {activeSelection.personId && <span className="relation-graph__panel-meta">{activeSelection.alias ? `"${activeSelection.alias}" · ` : ''}{activeSelection.personId} · {activeSelection.city || 'City unavailable'}</span>}
+          {activeSelection.reason && <span className="relation-graph__panel-meta">{activeSelection.reason}</span>}
+          {activeSelection.provenance && <span className="relation-graph__panel-meta">Source: {activeSelection.provenance}</span>}
+          <div className="relation-graph__panel-actions">
+            {activeSelection.personId && activeSelection.personId !== String(mainCriminal.id) && onNodeClick && <button className="rg-btn" type="button" onClick={() => onNodeClick(activeSelection.personId)}>Open profile</button>}
+            <button className="rg-btn" type="button" onClick={() => inspect('')}>Clear selection</button>
+          </div>
         </div>}</div>
       </>}
   </div>;
