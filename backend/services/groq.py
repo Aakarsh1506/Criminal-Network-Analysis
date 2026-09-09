@@ -63,7 +63,7 @@ async def explain_network(profile, *, api_key, client, model="openai/gpt-oss-20b
                 isinstance(error, dict) and error.get("code") == "model_not_found"
             ):
                 raise AIError(
-                    "The configured Groq model is unavailable to this API key. Set GROQ_MODEL in backend1/.env to an available model and restart the backend.",
+                    "The configured Groq model is unavailable to this API key. Set GROQ_MODEL in backend/.env to an available model and restart the backend.",
                     503,
                 )
             if response.status_code == 429:

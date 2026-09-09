@@ -38,7 +38,7 @@ class Settings:
         env = {**dotenv_values(BASE_DIR / ".env"), **os.environ}
         secret = env.get("JWT_SECRET")
         if not secret:
-            raise RuntimeError("JWT_SECRET is not set — add it to backend1/.env")
+            raise RuntimeError("JWT_SECRET is not set — add it to backend/.env")
         return cls(
             jwt_secret=secret,
             jwt_expires_in=env.get("JWT_EXPIRES_IN") or "12h",

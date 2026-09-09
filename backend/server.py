@@ -1,4 +1,4 @@
-"""Run from the repository root with: python -m backend1.server."""
+"""Run from the repository root with: python -m backend.server."""
 
 import uvicorn
 

@@ -1,4 +1,4 @@
-"""Create an officer: python -m backend1.scripts.add_officer --help."""
+"""Create an officer: python -m backend.scripts.add_officer --help."""
 
 import argparse
 import asyncio

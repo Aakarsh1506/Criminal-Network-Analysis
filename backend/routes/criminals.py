@@ -65,7 +65,7 @@ async def explain(person_id: str, request: Request):
     state = request.app.state
     if not state.settings.groq_api_key.strip():
         raise APIError(
-            "AI is not configured. Add GROQ_API_KEY to backend1/.env and restart the server.", 503
+            "AI is not configured. Add GROQ_API_KEY to backend/.env and restart the server.", 503
         )
     if state.active_explanations >= 3:
         raise APIError("AI is busy. Please try again shortly.", 429)
