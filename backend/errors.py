@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 
 
 class APIError(Exception):
+    # Carry a public error message and status to the app's response handler.
     def __init__(self, message, status=500, *, clear_cookie=False):
         super().__init__(message)
         self.message = message

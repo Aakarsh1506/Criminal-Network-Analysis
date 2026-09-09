@@ -1,4 +1,5 @@
 NETWORK_PATH_LIMIT = 1000
+# Explore four hops, allowing crime types only at the end of a path.
 NETWORK_QUERY = f"""
   MATCH path = (root:Person {{person_id: $id}})-[*0..4]-(connected)
   WHERE none(node IN nodes(path)[0..-1] WHERE node:CrimeType)
@@ -9,6 +10,7 @@ NETWORK_QUERY = f"""
 
 
 async def fetch_network(person_id, run_cypher):
+    # Request one extra path to detect when the displayed network is truncated.
     records = await run_cypher(NETWORK_QUERY, {"id": person_id})
     if not records:
         return None
@@ -20,6 +22,7 @@ async def fetch_network(person_id, run_cypher):
 
 
 def serialize_network(records):
+    # Merge overlapping paths by graph ID, keeping each node's shortest depth.
     nodes, edges = {}, {}
     for record in records:
         path = record["path"]
@@ -31,7 +34,15 @@ def serialize_network(records):
             kind = next(
                 (
                     label
-                    for label in ("Person", "Case", "Location", "CrimeType", "Vehicle")
+                    for label in (
+                        "Person",
+                        "Case",
+                        "Location",
+                        "CrimeType",
+                        "Vehicle",
+                        "Organization",
+                        "PhoneNumber",
+                    )
                     if label in node.labels
                 ),
                 next(iter(sorted(node.labels)), "Record"),
@@ -64,6 +75,7 @@ def serialize_network(records):
                 "provenance": node.get("source") or None,
             }
         for relationship in path.relationships:
+            # Preserve stored edge direction even when a path traverses it backwards.
             edges[relationship.element_id] = {
                 "id": relationship.element_id,
                 "source": relationship.start_node.element_id,
@@ -71,5 +83,14 @@ def serialize_network(records):
                 "label": relationship.type.replace("_", " "),
                 "provenance": relationship.get("source") or None,
                 "reason": relationship.get("reason") or None,
+                **{
+                    output: relationship.get(prop)
+                    for output, prop in (
+                        ("evidence", "evidence"),
+                        ("documentId", "document_id"),
+                        ("reviewStatus", "review_status"),
+                    )
+                    if relationship.get(prop) is not None
+                },
             }
     return {"nodes": list(nodes.values()), "edges": list(edges.values())}

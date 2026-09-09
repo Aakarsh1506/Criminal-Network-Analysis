@@ -27,10 +27,14 @@ class Settings:
     admin_password: str = ""
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-20b"
+    groq_extraction_model: str = "openai/gpt-oss-20b"
+    groq_debug_responses: bool = False
+    ocr_language: str = "eng"
     upload_dir: Path = BASE_DIR / "uploads"
 
     @classmethod
     def from_env(cls):
+        # Environment variables override the backend's local .env file.
         env = {**dotenv_values(BASE_DIR / ".env"), **os.environ}
         secret = env.get("JWT_SECRET")
         if not secret:
@@ -54,4 +58,8 @@ class Settings:
             admin_password=env.get("ADMIN_PASSWORD") or "",
             groq_api_key=env.get("GROQ_API_KEY") or "",
             groq_model=env.get("GROQ_MODEL") or "openai/gpt-oss-20b",
+            groq_extraction_model=env.get("GROQ_EXTRACTION_MODEL") or "openai/gpt-oss-20b",
+            groq_debug_responses=(env.get("GROQ_DEBUG_RESPONSES") or "").lower()
+            in ("1", "true", "yes"),
+            ocr_language=env.get("OCR_LANGUAGE") or "eng",
         )

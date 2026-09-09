@@ -1,3 +1,4 @@
+// Unique record IDs let imports merge existing nodes without duplicates.
 CREATE CONSTRAINT person_id_unique IF NOT EXISTS
 FOR (p:Person)
 REQUIRE p.person_id IS UNIQUE;

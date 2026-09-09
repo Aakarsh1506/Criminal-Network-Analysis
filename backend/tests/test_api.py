@@ -8,7 +8,7 @@ import jwt
 import pytest
 from psycopg.errors import UndefinedTable, UniqueViolation
 
-from backend1.security import verify_password
+from backend.security import verify_password
 
 from .conftest import PROFILE
 
@@ -38,7 +38,15 @@ def test_route_inventory_matches_express(app):
         for method in methods
         if method in {"get", "post", "put", "patch", "delete"}
     )
-    assert actual == expected
+    assert actual == sorted(
+        expected
+        + [
+            ["GET", "/api/documents/source-types"],
+            ["GET", "/api/documents/{id}"],
+            ["POST", "/api/documents/{id}/process"],
+            ["POST", "/api/documents/{id}/confirm"],
+        ]
+    )
 
 
 async def test_health_and_cors(client):

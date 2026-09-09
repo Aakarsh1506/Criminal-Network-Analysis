@@ -18,6 +18,7 @@ async def explain_network(profile, *, api_key, client, model="openai/gpt-oss-20b
     if not api_key or not api_key.strip():
         raise AIError("Groq API key is not configured.", 503)
     criminal, relations = profile["criminal"], profile["relations"]
+    # Send only the source fields needed for the summary, with explicit data limits.
     context = json.dumps(
         {
             "profile": {key: criminal.get(key) for key in ("id", "name", "recordStatus")},
@@ -32,6 +33,7 @@ async def explain_network(profile, *, api_key, client, model="openai/gpt-oss-20b
         ensure_ascii=False,
         separators=(",", ":"),
     )
+    # Count UTF-16 units to preserve the original JavaScript size limit.
     if len(context.encode("utf-16-le")) // 2 > 40000:
         raise AIError("These records are too large to summarize.", 413)
     try:
@@ -51,6 +53,7 @@ async def explain_network(profile, *, api_key, client, model="openai/gpt-oss-20b
                 timeout=30,
             )
         if not response.is_success:
+            # Translate provider failures into messages safe to show the client.
             try:
                 failure = response.json()
             except ValueError:

@@ -8,6 +8,7 @@ router = APIRouter(
 )
 
 
+# Accept both trailing-slash forms while documenting one endpoint.
 @router.get("/", include_in_schema=False)
 @router.get("")
 async def get_crime_types(request: Request):

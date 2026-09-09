@@ -36,6 +36,7 @@ async def create_officer(request: Request, body: OfficerBody | None = None):
     with api_errors("Failed to create officer"):
         password_hash = await run_in_threadpool(hash_password, body.password)
         try:
+            # Accounts created through this API always receive the officer role.
             rows = await request.app.state.db.query(
                 """INSERT INTO officers (username, password_hash, name, dob, org_name, role)
                    VALUES (%s, %s, %s, %s, %s, 'officer')

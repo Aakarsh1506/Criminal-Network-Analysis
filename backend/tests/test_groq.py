@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 
-from backend1.routes import criminals
-from backend1.services.groq import AIError, explain_network
+from backend.routes import criminals
+from backend.services.groq import AIError, explain_network
 
 PROFILE = {
     "criminal": {

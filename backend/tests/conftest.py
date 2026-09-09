@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 
-from backend1.app import create_app
-from backend1.config import Settings
-from backend1.security import sign_officer_token
+from backend.app import create_app
+from backend.config import Settings
+from backend.security import sign_officer_token
 
 PROFILE = {
     "officerId": 7,

@@ -1,3 +1,4 @@
+# Positions on the frontend map, rather than geographic latitude and longitude.
 CITY_COORDINATES = {
     "Mumbai": {"x": 22, "y": 62},
     "New Delhi": {"x": 42, "y": 24},
@@ -17,4 +18,5 @@ CITY_COORDINATES = {
 
 
 def coordinates_for_city(city):
+    # Unknown cities use the map center; copy to protect the shared lookup.
     return CITY_COORDINATES.get(city, {"x": 50, "y": 50}).copy()

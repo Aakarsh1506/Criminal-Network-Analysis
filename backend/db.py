@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
@@ -32,11 +34,29 @@ class Database:
         await self.pool.close()
 
     async def query(self, sql, params=()):
+        # Borrow a pooled connection and return rows as dictionaries.
         async with self.pool.connection() as connection:
             async with connection.cursor() as cursor:
                 await cursor.execute(sql, params or None)
                 return await cursor.fetchall() if cursor.description else []
 
     async def ensure_schema(self):
-        for filename in ("officers.sql", "workspace.sql", "documents.sql"):
+        # Create app-owned tables without replacing existing records.
+        for filename in ("officers.sql", "workspace.sql", "documents.sql", "ingestion.sql"):
             await self.query((BASE_DIR / "sql" / filename).read_text())
+
+    @asynccontextmanager
+    async def transaction(self):
+        async with self.pool.connection() as connection:
+            async with connection.transaction():
+                yield Transaction(connection)
+
+
+class Transaction:
+    def __init__(self, connection):
+        self.connection = connection
+
+    async def query(self, sql, params=()):
+        async with self.connection.cursor() as cursor:
+            await cursor.execute(sql, params or None)
+            return await cursor.fetchall() if cursor.description else []

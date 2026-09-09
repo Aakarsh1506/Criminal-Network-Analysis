@@ -7,9 +7,9 @@ from ..utils.map_coordinates import coordinates_for_city
 
 logger = logging.getLogger(__name__)
 
-PERSONS_SQL = "\n      SELECT p.*,\n             array_remove(array_agg(DISTINCT ct.crime_name), NULL) AS crime_tags\n      FROM persons p\n      LEFT JOIN cases c ON c.person_id = p.person_id\n      LEFT JOIN crime_types ct ON ct.crime_id = c.crime_id\n      {where_clause}\n      GROUP BY p.person_id\n    "
-CASES_SQL = "\n  SELECT c.case_id, c.case_month, c.case_status, l.city, l.state, ct.crime_name\n  FROM cases c\n  LEFT JOIN crime_types ct ON ct.crime_id = c.crime_id\n  LEFT JOIN locations l ON l.location_id = c.location_id\n  WHERE c.person_id = %s\n  ORDER BY c.case_month DESC\n"
-ASSOCIATES_QUERY = "\n      MATCH (p1:Person {person_id: $id})-[:INVOLVED_IN]->(c1:Case)\n      MATCH (p2:Person)-[:INVOLVED_IN]->(c2:Case)\n      WHERE p1 <> p2\n      OPTIONAL MATCH (c1)-[:OCCURRED_AT]->(l:Location)<-[:OCCURRED_AT]-(c2)\n      OPTIONAL MATCH (c1)-[:OF_TYPE]->(crime:CrimeType)<-[:OF_TYPE]-(c2)\n      WITH p2, l, crime\n      WHERE l IS NOT NULL OR crime IS NOT NULL\n      RETURN DISTINCT\n        p2.person_id AS other_id,\n        p2.name AS other_name,\n        p2.alias AS other_alias,\n        p2.city AS other_city,\n        p2.state AS other_state,\n        l.city AS shared_location,\n        crime.crime_name AS shared_crime\n      LIMIT 25\n      "
+PERSONS_SQL = "\n      SELECT p.*,\n             array_remove(array_agg(DISTINCT ct.crime_name), NULL) AS crime_tags\n      FROM persons p\n      LEFT JOIN case_people cp ON cp.person_id = p.person_id\n      LEFT JOIN cases c ON c.case_id = cp.case_id\n      LEFT JOIN crime_types ct ON ct.crime_id = c.crime_id\n      {where_clause}\n      GROUP BY p.person_id\n    "
+CASES_SQL = "\n  SELECT c.case_id, c.case_month, c.case_status, l.city, l.state, ct.crime_name\n  FROM cases c\n  LEFT JOIN crime_types ct ON ct.crime_id = c.crime_id\n  LEFT JOIN locations l ON l.location_id = c.location_id\n  WHERE c.case_id IN (SELECT case_id FROM case_people WHERE person_id = %s)\n  ORDER BY c.case_month DESC\n"
+ASSOCIATES_QUERY = "\n      MATCH (p1:Person {person_id: $id})-[:INVOLVED_IN|MENTIONED_IN|WITNESS_IN|SUSPECT_IN]->(c1:Case)\n      MATCH (p2:Person)-[:INVOLVED_IN|MENTIONED_IN|WITNESS_IN|SUSPECT_IN]->(c2:Case)\n      WHERE p1 <> p2\n      OPTIONAL MATCH (c1)-[:OCCURRED_AT]->(l:Location)<-[:OCCURRED_AT]-(c2)\n      OPTIONAL MATCH (c1)-[:OF_TYPE]->(crime:CrimeType)<-[:OF_TYPE]-(c2)\n      WITH p2, l, crime\n      WHERE l IS NOT NULL OR crime IS NOT NULL\n      RETURN DISTINCT\n        p2.person_id AS other_id,\n        p2.name AS other_name,\n        p2.alias AS other_alias,\n        p2.city AS other_city,\n        p2.state AS other_state,\n        l.city AS shared_location,\n        crime.crime_name AS shared_crime\n      LIMIT 25\n      "
 
 
 def date_string(value):
@@ -24,6 +24,7 @@ def date_string(value):
 
 
 def map_person(row):
+    # Convert database fields into the profile shape used by the frontend.
     city = row.get("city")
     last_seen = row.get("last_seen")
     if last_seen:
@@ -60,6 +61,7 @@ def map_person(row):
 
 
 async def fetch_associates(person_id, graph):
+    # Shared locations or crime types are overlaps, not confirmed relationships.
     try:
         records = await graph.run(ASSOCIATES_QUERY, {"id": person_id})
         return [
@@ -78,6 +80,7 @@ async def fetch_associates(person_id, graph):
             for row in records
         ]
     except Exception:
+        # Keep the main profile available when Neo4j cannot return overlaps.
         logger.exception("Neo4j associate lookup failed")
         return []
 
@@ -87,6 +90,7 @@ async def load_profile(person_id, db, graph):
     if not rows:
         return None
     criminal = map_person(rows[0])
+    # Case history and graph overlaps can load independently.
     cases, relations = await asyncio.gather(
         db.query(CASES_SQL, (person_id,)),
         fetch_associates(person_id, graph),

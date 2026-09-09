@@ -1,28 +1,30 @@
 const BASE = "/api/documents";
 
-export async function fetchDocuments() {
-  const res = await fetch(BASE, { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to load documents");
-  return res.json();
+async function request(path, options = {}) {
+  const response = await fetch(`${BASE}${path}`, { credentials: "include", ...options });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || "Document request failed");
+  return body;
 }
 
-export async function uploadDocument(file) {
+export const fetchDocuments = () => request("");
+export const fetchDocument = (id) => request(`/${id}`);
+export const fetchSourceTypes = () => request("/source-types");
+export const retryDocument = (id) => request(`/${id}/process`, { method: "POST" });
+
+export function uploadDocument(file, sourceType) {
   const formData = new FormData();
   formData.append("file", file);
-  // No Content-Type header here — the browser sets the multipart
-  // boundary itself when the body is a FormData object.
-  const res = await fetch(BASE, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || "Failed to upload document");
-  }
-  return res.json();
+  formData.append("sourceType", sourceType);
+  // Let the browser add the multipart boundary.
+  return request("", { method: "POST", body: formData });
 }
 
 export function documentFileUrl(id) {
   return `${BASE}/${id}/file`;
 }
+
+export const confirmDocument = (id, extraction) => request(`/${id}/confirm`, {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ extraction }),
+});

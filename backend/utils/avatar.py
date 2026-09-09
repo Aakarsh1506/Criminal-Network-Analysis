@@ -5,6 +5,7 @@ PALETTE = ["#8B0000", "#1B4332", "#1E3A8A", "#4A044E", "#713F12", "#374151", "#7
 
 
 def initials_avatar(name, bg_color="#3a3a3a"):
+    # Embed an escaped initials image directly in the profile response.
     initials = escape("".join(part[0] for part in (name or "").split(" ") if part)[:2].upper())
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
       <rect width="200" height="200" fill="{escape(bg_color, quote=True)}" />
@@ -17,6 +18,7 @@ def initials_avatar(name, bg_color="#3a3a3a"):
 
 
 def color_for_id(person_id):
+    # Keep each person's fallback avatar color stable across requests.
     value = 0
     for char in str(person_id):
         value = (value * 31 + ord(char)) % len(PALETTE)

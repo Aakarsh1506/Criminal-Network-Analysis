@@ -20,6 +20,7 @@ async def list_criminals(request: Request, q: str = "", tags: str = "", all: str
         query = q.lower().strip()
         wanted_tags = [tag.strip().lower() for tag in tags.split(",") if tag.strip()]
         if query or wanted_tags:
+            # Match any name, alias, or crime tag; filters use OR semantics.
             results = [
                 person
                 for person in results
@@ -36,6 +37,7 @@ async def list_criminals(request: Request, q: str = "", tags: str = "", all: str
                 )
             ]
         elif all != "true":
+            # An empty search only lists everyone when explicitly requested.
             results = []
         return results
 
@@ -82,4 +84,5 @@ async def explain(person_id: str, request: Request):
             )
             return {"explanation": explanation}
     finally:
+        # Release the AI slot even if the request fails or is cancelled.
         state.active_explanations -= 1

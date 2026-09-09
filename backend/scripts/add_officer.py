@@ -44,6 +44,7 @@ def main():
     parser.add_argument("--dob", type=date.fromisoformat)
     parser.add_argument("--role", default="officer")
     args = parser.parse_args()
+    # Prompt without echoing the password when it is omitted from the command.
     args.password = args.password if args.password is not None else getpass.getpass("Password: ")
     if len(args.password) < 8:
         parser.error("Password must be at least 8 characters.")

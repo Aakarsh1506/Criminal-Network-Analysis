@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from contextlib import AsyncExitStack, asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from datetime import datetime, timezone
 
 import httpx
@@ -16,12 +17,14 @@ from .errors import APIError
 from .neo4j_driver import GraphDatabase
 from .routes import auth, crime_types, criminals, documents, officers, stats, workspace
 from .security import token_lifetime
+from .services.ingestion import worker
 
 logger = logging.getLogger(__name__)
 
 
 class APIJSONResponse(JSONResponse):
     def render(self, content):
+        # Match the frontend's UTC timestamp format, including milliseconds.
         return super().render(
             jsonable_encoder(
                 content,
@@ -45,6 +48,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app):
+        # Close resources created here when the app stops or startup fails.
         async with AsyncExitStack() as stack:
             if database is None:
                 db = Database(settings)
@@ -70,7 +74,14 @@ def create_app(
                     # Same degraded-start behavior as Express; health/login can
                     # still respond, and database routes return controlled errors.
                     logger.exception("Failed to ensure workspace/documents tables")
-            yield
+            task = asyncio.create_task(worker(app.state)) if initialize_schema else None
+            try:
+                yield
+            finally:
+                if task:
+                    task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await task
 
     app = FastAPI(
         title="Criminal Network Analysis API",
@@ -97,6 +108,7 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):
+        # Keep invalid-body responses compatible with the original API.
         return APIJSONResponse({"error": "Invalid request"}, status_code=400)
 
     @app.exception_handler(HTTPException)

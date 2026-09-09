@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import CriminalList from "./pages/CriminalList";
 import CriminalProfile from "./pages/CriminalProfile";
 import UploadDoc from "./pages/UploadDoc";
+import DocumentReview from "./pages/DocumentReview";
 import CriminalListPage from "./pages/CriminalListPage";
 import AdminPanel from "./pages/AdminPanel";
 import "./App.css";
@@ -29,6 +30,7 @@ function AppLayout() {
           <Route path="/search" element={<CriminalList />} />
           <Route path="/criminal/:id" element={<CriminalProfile />} />
           <Route path="/upload" element={<UploadDoc />} />
+          <Route path="/documents/:id/review" element={<DocumentReview />} />
           <Route path="/criminal-list" element={<CriminalListPage />} />
           <Route path="/admin" element={<AdminPanel />} />
         </Route>

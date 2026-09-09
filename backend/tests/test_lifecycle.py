@@ -3,10 +3,10 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from backend1 import app as app_module
-from backend1.app import create_app
-from backend1.config import Settings
-from backend1.security import token_lifetime
+from backend import app as app_module
+from backend.app import create_app
+from backend.config import Settings
+from backend.security import token_lifetime
 
 
 async def test_owns_and_closes_resources(settings, monkeypatch):
@@ -39,7 +39,7 @@ async def test_schema_failure_retains_liveness(settings, db, graph):
 
 
 def test_configuration_precedence_and_missing_secret(tmp_path, monkeypatch):
-    from backend1 import config
+    from backend import config
 
     monkeypatch.setattr(config, "BASE_DIR", tmp_path)
     monkeypatch.delenv("JWT_SECRET", raising=False)
@@ -79,5 +79,5 @@ def test_server_entrypoint_uses_configured_port(monkeypatch):
     monkeypatch.setenv("JWT_EXPIRES_IN", "12h")
     monkeypatch.setenv("PORT", "6080")
     monkeypatch.setattr(uvicorn, "run", run)
-    namespace = runpy.run_module("backend1.server", run_name="__main__")
+    namespace = runpy.run_module("backend.server", run_name="__main__")
     run.assert_called_once_with(namespace["app"], host="0.0.0.0", port=6080)

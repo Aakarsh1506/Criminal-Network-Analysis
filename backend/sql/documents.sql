@@ -1,3 +1,4 @@
+-- Store ownership and file metadata here; PDF contents live in uploads/.
 CREATE TABLE IF NOT EXISTS officer_documents (
   document_id   SERIAL PRIMARY KEY,
   officer_id    INTEGER NOT NULL REFERENCES officers(officer_id) ON DELETE CASCADE,

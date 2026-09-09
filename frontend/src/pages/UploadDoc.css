@@ -148,3 +148,21 @@
   transition: color 0.15s, border-color 0.15s;
 }
 .doc-preview-close:hover { color: var(--btn); border-color: var(--btn); }
+.upload-controls { display: grid; gap: 12px; }
+.upload-controls p { color: var(--text-dim); font-size: .9rem; line-height: 1.5; }
+.upload-controls select { background: #161616; color: var(--text); border: 1px solid var(--card-border); padding: 12px; border-radius: 6px; width: 100%; }
+.upload-controls label { color: var(--text); }
+.doc-card { text-align: left; font: inherit; }
+.doc-card[aria-pressed="true"] { border-color: var(--accent); }
+.doc-card-tag { max-width: 90%; white-space: normal; }
+.doc-status { color: var(--accent); font-size: .8rem; line-height: 1.5; }
+.extraction-detail { margin-top: 28px; color: var(--text); }
+.extraction-detail p { line-height: 1.5; margin: 12px 0; }
+.extraction-detail a { color: var(--accent); }
+.extracted-item { border-top: 1px solid var(--card-border); padding: 14px 0; overflow-wrap: anywhere; }
+.extracted-item summary { cursor: pointer; }
+.extracted-item blockquote { border-left: 3px solid var(--accent); margin: 12px 0; padding-left: 16px; color: #bdbdbd; white-space: pre-wrap; }
+.extracted-item dt { color: var(--text-dim); }
+.extracted-item dd { margin-left: 0; margin-bottom: 8px; }
+.extracted-text { white-space: pre-wrap; max-height: 500px; overflow: auto; }
+.upload-page > .upload-error { max-width: 900px; margin: 20px auto; }

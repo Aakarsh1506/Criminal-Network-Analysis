@@ -5,13 +5,13 @@ from unittest.mock import AsyncMock
 import pytest
 from neo4j.graph import Graph, Node, Path
 
-from backend1.services.network import (
+from backend.services.network import (
     NETWORK_PATH_LIMIT,
     NETWORK_QUERY,
     fetch_network,
     serialize_network,
 )
-from backend1.utils.avatar import color_for_id, initials_avatar
+from backend.utils.avatar import color_for_id, initials_avatar
 
 
 @pytest.fixture

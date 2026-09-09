@@ -6,6 +6,9 @@ import './RelationGraph.css';
 // Per-kind palette: a saturated fill plus a paler halo used for the border,
 // mirroring the soft-glow node treatment common to modern network charts.
 const KIND_STYLE = {
+  Organization: { label: 'Organization', fill: '#c47b9a', halo: '#f5bbd2', shape: 'round-rectangle' },
+  Vehicle: { label: 'Vehicle', fill: '#b18c60', halo: '#e8c799', shape: 'rectangle' },
+  PhoneNumber: { label: 'Phone number', fill: '#7891c9', halo: '#b6ccff', shape: 'ellipse' },
   Person: { label: 'Person', fill: '#d9a94e', halo: '#f6d98b', shape: 'ellipse' },
   Case: { label: 'Case', fill: '#4e8fc7', halo: '#a8d4ff', shape: 'round-rectangle' },
   Location: { label: 'Location', fill: '#3fa893', halo: '#92e8d2', shape: 'diamond' },
@@ -189,6 +192,8 @@ export default function RelationGraph({ mainCriminal, onNodeClick, height = 480 
           <span className="relation-graph__panel-meta">{activeSelection.kind ? `${activeSelection.kind} · ${activeSelection.depth === 0 ? 'Selected person' : `${activeSelection.depth} graph steps away`}` : 'Recorded relationship'}</span>
           {activeSelection.personId && <span className="relation-graph__panel-meta">{activeSelection.alias ? `"${activeSelection.alias}" · ` : ''}{activeSelection.personId} · {activeSelection.city || 'City unavailable'}</span>}
           {activeSelection.reason && <span className="relation-graph__panel-meta">{activeSelection.reason}</span>}
+          {activeSelection.evidence && <span className="relation-graph__panel-meta">Evidence: {activeSelection.evidence}</span>}
+          {activeSelection.reviewStatus && <span className="relation-graph__panel-meta">Review: {activeSelection.reviewStatus}</span>}
           {activeSelection.provenance && <span className="relation-graph__panel-meta">Source: {activeSelection.provenance}</span>}
           <div className="relation-graph__panel-actions">
             {activeSelection.personId && activeSelection.personId !== String(mainCriminal.id) && onNodeClick && <button className="rg-btn" type="button" onClick={() => onNodeClick(activeSelection.personId)}>Open profile</button>}

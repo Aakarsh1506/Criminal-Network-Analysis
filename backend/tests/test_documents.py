@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from backend1.routes.documents import MAX_FILE_SIZE
+from backend.routes.documents import MAX_FILE_SIZE
 
 
 async def test_upload_list_download_delete_preserves_contract(officer_client, db, settings):
@@ -11,7 +11,7 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
 
     async def query(sql, params=()):
         if sql.lstrip().startswith("INSERT"):
-            officer_id, original, stored, mime, size = params
+            officer_id, original, stored, mime, size, source_type = params
             assert officer_id == 7
             files[1] = {
                 "document_id": 1,
@@ -21,6 +21,8 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
                 "mime_type": mime,
                 "size_bytes": size,
                 "uploaded_at": now,
+                "source_type": source_type,
+                "processing_status": "queued",
             }
             return [files[1]]
         if "ORDER BY uploaded_at" in sql:
@@ -39,7 +41,18 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
     )
     assert response.status_code == 201
     document = response.json()
-    assert set(document) == {"id", "name", "type", "size", "uploadedAt"}
+    assert set(document) == {
+        "id",
+        "name",
+        "type",
+        "size",
+        "uploadedAt",
+        "sourceType",
+        "status",
+        "processingError",
+        "confirmedAt",
+    }
+    assert document["status"] == "queued"
     assert document["id"] == 1 and document["size"] == len(content)
     assert document["type"] == "application/pdf"
     stored = files[1]["stored_name"]
@@ -80,7 +93,10 @@ async def test_upload_requires_auth_before_saving(client, db, settings):
     "files,message",
     [
         (None, "No file provided"),
-        ({"file": ("test.txt", b"text", "text/plain")}, "Only PDF files are allowed"),
+        (
+            {"file": ("test.exe", b"text", "text/plain")},
+            "Upload a PDF, image, TXT, CSV, JSON, or DOCX file",
+        ),
         ({"wrong": ("test.pdf", b"%PDF", "application/pdf")}, "Unexpected field"),
     ],
 )

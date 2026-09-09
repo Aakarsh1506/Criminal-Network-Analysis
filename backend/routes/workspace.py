@@ -12,7 +12,8 @@ LIST_ITEMS_SQL = """
          array_remove(array_agg(DISTINCT ct.crime_name), NULL) AS crime_tags
   FROM officer_working_list w
   JOIN persons p ON p.person_id = w.person_id
-  LEFT JOIN cases c ON c.person_id = p.person_id
+  LEFT JOIN case_people cp ON cp.person_id = p.person_id
+  LEFT JOIN cases c ON c.case_id = cp.case_id
   LEFT JOIN crime_types ct ON ct.crime_id = c.crime_id
   WHERE w.officer_id = %s
   GROUP BY p.person_id, w.added_at
@@ -23,6 +24,7 @@ LIST_ITEMS_SQL = """
 @router.get("/", include_in_schema=False)
 @router.get("")
 async def get_workspace(request: Request, officer=Depends(require_auth)):
+    # Scope both the pin and working list to the signed-in officer.
     with api_errors("Failed to load workspace"):
         pinned, rows = await asyncio.gather(
             request.app.state.db.query(
@@ -49,6 +51,7 @@ async def pin(request: Request, body: PersonBody | None = None, officer=Depends(
     if body is None or not body.personId:
         raise APIError("personId is required", 400)
     with api_errors("Failed to pin criminal"):
+        # Each officer has one pin; pinning again replaces it.
         await request.app.state.db.query(
             """INSERT INTO officer_pinned_criminal (officer_id, person_id, pinned_at)
                VALUES (%s, %s, now())
@@ -76,6 +79,7 @@ async def add_to_list(
     if body is None or not body.personId:
         raise APIError("personId is required", 400)
     with api_errors("Failed to add to list"):
+        # Repeated additions leave the existing list entry unchanged.
         await request.app.state.db.query(
             """INSERT INTO officer_working_list (officer_id, person_id) VALUES (%s, %s)
                ON CONFLICT (officer_id, person_id) DO NOTHING""",

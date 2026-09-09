@@ -78,6 +78,7 @@ def require_auth(request: Request):
         raise APIError("Not authenticated", 401)
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        # Use officer details only after verifying the token's signature and expiry.
         if not all(field in payload for field in PROFILE_FIELDS):
             raise jwt.InvalidTokenError("Missing officer claims")
         return payload

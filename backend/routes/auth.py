@@ -14,6 +14,7 @@ async def login(request: Request, response: Response, body: LoginBody | None = N
         raise APIError("Username and password are required", 400)
     settings = request.app.state.settings
     with api_errors("Login failed"):
+        # The configured administrator can log in without an officer database row.
         if (
             settings.admin_username
             and settings.admin_password
@@ -36,6 +37,7 @@ async def login(request: Request, response: Response, body: LoginBody | None = N
             officer = rows[0] if rows else None
             if not officer or not officer["is_active"]:
                 raise APIError("Invalid credentials", 401)
+            # Run bcrypt in a thread so password checks do not block other requests.
             if not await run_in_threadpool(
                 verify_password, body.password, officer["password_hash"]
             ):
