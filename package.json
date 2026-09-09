@@ -10,8 +10,8 @@
     "build": "vite build frontend",
     "lint": "oxlint",
     "preview": "vite preview frontend",
-    "server:fastapi": "python3 -m backend.server",
-    "add-officer:fastapi": "python3 -m backend.scripts.add_officer"
+    "server:fastapi": "python3 -m backend1.server",
+    "add-officer:fastapi": "python3 -m backend1.scripts.add_officer"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
