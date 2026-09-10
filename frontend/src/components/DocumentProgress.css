@@ -1,0 +1,15 @@
+.document-progress { display: block; width: 100%; margin: 14px 0; color: var(--accent, #c9a463); }
+.document-progress-caption { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: .8rem; line-height: 1.5; }
+.document-progress-caption > :last-child { flex-shrink: 0; }
+.document-progress-caption > :first-child { flex-shrink: 1; }
+.document-progress-track { position: relative; display: block; height: 8px; overflow: hidden; background: #ffffff12; border-radius: 8px; }
+.document-progress-fill { display: block; height: 100%; border-radius: inherit; background: currentColor; transition: width .4s ease; }
+.document-progress.is-busy .document-progress-track::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent, #ffffff25, transparent); animation: document-progress-sweep 2s linear infinite; }
+.document-progress .is-indeterminate .document-progress-fill { animation: document-progress-slide 2s ease-in-out infinite alternate; }
+.document-progress.is-failed { color: #ff9c9c; }
+@keyframes document-progress-sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes document-progress-slide { from { transform: translateX(0); } to { transform: translateX(185%); } }
+@media (prefers-reduced-motion: reduce) {
+  .document-progress-fill { transition: none; }
+  .document-progress.is-busy .document-progress-track::after, .document-progress .is-indeterminate .document-progress-fill { animation: none; }
+}

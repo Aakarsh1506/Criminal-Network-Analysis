@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS source_type TEXT;
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS processing_status TEXT NOT NULL DEFAULT 'stored';
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS processing_error TEXT;
+ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS processing_progress JSONB;
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS extracted_text TEXT;
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS extraction JSONB;
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS graph_payload JSONB;

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BackButton from "../components/BackButton";
-import RemoveDocumentButton from "../components/RemoveDocumentButton";
+import DocumentActions from "../components/DocumentActions";
+import DocumentProgress from "../components/DocumentProgress";
 import {
   fetchDocuments, fetchDocument, fetchSourceTypes, uploadDocument,
-  retryDocument, documentFileUrl,
+  documentFileUrl,
 } from "../api/documents";
 import "./UploadDoc.css";
 
@@ -13,9 +14,9 @@ const STATUS = {
   stored: "Stored · ready to process", queued: "Queued", processing: "Extracting text and entities",
   syncing: "Saving relationships to Neo4j", complete: "Saved to PostgreSQL and Neo4j",
   failed: "Processing failed", sync_failed: "Saved to PostgreSQL · Neo4j sync failed",
+  cancelled: "Processing stopped",
 };
 const BUSY = new Set(["queued", "processing", "syncing"]);
-const RETRYABLE = new Set(["stored", "failed", "sync_failed"]);
 
 export default function UploadDoc() {
   const navigate = useNavigate();
@@ -28,7 +29,6 @@ export default function UploadDoc() {
   const [sourceType, setSourceType] = useState("fir");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -53,13 +53,14 @@ export default function UploadDoc() {
   }, [processing]);
 
   const selectedStatus = documents.find((doc) => doc.id === selected)?.status;
+  const selectedProgress = JSON.stringify(documents.find((doc) => doc.id === selected)?.progress);
   useEffect(() => {
     if (selected === null) return;
     let active = true;
     fetchDocument(selected).then((doc) => { if (active) setDetail(doc); })
       .catch((err) => { if (active) setError(err.message); });
     return () => { active = false; };
-  }, [selected, selectedStatus]);
+  }, [selected, selectedStatus, selectedProgress]);
 
   async function upload(event) {
     const file = event.target.files?.[0];
@@ -74,14 +75,16 @@ export default function UploadDoc() {
     finally { setUploading(false); }
   }
 
-  async function retry() {
-    setRetrying(true); setError(null);
-    try {
-      const doc = await retryDocument(selected);
-      setDocuments((prev) => prev.map((item) => item.id === doc.id ? doc : item));
-      setDetail((prev) => ({ ...prev, ...doc }));
-    } catch (err) { setError(err.message); }
-    finally { setRetrying(false); }
+  function updatedDocument(doc) {
+    setDocuments((prev) => prev.map((item) => item.id === doc.id ? { ...item, ...doc } : item));
+    setDetail((prev) => prev?.id === doc.id ? { ...prev, ...doc } : prev);
+    setError(null);
+  }
+
+  function removedDocument(id) {
+    setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+    if (selected === id) { setSelected(null); setDetail(null); }
+    setError(null);
   }
 
   const entities = detail?.extraction?.entities || [];
@@ -97,22 +100,28 @@ export default function UploadDoc() {
         {Object.entries(types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select>
       <p>PDF, PNG, JPEG, TIFF, TXT, CSV, JSON, or Word (.docx). Up to 20 MB, 30 scanned pages, and 60,000 extracted characters.</p>
-      <p>Scans use OCR. Extracted text is sent to Groq; you can review every entity and relationship before confirming the database save.</p>
+      <p>Scans use OCR. Records are analyzed using the configured AI provider; you can review every entity and relationship before confirming the database save.</p>
       <input ref={input} className="upload-input-hidden" type="file" accept={extensions.join(",")}
         onChange={upload} />
       <button className="stamp-btn upload-btn-center" disabled={uploading || loading || !extensions.length}
         onClick={() => input.current?.click()}>{uploading ? "Uploading…" : "Upload and extract"}</button>
+      {uploading && <DocumentProgress uploading />}
     </section>
     {error && <p role="alert" className="upload-error">{error}</p>}
     {loading ? <p role="status" className="empty-note">Loading documents…</p> :
       <div className="doc-grid">
-        {documents.map((doc) => <button type="button" className="doc-card" key={doc.id}
+        {documents.map((doc) => <article className="doc-card" key={doc.id}>
+          <button type="button" className="doc-card-open"
           onClick={() => { if (doc.status === "awaiting_review") { navigate(`/documents/${doc.id}/review`); return; } if (selected !== doc.id) { setDetail(null); setSelected(doc.id); } }} aria-pressed={selected === doc.id}>
           <span className="doc-card-tag">{types[doc.sourceType] || "Document"}</span>
           <h3>{doc.name}</h3>
           <p className="doc-card-meta">{(doc.size / 1024).toFixed(1)} KB · {new Date(doc.uploadedAt).toLocaleDateString()}</p>
           <p className="doc-status">{STATUS[doc.status] || doc.status}</p>
-        </button>)}
+          </button>
+          <DocumentProgress document={doc} />
+          <DocumentActions document={doc} onUpdated={updatedDocument}
+            onRemoved={removedDocument} onError={setError} />
+        </article>)}
         {!documents.length && <p className="empty-note">No documents uploaded yet.</p>}
       </div>}
     {selected !== null && <section className="doc-preview extraction-detail" aria-live="polite">
@@ -122,15 +131,10 @@ export default function UploadDoc() {
       </div>
       {detail && <>
         <p role="status">{STATUS[detail.status]}</p>
-        <RemoveDocumentButton document={detail} disabled={retrying} onError={setError}
-          onRemoved={(id) => {
-            setDocuments((prev) => prev.filter((doc) => doc.id !== id));
-            setSelected(null); setDetail(null); setError(null);
-          }} />
+        <DocumentProgress document={detail} />
+        <DocumentActions document={detail} onUpdated={updatedDocument}
+          onRemoved={removedDocument} onError={setError} />
         {detail.processingError && <p role="alert" className="upload-error">{detail.processingError}</p>}
-        {RETRYABLE.has(detail.status) && <button className="stamp-btn" disabled={retrying} onClick={retry}>
-          {retrying ? "Queuing…" : detail.status === "sync_failed" ? "Retry Neo4j sync" : "Process document"}
-        </button>}
         <p><a href={documentFileUrl(detail.id)} target="_blank" rel="noreferrer">Open original document</a></p>
         {detail.extraction && <>
           <p><Link to={`/documents/${detail.id}/review`}>Open full entity review →</Link></p>

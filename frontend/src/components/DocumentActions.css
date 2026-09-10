@@ -1,0 +1,7 @@
+.document-actions { margin: 14px 0; }
+.document-action-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+.document-actions .stamp-btn { font-size: .8rem; padding: 9px 12px; }
+.document-actions button:disabled { opacity: .5; cursor: not-allowed; }
+.document-actions p { color: var(--text-dim); font-size: .78rem; line-height: 1.5; }
+.document-stop-button { border-color: #ff9c9c !important; color: #ff9c9c !important; }
+.doc-card .doc-card-open { display: block; width: 100%; text-align: left; padding: 0; background: none; border: 0; font: inherit; color: inherit; cursor: pointer; }

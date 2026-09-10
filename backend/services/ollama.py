@@ -37,8 +37,9 @@ async def extraction_choice(client, settings, messages, schema, max_tokens):
     if not body.get("done"):
         raise APIError("Ollama extraction was incomplete. Retry processing.", 502)
     logger.info(
-        "Ollama extraction: input=%s output=%s duration_ns=%s load_ns=%s",
+        "Ollama extraction: input=%s output=%s duration_ns=%s load_ns=%s finish=%s limit=%s",
         body.get("prompt_eval_count"), body.get("eval_count"),
         body.get("total_duration"), body.get("load_duration"),
+        body.get("done_reason"), max_tokens,
     )
     return {"message": body["message"], "finish_reason": body.get("done_reason")}

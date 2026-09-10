@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { canRemoveDocument, deleteDocument } from "../api/documents";
 
-export default function RemoveDocumentButton({ document, disabled, onRemoved, onError }) {
+export default function RemoveDocumentButton({ document, disabled, onRemoved, onError, onBusyChange }) {
   const [removing, setRemoving] = useState(false);
   const allowed = canRemoveDocument(document);
 
@@ -9,11 +9,12 @@ export default function RemoveDocumentButton({ document, disabled, onRemoved, on
     if (!allowed || removing || disabled) return;
     if (!window.confirm(`Remove “${document.name}”?\n\nThis permanently deletes the uploaded file and its extraction draft. This cannot be undone.`)) return;
     setRemoving(true);
+    onBusyChange?.(true);
     try {
       await deleteDocument(document.id);
       onRemoved(document.id);
     } catch (error) { onError(error.message); }
-    finally { setRemoving(false); }
+    finally { setRemoving(false); onBusyChange?.(false); }
   }
 
   return <button type="button" className="stamp-btn" onClick={remove}

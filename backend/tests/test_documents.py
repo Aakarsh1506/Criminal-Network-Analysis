@@ -51,6 +51,7 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
         "status",
         "processingError",
         "confirmedAt",
+        "progress",
     }
     assert document["status"] == "queued"
     assert document["id"] == 1 and document["size"] == len(content)

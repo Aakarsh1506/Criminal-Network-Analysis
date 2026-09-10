@@ -11,6 +11,7 @@ export const fetchDocuments = () => request("");
 export const fetchDocument = (id) => request(`/${id}`);
 export const fetchSourceTypes = () => request("/source-types");
 export const retryDocument = (id) => request(`/${id}/process`, { method: "POST" });
+export const cancelDocument = (id) => request(`/${id}/cancel`, { method: "POST" });
 export const deleteDocument = (id) => request(`/${id}`, { method: "DELETE" });
 export const canRemoveDocument = (doc) => doc && !doc.confirmedAt
   && ["stored", "failed", "awaiting_review"].includes(doc.status);

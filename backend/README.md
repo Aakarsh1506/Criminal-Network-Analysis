@@ -181,6 +181,12 @@ Supported graph predicates are `MENTIONED_IN`, `WITNESS_IN`, `SUSPECT_IN`, `OCCU
 Unidentified phone owners are not turned into people or inferred `CONTACTED` edges.
 
 Uploads return immediately with status `queued`. A persistent, single-job-per-worker queue
+reports stage and batch progress to the review page and document list, refreshed every
+three seconds. Percentages mark workflow milestones and completed batches, not elapsed
+time estimates; an in-flight model request keeps its current percentage. Extraction reaches
+100% when ready for review. Confirmation starts a separate saving phase. Progress is stored
+in PostgreSQL and remains available after refreshing the page.
+The queue
 extracts text, calls Groq, and stops at `awaiting_review`. After confirmation it commits
 PostgreSQL entity records and a graph payload in one transaction,
 and then writes Neo4j in a transaction after confirmation. `complete` means both saves succeeded. A `sync_failed`
@@ -256,6 +262,41 @@ This applies to drafts awaiting review, not links already saved from completed d
 
 The configured GPT-OSS models use Groq strict JSON schema output. Temporary rate limits use
 bounded retries respecting `Retry-After`; evidence is still validated against the source.
+
+### Local extraction with Ollama
+
+Start the Ollama app (or `ollama serve`) and install a local model:
+
+```bash
+ollama pull qwen3:4b
+```
+
+Set these values in `backend/.env`, then restart FastAPI:
+
+```dotenv
+EXTRACTION_PROVIDER=ollama
+EXTRACTION_MODE=hybrid
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3:4b
+OLLAMA_TIMEOUT=180
+OLLAMA_MAX_TOKENS=4096
+SPACY_MODEL=en_core_web_sm
+```
+
+Hybrid mode uses spaCy for entities and Ollama for relationships. Install the configured
+spaCy model with `backend/.venv/bin/python -m spacy download en_core_web_sm` if needed.
+`EXTRACTION_MODE=groq` is the legacy name for full model extraction; it also respects
+`EXTRACTION_PROVIDER=ollama` and does not require a Groq key in that configuration.
+Set `EXTRACTION_PROVIDER=groq` to switch back. Network explanation summaries still use Groq.
+
+The backend calls Ollama's native `/api/chat` endpoint using the existing `httpx` client;
+no Ollama Python package is needed. Requests use a JSON schema, `think=false`, a 16K
+context window, and a ten-minute model keep-alive. All evidence and relationship checks,
+correction retries, and the Yes/No review flow still apply. There is no automatic cloud
+fallback. Logs show token counts and generation/load durations for comparing performance.
+Truncated output retries with twice the configured output budget, capped at 8192 tokens.
+`OLLAMA_MAX_TOKENS` accepts 256–8192; truncated JSON is never accepted as a complete extraction.
+See [Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs).
 
 ### Debug Groq responses
 

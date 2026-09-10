@@ -33,6 +33,7 @@ class Settings:
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:4b"
     ollama_timeout: float = 180
+    ollama_max_tokens: int = 4096
     extraction_mode: str = "hybrid"
     spacy_model: str = "en_core_web_sm"
     ocr_language: str = "eng"
@@ -72,6 +73,7 @@ class Settings:
             ollama_base_url=(env.get("OLLAMA_BASE_URL") or "http://localhost:11434").rstrip("/"),
             ollama_model=env.get("OLLAMA_MODEL") or "qwen3:4b",
             ollama_timeout=float(env.get("OLLAMA_TIMEOUT") or 180),
+            ollama_max_tokens=int(env.get("OLLAMA_MAX_TOKENS") or 4096),
             spacy_model=env.get("SPACY_MODEL") or "en_core_web_sm",
             ocr_language=env.get("OCR_LANGUAGE") or "eng",
         )

@@ -44,7 +44,8 @@ def test_route_inventory_matches_express(app):
             ["GET", "/api/documents/source-types"],
             ["GET", "/api/documents/{id}"],
             ["POST", "/api/documents/{id}/process"],
-            ["POST", "/api/documents/{id}/confirm"],
+                ["POST", "/api/documents/{id}/confirm"],
+                ["POST", "/api/documents/{id}/cancel"],
         ]
     )
 

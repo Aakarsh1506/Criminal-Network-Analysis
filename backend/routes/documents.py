@@ -30,6 +30,7 @@ def map_document(row):
         "status": row.get("processing_status", "stored"),
         "processingError": row.get("processing_error"),
         "confirmedAt": row.get("confirmed_at"),
+        "progress": row.get("processing_progress"),
     }
 
 
@@ -75,7 +76,8 @@ async def list_documents(request: Request, officer=Depends(require_auth)):
     with api_errors("Failed to load documents"):
         rows = await request.app.state.db.query(
             """SELECT document_id, original_name, mime_type, size_bytes, uploaded_at,
-               source_type, processing_status, processing_error, confirmed_at FROM officer_documents
+               source_type, processing_status, processing_error, confirmed_at,
+               processing_progress FROM officer_documents
                WHERE officer_id = %s ORDER BY uploaded_at DESC""",
             (officer["officerId"],),
         )
@@ -174,15 +176,40 @@ async def retry_document(document_id: int, request: Request, officer=Depends(req
     with api_errors("Failed to queue document"):
         rows = await request.app.state.db.query(
             """UPDATE officer_documents SET processing_status='queued', processing_error=NULL,
+               processing_progress=NULL,
                extraction=CASE WHEN graph_payload IS NULL AND confirmed_at IS NULL THEN NULL ELSE extraction END,
                source_type=COALESCE(source_type,'fir'), lease_until=NULL
                WHERE document_id=%s AND officer_id=%s
-                 AND processing_status IN ('stored','failed','sync_failed') RETURNING *""",
+                 AND processing_status IN ('stored','failed','sync_failed','cancelled') RETURNING *""",
             (document_id, officer["officerId"]),
         )
         if not rows:
             raise APIError("Document unavailable or already processing/completed", 409)
         return map_document(rows[0])
+
+
+@router.post("/{document_id}/cancel")
+async def cancel_document(document_id: int, request: Request, officer=Depends(require_auth)):
+    """Stop a queued or active extraction at the next safe checkpoint."""
+    with api_errors("Failed to stop document processing"):
+        rows = await request.app.state.db.query(
+            """UPDATE officer_documents SET processing_status='cancelled',
+               processing_error=NULL, lease_until=NULL,
+               processing_progress='{"percent":0,"label":"Processing stopped by officer"}'::jsonb
+               WHERE document_id=%s AND officer_id=%s
+                 AND processing_status IN ('queued','processing','syncing')
+                 AND confirmed_at IS NULL RETURNING *""",
+            (document_id, officer["officerId"]),
+        )
+        if rows:
+            return map_document(rows[0])
+        existing = await request.app.state.db.query(
+            "SELECT document_id, processing_status FROM officer_documents WHERE document_id=%s AND officer_id=%s",
+            (document_id, officer["officerId"]),
+        )
+        if not existing:
+            raise APIError("Document not found", 404)
+        raise APIError("Document is not currently processing or is already confirmed.", 409)
 
 
 class ConfirmBody(BaseModel):
@@ -236,6 +263,7 @@ async def confirm_document(
         rows = await request.app.state.db.query(
             """UPDATE officer_documents SET processing_status='queued',
                confirmed_at=now(), confirmed_by=%s, processing_error=NULL, lease_until=NULL,
+               processing_progress=NULL,
                extraction=%s
                WHERE document_id=%s AND officer_id=%s AND processing_status='awaiting_review'
                  AND confirmed_at IS NULL AND graph_payload IS NULL AND extraction=%s

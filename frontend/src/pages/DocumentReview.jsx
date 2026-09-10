@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import RemoveDocumentButton from "../components/RemoveDocumentButton";
+import DocumentActions from "../components/DocumentActions";
+import DocumentProgress from "../components/DocumentProgress";
 import { confirmDocument, fetchDocument, documentFileUrl } from "../api/documents";
 import "./CriminalProfile.css";
 import "./DocumentReview.css";
@@ -10,6 +11,7 @@ const STATUS = {
   awaiting_review: "Awaiting your confirmation", syncing: "Saving to Neo4j",
   complete: "Saved to PostgreSQL and Neo4j", failed: "Processing failed",
   sync_failed: "PostgreSQL saved; Neo4j sync needs a retry",
+  cancelled: "Processing stopped",
 };
 const PENDING = new Set(["queued", "processing", "syncing"]);
 const label = (value) => value.replaceAll("_", " ");
@@ -62,11 +64,11 @@ export default function DocumentReview() {
   const endpointRejected = (relation) => rejectedRefs.has(relation.subject) || rejectedRefs.has(relation.object);
   const rejected = new Set(relationships.flatMap((relation, index) =>
     choices.relationships[index] === false || endpointRejected(relation) ? [index] : []));
-  const remaining = entities.filter((_, index) => choices.entities[index] === undefined).length
-    + relationships.filter((relation, index) => !endpointRejected(relation) && choices.relationships[index] === undefined).length;
-  const acceptedEntityCount = entities.filter((_, index) => choices.entities[index] === true).length;
+  // Every extracted assertion starts selected for saving; reviewers can choose No.
+  const remaining = 0;
+  const acceptedEntityCount = entities.filter((_, index) => choices.entities[index] !== false).length;
   const acceptedRelationshipCount = relationships.filter((relation, index) =>
-    choices.relationships[index] === true && !endpointRejected(relation)).length;
+    choices.relationships[index] !== false && !endpointRejected(relation)).length;
   const reviewing = document?.status === "awaiting_review";
   const link = (ref) => byRef[ref] ? <a href={`#review-entity-${byRef[ref].index}`}>{byRef[ref].name}</a> : <span>{ref}</span>;
   function choose(kind, index, value) {
@@ -77,7 +79,7 @@ export default function DocumentReview() {
   }
   const reviewControl = (index, kind = "relationships") => {
     const blocked = kind === "relationships" && endpointRejected(relationships[index]);
-    const value = blocked ? false : choices[kind][index];
+    const value = blocked ? false : choices[kind][index] ?? true;
     return reviewing && <div className="review-relation-actions" role="group"
       aria-label={`Review ${kind === "entities" ? "entity" : "relationship"} ${index + 1}`}>
       <span>Keep this {kind === "entities" ? "entity" : "relationship"}?</span>
@@ -94,10 +96,15 @@ export default function DocumentReview() {
       <p className="form-number">Document review</p>
       <h1>{document?.name || "Loading document…"}</h1>
       <p role="status">{document ? STATUS[document.status] : "Loading extracted information…"}</p>
+      <DocumentProgress document={document} />
       {error && <p role="alert" className="review-error">{error} <button onClick={() => setReload((value) => value + 1)}>Reload</button></p>}
       {document?.processingError && <p role="alert" className="review-error">{document.processingError}</p>}
-      {document && <RemoveDocumentButton document={document} disabled={confirming}
-        onError={setError} onRemoved={() => navigate("/upload")} />}
+      {document && <DocumentActions document={document} disabled={confirming}
+        onError={setError} onRemoved={() => navigate("/upload")}
+        onUpdated={(updated) => {
+          setDocument((current) => ({ ...current, ...updated }));
+          setError(null); setReload((value) => value + 1);
+        }} />}
       {reviewing && <p>Choose Yes or No for every entity and relationship. Rejecting an entity also excludes its connected relationships. Confirm and save to keep your choices; leaving this page discards pending selections.</p>}
       {excluded.length > 0 && <p className="review-error">{excluded.length} relationship suggestions were excluded from saving. Review their reasons below.</p>}
       {document?.confirmedAt && <p>Confirmed on {new Date(document.confirmedAt).toLocaleString()}.</p>}
@@ -180,7 +187,7 @@ export default function DocumentReview() {
 
     {reviewing && <footer className="review-confirm-bar">
       <div><strong>{acceptedEntityCount} entities · {acceptedRelationshipCount} relationships selected to save · {rejected.size + rejectedEntities.size} rejected</strong>
-        <p role="status">{remaining ? `${remaining} decisions remaining` : "All records reviewed"}</p>
+        <p role="status">Yes is selected by default. Choose No for anything that should not be saved.</p>
         <p>Confirmation saves these source assertions; it does not establish guilt or verify allegations.</p></div>
       <div className="review-confirm-actions"><Link to="/upload">Review later</Link>
         <button className="stamp-btn" disabled={confirming || remaining > 0} onClick={confirm}>{confirming ? "Confirming…" : "Confirm and save"}</button></div>

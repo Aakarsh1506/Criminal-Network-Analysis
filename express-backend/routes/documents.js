@@ -138,4 +138,23 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// POST /api/documents/:id/cancel — stop an active extraction
+router.post("/:id/cancel", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `UPDATE officer_documents SET processing_status = 'cancelled',
+         processing_error = NULL, lease_until = NULL
+       WHERE document_id = $1 AND officer_id = $2
+         AND processing_status IN ('queued','processing','syncing')
+         AND confirmed_at IS NULL RETURNING *`,
+      [req.params.id, req.officer.officerId]
+    );
+    if (!rows[0]) return res.status(409).json({ error: "Document is not currently processing or is already confirmed." });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("POST /api/documents/:id/cancel failed", err);
+    res.status(500).json({ error: "Failed to stop document processing" });
+  }
+});
+
 export default router;

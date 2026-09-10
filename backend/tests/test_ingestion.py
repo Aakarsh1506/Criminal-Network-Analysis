@@ -263,6 +263,27 @@ async def test_document_details_and_retry_require_owner(officer_client, db):
     assert "officer_id=%s" in db.query.call_args.args[0]
 
 
+async def test_cancel_document_scopes_owner_and_active_status(officer_client, db):
+    db.query.return_value = [{
+        "document_id": 1, "original_name": "report.txt", "mime_type": "text/plain",
+        "size_bytes": 5, "uploaded_at": "2026-09-10", "processing_status": "cancelled",
+    }]
+    response = await officer_client.post("/api/documents/1/cancel")
+    assert response.status_code == 200
+    assert response.json()["status"] == "cancelled"
+    sql, params = db.query.call_args.args
+    assert "processing_status='cancelled'" in sql
+    assert "processing_status IN ('queued','processing','syncing')" in sql
+    assert "confirmed_at IS NULL" in sql
+    assert params == (1, 7)
+
+
+async def test_cancel_document_rejects_completed_job(officer_client, db):
+    db.query.side_effect = [[], [{"document_id": 1, "processing_status": "complete"}]]
+    response = await officer_client.post("/api/documents/1/cancel")
+    assert response.status_code == 409
+
+
 async def test_reject_unknown_category_before_saving(officer_client, db):
     response = await officer_client.post(
         "/api/documents",

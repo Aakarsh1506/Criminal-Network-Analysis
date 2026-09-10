@@ -257,7 +257,9 @@ def relevant_batches(text, entities):
             yield passage, catalog
 
 
-async def extract_hybrid(text, source_type, settings, client):
+async def extract_hybrid(text, source_type, settings, client, progress=None):
+    if progress:
+        await progress(20, "Finding entities in the document")
     local = await asyncio.to_thread(extract_local, text, settings.spacy_model)
     relationships, excluded = {}, []
     batches = list(relevant_batches(text, local.entities))
@@ -268,7 +270,10 @@ async def extract_hybrid(text, source_type, settings, client):
         sum(len(p) for p, _ in batches),
         len(text),
     )
-    for passage, catalog in batches:
+    for index, (passage, catalog) in enumerate(batches):
+        if progress:
+            await progress(30 + int(60 * index / len(batches)),
+                           f"Extracting relationships: batch {index + 1} of {len(batches)}")
         result = await extract_chunk(passage, source_type, settings, client, catalog=catalog)
         # A quote crossing omitted source must never become saved evidence.
         validate_extraction(result, text)
@@ -276,6 +281,9 @@ async def extract_hybrid(text, source_type, settings, client):
             key = (relation.subject, relation.predicate, relation.object)
             relationships.setdefault(key, relation)
         excluded.extend(result.excluded_relationships)
+        if progress:
+            await progress(30 + int(60 * (index + 1) / len(batches)),
+                           f"Extracted relationships: {index + 1} of {len(batches)} batches")
     return Extraction(
         entities=local.entities,
         relationships=list(relationships.values()),

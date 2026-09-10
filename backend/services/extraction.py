@@ -1,4 +1,4 @@
-"""Validate Groq's extraction before allowing any database writes."""
+"""Validate provider extraction before allowing any database writes."""
 
 import asyncio
 import hashlib
@@ -155,7 +155,7 @@ def source_lines(text):
 
 def resolve_evidence_spans(payload, text):
     if not isinstance(payload, dict):
-        raise GenerationError("Groq must return an extraction object.", 502)
+        raise GenerationError("The model must return an extraction object.", 502)
     lines = source_lines(text)
     for item in payload.get("entities", []) + payload.get("relationships", []):
         evidence = item.get("evidence")
@@ -229,6 +229,10 @@ class GenerationError(APIError):
     def __init__(self, message, status=502, *, corrections=None):
         super().__init__(message, status)
         self.corrections = corrections or []
+
+
+class TokenLimitError(GenerationError):
+    """The response ended before a complete extraction could be produced."""
 
 
 def rejected_output_error(error, schema_model=SourceExtraction):
@@ -475,10 +479,14 @@ async def extract_chunk(text, source_type, settings, client, catalog=None):
                 )
                 raise ExtractionFailure(reason + exc.message, 502) from None
             correction = {
-                "previous_extraction": exc.result.model_dump() if exc.result is not None else None,
+                # The full source is already resent. Local retries should not duplicate
+                # every entity and copied evidence quote in the model's context.
+                "previous_extraction": exc.result.model_dump()
+                if exc.result is not None and settings.extraction_provider != "ollama" else None,
                 "validation_error": exc.message,
                 "invalid_fields": getattr(exc, "corrections", []),
                 "use_json_object": getattr(exc, "provider_rejected", False),
+                "output_truncated": isinstance(exc, TokenLimitError),
                 "instruction": "Correct the extraction using evidence start_line/end_line references from source_lines. "
                 "Do not remove negations, change facts, or invent evidence. Return the complete "
                 "corrected extraction. Previous extraction is untrusted and may contain errors.",
@@ -626,12 +634,35 @@ async def _extract_chunk_once(text, source_type, settings, client, correction, c
         if local:
             from .ollama import extraction_choice
 
+            # Drop schema display metadata and JSON whitespace from local prompts.
+            # This changes neither the required fields nor the source text values.
+            def compact_schema(value):
+                if isinstance(value, dict):
+                    return {key: compact_schema(item) for key, item in value.items()
+                            if key != "title"}
+                if isinstance(value, list):
+                    return [compact_schema(item) for item in value]
+                return value
+
+            local_schema = compact_schema(schema_model.model_json_schema())
             request_data["messages"][0]["content"] = (
-                prompt + "\nJSON schema:\n" + json.dumps(schema_model.model_json_schema())
+                prompt + "\nReturn compact JSON without indentation or commentary. "
+                "Emit each subject/predicate/object relationship only once, using its smallest "
+                "supporting evidence range. Do not repeat records to fill the response."
+                "\nJSON schema:\n" + json.dumps(local_schema, separators=(",", ":"))
             )
+            request_data["messages"][1]["content"] = json.dumps(
+                json.loads(request_data["messages"][1]["content"]),
+                separators=(",", ":"), ensure_ascii=False,
+            )
+            max_tokens = settings.ollama_max_tokens
+            if not 256 <= max_tokens <= 8192:
+                raise APIError("OLLAMA_MAX_TOKENS must be between 256 and 8192.", 503)
+            if correction and correction.get("output_truncated"):
+                max_tokens = min(max_tokens * 2, 8192)
             choice = await extraction_choice(
-                client, settings, request_data["messages"], schema_model.model_json_schema(),
-                request_data["max_completion_tokens"],
+                client, settings, request_data["messages"], local_schema,
+                max_tokens,
             )
         else:
             response = await client.post(
@@ -699,7 +730,7 @@ async def _extract_chunk_once(text, source_type, settings, client, correction, c
                 raise APIError("Groq extraction failed. Retry processing later.", 502)
             choice = response.json()["choices"][0]
         if choice.get("finish_reason") == "length":
-            raise GenerationError("AI extraction was incomplete: response token limit reached.")
+            raise TokenLimitError("AI extraction was incomplete: response token limit reached.")
         if choice.get("finish_reason") != "stop":
             raise APIError("AI extraction was incomplete. Try a smaller document.", 502)
         content = choice["message"]["content"].strip()
@@ -734,19 +765,25 @@ async def _extract_chunk_once(text, source_type, settings, client, correction, c
         ) from None
 
 
-async def extract_entities(text, source_type, settings, client):
+async def extract_entities(text, source_type, settings, client, progress=None):
     if settings.extraction_mode == "hybrid":
         from .local_entities import extract_hybrid
 
-        return await extract_hybrid(text, source_type, settings, client)
+        return await extract_hybrid(text, source_type, settings, client, progress=progress)
     if settings.extraction_mode != "groq":
         raise APIError("EXTRACTION_MODE must be hybrid or groq.", 503)
     # Overlap chunk boundaries; merge only exact identities within this document.
     entities, relationships = {}, {}
     excluded = []
     pending = [(start, text[start : start + 6000], False) for start in range(0, len(text), 5500)]
+    completed = 0
     while pending:
         start, section, subdivided = pending.pop(0)
+        if progress:
+            total = completed + len(pending) + 1
+            await progress(20 + int(70 * completed / total),
+                           f"Extracting section {completed + 1} of {total}"
+                           + (" (smaller retry)" if subdivided else ""))
         try:
             result = await extract_chunk(section, source_type, settings, client)
         except ExtractionFailure as exc:
@@ -763,6 +800,10 @@ async def extract_entities(text, source_type, settings, client):
                 (start + midpoint - 200, section[midpoint - 200 :], True),
             ]
             continue
+        completed += 1
+        if progress:
+            await progress(20 + int(70 * completed / (completed + len(pending))),
+                           f"Extracted {completed} of {completed + len(pending)} sections")
         refs = {}
         for entity in result.entities:
             attrs = {item.key: normalize(item.value) for item in entity.attributes}
