@@ -1,0 +1,456 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Courier+Prime:wght@400;700&display=swap');
+
+:root {
+  --bg: #050505;
+  --panel: #111110;
+  --panel-edge: #262421;
+  --ink: #f4efe2;       /* brightened — was too dim to read */
+  --ink-dim: #b5ad9b;    /* brightened — was too dim to read */
+  --red: #d1453c;
+}
+
+body {
+  background: var(--bg);
+}
+
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: radial-gradient(circle at 50% -10%, rgba(209, 69, 60, 0.08), transparent 50%), var(--bg);
+  perspective: 1800px;
+}
+
+/* --- flip mechanics --- */
+
+.case-flip-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+}
+
+.case-flip-inner {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 1s cubic-bezier(0.4, 0.15, 0.2, 1);
+}
+
+.case-flip-wrapper.is-flipped .case-flip-inner {
+  transform: rotateY(180deg);
+}
+
+.case-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background:
+    repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.015) 0px, transparent 2px, transparent 6px),
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.03), transparent 35%),
+    radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.5), transparent 50%),
+    var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  padding: 26px 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--ink);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.75);
+}
+
+.case-face-front {
+  position: relative;
+}
+
+.case-face-front.status-denied {
+  animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.case-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* --- shared bits --- */
+
+.case-meta {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.case-meta-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.72rem;
+}
+
+.meta-row {
+  display: flex;
+  gap: 6px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.meta-row span:first-child {
+  width: 96px;
+  flex-shrink: 0;
+}
+
+.meta-row span:last-child {
+  color: var(--ink);
+}
+
+em.pending {
+  font-style: italic;
+  color: var(--ink);
+}
+
+.hot {
+  font-style: normal;
+  color: var(--red);
+}
+
+.scales-box {
+  width: 110px;
+  flex-shrink: 0;
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.scales-box p {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.4px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.subject-block {
+  display: flex;
+  gap: 16px;
+}
+
+.subject-photo {
+  position: relative;
+  width: 96px;
+  height: 116px;
+  flex-shrink: 0;
+  border: 1px solid var(--panel-edge);
+  overflow: hidden;
+}
+
+.tape {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 46px;
+  height: 16px;
+  background: rgba(244, 239, 226, 0.18);
+  z-index: 2;
+}
+
+.stamp {
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border: 2px solid var(--red);
+  color: var(--red);
+  padding: 2px 6px;
+  border-radius: 3px;
+  transform: rotate(-10deg);
+  opacity: 0.9;
+}
+
+.stamp-photo {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.subject-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subject-label {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.subject-name {
+  margin: 0 0 6px;
+  font-family: "Oswald", sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.subject-line {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.7rem;
+  color: red;
+  text-transform: uppercase;
+}
+
+.subject-line span {
+  color: var(--ink-dim);
+  margin-right: 5px;
+}
+
+.unlock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+
+.unlock-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  color: red;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.unlock-label input {
+  border: none;
+  border-bottom: 1px solid var(--red);
+  background: transparent;
+  color: #ffffff;       /* was var(--ink) — bumped to pure white so typed text is clearly visible */
+  caret-color: #ffffff; /* makes the cursor visible against the dark background too */
+  padding: 8px 2px;
+  font-size: 1rem;
+  font-family: "Courier Prime", monospace;
+  letter-spacing: normal;
+  text-transform: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.unlock-label input:focus {
+  border-bottom: 2px solid var(--red);
+}
+
+.unlock-btn {
+  padding: 12px;
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--red);
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.unlock-btn:hover {
+  background: var(--red);
+  color: #0a0a0a;
+}
+
+.unlock-btn:disabled,
+.unlock-label input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.unlock-btn:disabled:hover {
+  background: transparent;
+  color: var(--red);
+}
+
+.denied-text {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  color: var(--red);
+  text-align: center;
+}
+
+.warning-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+
+.warn-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ink-dim);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Oswald", sans-serif;
+  font-size: 0.75rem;
+  color: var(--ink-dim);
+}
+
+.warning-strip p {
+  flex: 1;
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  letter-spacing: 0.2px;
+}
+
+.lock-icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  opacity: 0.75;
+}
+
+/* --- back face (confirmation) --- */
+
+.seal {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Oswald", sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: var(--ink);
+  background: repeating-radial-gradient(circle, transparent 0, transparent 8px, rgba(255, 255, 255, 0.03) 9px);
+}
+
+.back-title {
+  margin: 0;
+  font-family: "Oswald", sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.back-subtitle {
+  margin: -8px 0 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}
+
+.back-summary {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0;
+  border-top: 1px solid var(--panel-edge);
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.summary-row span:first-child {
+  color: var(--ink-dim);
+}
+
+.summary-row span:last-child {
+  color: red;
+  letter-spacing: 0.5px;
+}
+
+.enter-btn {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  background: var(--red);
+  color: #0a0a0a;
+  font-family: "Oswald", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.enter-btn:hover {
+  opacity: 0.85;
+}
+
+.back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 2px;
+  background: rgba(17, 17, 16, 0.6);
+  color: var(--ink-dim);
+  font-family: "Courier Prime", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.back-btn:hover {
+  color: var(--ink);
+  border-color: var(--red);
+}

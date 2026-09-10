@@ -4,17 +4,24 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "server": "node backend/server.js",
-    "build": "vite build",
+    "dev": "vite frontend",
+    "server": "node express-backend/server.js",
+    "add-officer": "node express-backend/scripts/addOfficer.js",
+    "build": "vite build frontend",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview frontend",
+    "server:fastapi": "python3 -m backend.server",
+    "add-officer:fastapi": "python3 -m backend.scripts.add_officer"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cytoscape": "^3.30.4",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.3.0",
     "neo4j-driver": "^6.2.0",
     "pg": "^8.13.1",
     "react": "^19.2.8",

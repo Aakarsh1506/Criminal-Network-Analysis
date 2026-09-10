@@ -1,0 +1,154 @@
+.admin-page {
+  --bg: #000000;
+  --card-border: #262626;
+  --text: #f2f2f2;
+  --text-dim: #8f8f8f;
+  --accent: #c9a463;
+  --accent-dim: #8a744a;
+  --btn: #d93636;
+  min-height: 100vh;
+  padding: 40px 60px 60px;
+  background: radial-gradient(circle at 50% 0%, rgba(201, 164, 99, 0.08), transparent 55%), var(--bg);
+}
+
+.admin-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  max-width: 1080px;
+  margin: 0 auto 32px;
+}
+
+.admin-badge {
+  display: inline-block;
+  font-family: var(--font-type);
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  color: var(--btn);
+  border: 1.5px solid var(--btn);
+  border-radius: 4px;
+  padding: 2px 10px;
+  margin-bottom: 8px;
+}
+
+.admin-top h2 {
+  font-family: var(--font-type);
+  font-size: 1.3rem;
+  color: var(--text);
+}
+
+.admin-page .stamp-btn {
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: 7px;
+}
+.admin-page .stamp-btn:hover { background: var(--accent); color: #101010; }
+
+.admin-grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.admin-form,
+.admin-list {
+  background: linear-gradient(180deg, #161616 0%, #101010 100%);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 28px 26px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.admin-form h3,
+.admin-list h3 {
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 18px;
+}
+
+.admin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.admin-form input {
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  background: #0d0d0d;
+  color: var(--text);
+}
+.admin-form input:focus { outline: none; border-color: var(--accent-dim); }
+
+.password-field { position: relative; display: flex; }
+.password-field input { flex: 1; padding-right: 40px; }
+
+.eye-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+.eye-toggle:hover { color: var(--accent); }
+
+.admin-success { color: #7fbf7f; margin-top: 12px; font-size: 0.8rem; }
+.admin-error { color: var(--btn); margin-top: 12px; font-size: 0.8rem; }
+
+.admin-list .empty-note { color: var(--text-dim); opacity: 1; padding: 20px 0; }
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--card-border);
+  font-family: var(--font-type);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-table td {
+  padding: 10px 8px;
+  border-bottom: 1px dashed var(--card-border);
+  color: var(--text);
+}
+
+.row-inactive td { color: var(--text-dim); }
+
+.admin-table .tag-stamp {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+.admin-table .tag-stamp-dim {
+  border-color: var(--card-border);
+  color: var(--text-dim);
+}
+
+.link-remove {
+  color: var(--btn);
+  font-size: 0.78rem;
+  text-decoration: underline;
+}
+.link-remove:hover { color: #ff6b6b; }

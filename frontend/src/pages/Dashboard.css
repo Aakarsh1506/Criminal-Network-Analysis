@@ -1,0 +1,329 @@
+.board-page {
+  --bg: #000000;
+  --card-border: #262626;
+  --text: #f2f2f2;
+  --text-dim: #8f8f8f;
+  --accent: #c9a463;
+  --accent-dim: #8a744a;
+  --btn: #d93636;
+  --btn-dim: #a92a2a;
+  min-height: 100vh;
+  padding-bottom: 60px;
+  background: radial-gradient(circle at 50% 0%, rgba(201, 164, 99, 0.08), transparent 55%), var(--bg);
+}
+
+.search-tab-wrapper { display: flex; flex-direction: column; align-items: center; padding: 48px 20px 36px; }
+
+.search-tab {
+  display: flex;
+  background: linear-gradient(180deg, #161616 0%, #101010 100%);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 6px;
+  max-width: 620px;
+  width: 100%;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  outline: none;
+  font-family: var(--font-body);
+}
+.search-input::placeholder { color: var(--text-dim); }
+
+.stamp-btn.small {
+  font-size: 0.8rem;
+  padding: 10px 20px;
+  border-radius: 7px;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+.stamp-btn.small:hover { background: var(--accent); color: #101010; }
+
+.tag-note {
+  background: linear-gradient(180deg, #161616 0%, #101010 100%);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text);
+  max-width: 620px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 18px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+}
+
+.tag-note-head { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-dim); margin-bottom: 12px; }
+.tag-note-head button { color: var(--btn); font-size: 0.78rem; background: none; border: none; cursor: pointer; }
+
+.tag-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tag-chip {
+  border: 1.5px solid var(--card-border);
+  border-radius: 6px;
+  padding: 6px 13px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.tag-chip:hover { border-color: var(--accent); color: var(--text); }
+.tag-chip-active { background: var(--btn); border-color: var(--btn); color: #fff; }
+
+/* max-width/padding now matches .working-section so the stats cards line up
+   with the "currently working on / researching" block above them */
+.pinboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  margin: 44px auto 0;
+  padding: 20px 32px 40px;
+}
+
+.pin-card {
+  position: relative;
+  background: linear-gradient(180deg, #161616 0%, #101010 100%);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 24px 22px;
+  box-shadow: 0 16px 26px rgba(0, 0, 0, 0.6);
+}
+
+.card-1, .card-2, .card-3, .card-4 { transform: none; }
+.wide { grid-column: span 2; }
+
+.pin {
+  position: absolute;
+  top: -8px;
+  left: 24px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 2px 6px rgba(201, 164, 99, 0.5);
+}
+
+.pin-card h3 {
+  font-family: var(--font-type);
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pin-number { font-family: var(--font-type); font-size: 2.4rem; font-weight: 700; color: var(--btn); }
+.pin-note { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; }
+
+.bar-list { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar-label { width: 90px; font-size: 0.78rem; flex-shrink: 0; color: var(--text); }
+.bar-track { flex: 1; background: #262626; border-radius: 4px; height: 8px; overflow: hidden; }
+.bar-fill { background: var(--btn); height: 100%; }
+.bar-count { font-size: 0.78rem; width: 18px; text-align: right; color: var(--text-dim); }
+
+.city-list { display: flex; flex-direction: column; gap: 9px; }
+.city-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  border-bottom: 1px dashed var(--card-border);
+  padding-bottom: 7px;
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .pinboard { grid-template-columns: 1fr; }
+  .wide { grid-column: span 1; }
+}
+
+.working-section { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+.working-heading {
+  font-family: var(--font-type);
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--card-border);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Two columns instead of three: map gets the wide 2fr column,
+   profile + list share the narrow 1fr column stacked on top of each other */
+.working-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.working-col {
+  background: linear-gradient(180deg, #161616 0%, #101010 100%);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text);
+  box-shadow: 0 16px 26px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+.working-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.working-empty .empty-note { padding: 0; color: var(--text-dim); opacity: 1; }
+
+/* Map column: no padding/gap so the graph frame fills the entire card,
+   except for the small toolbar strip that holds the view toggle */
+.working-map-col {
+  padding: 0;
+  overflow: hidden;
+}
+
+.working-map-toolbar {
+  flex: 0 0 auto;
+  padding: 14px 16px 0;
+}
+
+.graph-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #101010;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.graph-toggle-btn {
+  font-family: var(--font-type);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.graph-toggle-btn:hover { color: var(--text); }
+
+.graph-toggle-active {
+  background: var(--accent);
+  color: #101010;
+}
+
+/* Side column: stacked profile (top) + list (bottom), each roughly half the height */
+.working-side-col {
+  padding: 0;
+}
+
+.working-side-top {
+  flex: 0 0 auto;
+  padding: 22px;
+}
+
+.working-side-divider {
+  border-top: 1px solid var(--card-border);
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.working-side-bottom {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.mini-photo { width: 64px; height: 64px; object-fit: cover; border: 2px solid var(--accent-dim); border-radius: 6px; margin-bottom: 12px; }
+.mini-dossier h4 { font-size: 1.05rem; margin-bottom: 4px; color: var(--text); }
+.mini-dossier .dossier-row { font-size: 0.8rem; color: var(--text-dim); border-bottom: 1px dashed var(--card-border); }
+.mini-dossier .dossier-row span:last-child { color: var(--text); }
+.mini-dossier .tag-row { margin: 12px 0 16px; }
+.mini-actions { display: flex; gap: 10px; margin-top: auto; }
+.mini-actions .stamp-btn {
+  flex: 1; text-align: center; padding: 8px 10px; font-size: 0.72rem;
+  color: var(--accent); border: 2px solid var(--accent); border-radius: 6px;
+}
+.mini-actions .stamp-btn:hover { background: var(--accent); color: #101010; }
+
+.working-list-title { font-family: var(--font-type); font-size: 0.8rem; color: var(--text-dim); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1px; }
+
+.working-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.working-list-items li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed var(--card-border);
+  padding-bottom: 10px;
+}
+
+.working-list-info { cursor: pointer; flex: 1; }
+.working-list-info strong { display: block; font-size: 0.9rem; margin-bottom: 6px; color: var(--text); }
+
+.working-col .tag-stamp { border-color: var(--accent-dim); color: var(--accent); }
+.tag-stamp.small { font-size: 0.62rem; padding: 2px 7px; }
+
+.list-remove-btn { color: var(--btn); font-size: 1.1rem; line-height: 1; padding: 2px 6px; flex-shrink: 0; background: none; border: none; cursor: pointer; }
+.list-remove-btn:hover { opacity: 0.7; }
+
+/* Cytoscape graph frame with India map background — now uses cover + fills the whole card */
+.graph-frame {
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #0d0d0d;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+}
+
+.graph-frame.mini {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.network-graph {
+  background: transparent;
+  width: 100%;
+  height: 100%;
+}
+
+.network-graph canvas {
+  background: transparent !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 900px) {
+  .working-grid { grid-template-columns: 1fr; }
+  .working-col { min-height: 320px; }
+}
