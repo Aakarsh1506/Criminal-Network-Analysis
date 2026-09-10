@@ -8,6 +8,9 @@ import pytest
 from backend.routes import criminals
 from backend.services.groq import AIError, explain_network
 
+SELECTION = {"selection": {"type": "node", "id": "n1"}}
+NETWORK = {"nodes": [{"id": "n1", "personId": "P1", "label": "Example"}], "edges": []}
+
 PROFILE = {
     "criminal": {
         "id": "P1",
@@ -90,17 +93,18 @@ async def test_unusable_answers(provider, content, reason):
 
 
 async def test_explanation_statuses_release_capacity(officer_client, app, ai_settings, monkeypatch):
-    assert (await officer_client.post("/api/criminals/P1/explain")).status_code == 503
+    assert (await officer_client.post("/api/criminals/P1/explain", json=SELECTION)).status_code == 503
     app.state.settings = ai_settings
+    monkeypatch.setattr(criminals, "fetch_network", AsyncMock(return_value=NETWORK))
     monkeypatch.setattr(criminals, "load_profile", AsyncMock(return_value=None))
-    assert (await officer_client.post("/api/criminals/P1/explain")).status_code == 404
+    assert (await officer_client.post("/api/criminals/P1/explain", json=SELECTION)).status_code == 404
     assert app.state.active_explanations == 0
     criminals.load_profile.return_value = PROFILE
-    response = await officer_client.post("/api/criminals/P1/explain")
+    response = await officer_client.post("/api/criminals/P1/explain", json=SELECTION)
     assert response.json() == {"explanation": "Summary"}
     assert app.state.active_explanations == 0
     criminals.load_profile.side_effect = RuntimeError("private")
-    assert (await officer_client.post("/api/criminals/P1/explain")).status_code == 500
+    assert (await officer_client.post("/api/criminals/P1/explain", json=SELECTION)).status_code == 500
     assert app.state.active_explanations == 0
 
 
@@ -108,6 +112,7 @@ async def test_explanation_limits_concurrent_requests(
     officer_client, app, ai_settings, monkeypatch
 ):
     app.state.settings = ai_settings
+    monkeypatch.setattr(criminals, "fetch_network", AsyncMock(return_value=NETWORK))
     release = asyncio.Event()
     all_started = asyncio.Event()
     started = 0
@@ -122,13 +127,44 @@ async def test_explanation_limits_concurrent_requests(
 
     monkeypatch.setattr(criminals, "load_profile", load)
     tasks = [
-        asyncio.create_task(officer_client.post("/api/criminals/P1/explain")) for _ in range(3)
+        asyncio.create_task(officer_client.post("/api/criminals/P1/explain", json=SELECTION)) for _ in range(3)
     ]
     try:
         await asyncio.wait_for(all_started.wait(), timeout=5)
-        assert (await officer_client.post("/api/criminals/P1/explain")).status_code == 429
+        assert (await officer_client.post("/api/criminals/P1/explain", json=SELECTION)).status_code == 429
     finally:
         release.set()
         responses = await asyncio.gather(*tasks)
     assert all(response.status_code == 200 for response in responses)
     assert app.state.active_explanations == 0
+
+
+@pytest.mark.parametrize("body", [None, {}, {"selection": {"type": "node"}}, {"selection": {"type": "edge", "id": 5}}])
+async def test_insight_requires_selection(officer_client, provider, body):
+    response = await officer_client.post("/api/criminals/P1/explain", json=body)
+    assert response.status_code == 400
+    provider.post.assert_not_called()
+
+
+async def test_insight_rejects_stale_selection(officer_client, app, ai_settings, monkeypatch, provider):
+    app.state.settings = ai_settings
+    monkeypatch.setattr(criminals, "load_profile", AsyncMock(return_value=PROFILE))
+    monkeypatch.setattr(criminals, "fetch_network", AsyncMock(return_value=NETWORK))
+    response = await officer_client.post("/api/criminals/P1/explain", json={"selection": {"type": "edge", "id": "missing"}})
+    assert response.status_code == 404
+    assert app.state.active_explanations == 0
+    provider.post.assert_not_called()
+
+
+async def test_insight_uses_selected_relationship_server_evidence(officer_client, app, ai_settings, monkeypatch, provider):
+    app.state.settings = ai_settings
+    edge = {"id": "e1", "source": "n1", "target": "n2", "label": "KNOWS", "evidence": "Recorded statement", "reviewStatus": "pending"}
+    network = {"nodes": NETWORK["nodes"] + [{"id": "n2"}, {"id": "unrelated"}], "edges": [edge]}
+    monkeypatch.setattr(criminals, "load_profile", AsyncMock(return_value=PROFILE))
+    monkeypatch.setattr(criminals, "fetch_network", AsyncMock(return_value=network))
+    response = await officer_client.post("/api/criminals/P1/explain", json={"selection": {"type": "edge", "id": "e1", "evidence": "fabricated"}})
+    assert response.status_code == 200
+    context = json.loads(provider.post.call_args.kwargs["json"]["messages"][1]["content"])
+    assert context["selection"]["record"] == edge
+    assert {node["id"] for node in context["nodes"]} == {"n1", "n2"}
+    assert "fabricated" not in json.dumps(context)

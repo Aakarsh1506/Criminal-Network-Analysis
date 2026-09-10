@@ -4,6 +4,7 @@ import { runCypher } from "../neo4jDriver.js";
 import { initialsAvatar, colorForId } from "../utils/avatar.js";
 import { coordinatesForCity } from "../utils/mapCoordinates.js";
 
+import { buildInsightContext, validateSelection } from "../services/insight.js";
 import { explainNetwork, AIError } from "../services/groq.js";
 import { fetchNetwork } from "../services/network.js";
 
@@ -184,6 +185,8 @@ async function loadProfile(id) {
 
 let activeExplanations = 0;
 router.post("/:id/explain", async (req, res) => {
+  try { validateSelection(req.body?.selection); }
+  catch (err) { return res.status(err.status).json({ error: err.message }); }
   if (!process.env.GROQ_API_KEY?.trim()) {
     return res.status(503).json({ error: "AI is not configured. Add GROQ_API_KEY to backend/.env and restart the server." });
   }
@@ -194,11 +197,13 @@ router.post("/:id/explain", async (req, res) => {
   try {
     const profile = await loadProfile(req.params.id);
     if (!profile) return res.status(404).json({ error: "Profile not found." });
-    const explanation = await explainNetwork(profile);
+    const network = await fetchNetwork(req.params.id, runCypher);
+    const insightContext = buildInsightContext(network, req.body.selection);
+    const explanation = await explainNetwork(profile, { insightContext });
     res.json({ explanation });
   } catch (err) {
     res.status(err instanceof AIError ? err.status : 500).json({
-      error: err instanceof AIError ? err.message : "Unable to load records for the AI summary. Please try again.",
+      error: err instanceof AIError ? err.message : "Unable to load records for the AI insight. Please try again.",
     });
   } finally {
     activeExplanations--;

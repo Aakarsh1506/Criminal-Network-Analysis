@@ -3,7 +3,7 @@ import { mapPoint } from "../utils/mapPoint";
 import "./NetworkGraph.css";
 import { useEffect, useRef, useState } from "react";
 
-function NetworkGraph({ mainCriminal, relations = [], onNodeClick, height = 480 }) {
+function NetworkGraph({ mainCriminal, relations = [], onNodeClick, onSelectionChange, selection, height = 480 }) {
   const [view, setView] = useState({ x: 0, y: 0, zoom: 1 });
   // Labels grow with the square root of zoom instead of scaling with the map.
   const labelScale = 1 / Math.sqrt(view.zoom);
@@ -83,16 +83,19 @@ function NetworkGraph({ mainCriminal, relations = [], onNodeClick, height = 480 
             <g transform={`scale(${labelScale})`}>
             <text x="8" y="-7" className="map-city">{city}</text>
             {residents.map((person, index) => {
-              const clickable = String(person.id) !== String(mainCriminal.id) && Boolean(onNodeClick);
-              const activate = () => clickable && onNodeClick(person.id);
+              const clickable = Boolean(onSelectionChange) || (String(person.id) !== String(mainCriminal.id) && Boolean(onNodeClick));
+              const activate = () => {
+                if (onSelectionChange) onSelectionChange({ type: "person", id: String(person.id), label: person.name });
+                else if (clickable) onNodeClick(person.id);
+              };
               return <text key={person.id} x="8" y={9 + index * 15} className="map-person"
-                role={clickable ? "link" : undefined} tabIndex={clickable ? 0 : undefined}
+                role={clickable ? "button" : undefined} tabIndex={clickable ? 0 : undefined}
                 onClick={activate} onKeyDown={(event) => {
                   if (clickable && (event.key === "Enter" || event.key === " ")) {
                     event.preventDefault();
                     activate();
                   }
-                }} style={{ cursor: clickable ? "pointer" : "default" }}>
+                }} style={{ cursor: clickable ? "pointer" : "default", fill: selection?.id === String(person.id) ? "#fff" : undefined, fontWeight: selection?.id === String(person.id) ? 700 : undefined }}>
                 {person.name}
               </text>;
             })}

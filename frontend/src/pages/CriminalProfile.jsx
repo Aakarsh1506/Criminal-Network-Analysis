@@ -15,6 +15,8 @@ function CriminalProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const [graphRevision, setGraphRevision] = useState(0);
+  const [selection, setSelection] = useState(null);
   const [criminal, setCriminal] = useState(null);
   const [relations, setRelations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,7 @@ function CriminalProfile() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setSelection(null);
     setNotFound(false);
 
     Promise.all([fetchCriminalById(id), fetchWorkspace()])
@@ -161,14 +164,14 @@ function CriminalProfile() {
             <button
               type="button"
               className={`graph-toggle-btn ${graphMode === "network" ? "graph-toggle-active" : ""}`}
-              onClick={() => setGraphMode("network")}
+              onClick={() => { setSelection(null); setGraphMode("network"); }}
             >
               Network
             </button>
             <button
               type="button"
               className={`graph-toggle-btn ${graphMode === "map" ? "graph-toggle-active" : ""}`}
-              onClick={() => setGraphMode("map")}
+              onClick={() => { setSelection(null); setGraphMode("map"); }}
             >
               Map
             </button>
@@ -179,12 +182,16 @@ function CriminalProfile() {
           >
             {graphMode === "network" ? (
               <RelationGraph
+                key={`${id}:${graphRevision}`}
+                onSelectionChange={setSelection}
                 mainCriminal={criminal}
                 onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
                 height={520}
               />
             ) : (
               <NetworkGraph
+                onSelectionChange={setSelection}
+                selection={selection}
                 mainCriminal={criminal}
                 relations={relations}
                 onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
@@ -192,7 +199,7 @@ function CriminalProfile() {
               />
             )}
           </div>
-          <NetworkExplanation key={id} id={id} />
+          <NetworkExplanation key={`${id}:${selection?.type}:${selection?.id}`} id={id} selection={selection} onClear={() => { setSelection(null); setGraphRevision((value) => value + 1); }} />
         </div>
       </div>
     </div>

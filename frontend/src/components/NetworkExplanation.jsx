@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export default function NetworkExplanation({ id }) {
+export default function NetworkExplanation({ id, selection, onClear }) {
   const [explanation, setExplanation] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ export default function NetworkExplanation({ id }) {
   useEffect(() => () => request.current?.abort(), []);
 
   async function explain() {
-    if (request.current) return;
+    if (!selection || request.current) return;
     const controller = new AbortController();
     request.current = controller;
     setLoading(true);
@@ -17,13 +17,19 @@ export default function NetworkExplanation({ id }) {
     try {
       const response = await fetch(`/api/criminals/${encodeURIComponent(id)}/explain`, {
         method: "POST", signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selection: { type: selection.type, id: selection.id } }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to generate a summary.");
-      if (typeof data.explanation !== "string" || !data.explanation.trim()) throw new Error("No summary was returned. Please try again.");
+      if (!response.ok) throw new Error(data.error || "Unable to generate an insight.");
+      if (typeof data.explanation !== "string" || !data.explanation.trim()) throw new Error("No insight was returned. Please try again.");
       if (!controller.signal.aborted) setExplanation(data.explanation);
     } catch (err) {
-      if (!controller.signal.aborted) setError(err instanceof SyntaxError ? "The AI service is unavailable. Check that the backend is running." : err.message);
+      if (!controller.signal.aborted) setError(
+        err instanceof SyntaxError || err instanceof TypeError
+          ? "Cannot reach the backend. Start or restart FastAPI on port 5050, then try again."
+          : err.message
+      );
     } finally {
       request.current = null;
       if (!controller.signal.aborted) setLoading(false);
@@ -32,11 +38,13 @@ export default function NetworkExplanation({ id }) {
 
   return (
     <section className="network-ai" aria-labelledby="network-ai-title" aria-busy={loading}>
-      <h3 id="network-ai-title">AI network summary</h3>
-      <p>Explain this profile’s cases and shared locations or crime types. Generating a summary sends relevant records to Groq.</p>
-      <button className="stamp-btn" onClick={explain} disabled={loading}>
-        {loading ? "Generating summary…" : explanation ? "Regenerate summary" : "Explain this network"}
+      <h3 id="network-ai-title">AI insight</h3>
+      <p>{selection ? `Selected: ${selection.label}` : "Select a node or relationship in the graph to enable AI insight."}</p>
+      {selection && <p>Review the evidence, investigative significance, and follow-up checks for this selection. The configured AI provider receives the relevant records.</p>}
+      <button className="stamp-btn" onClick={explain} disabled={!selection || loading}>
+        {loading ? "Generating insight…" : explanation ? "Regenerate insight" : "AI insight"}
       </button>
+      {selection && <button className="stamp-btn small" type="button" onClick={onClear}>Clear selection</button>}
       {loading && <p role="status">Reading the available records…</p>}
       {error && <p className="network-ai-error" role="alert">{error}</p>}
       {explanation && <div className="network-ai-answer" aria-live="polite">{explanation}</div>}

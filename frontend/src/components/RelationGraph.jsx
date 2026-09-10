@@ -85,7 +85,7 @@ function fitAroundPerson(cy) {
   cy.fit(cy.elements(), 60);
 }
 
-export default function RelationGraph({ mainCriminal, onNodeClick, height = 480 }) {
+export default function RelationGraph({ mainCriminal, onNodeClick, onSelectionChange, height = 480 }) {
   const [result, setResult] = useState(null);
   const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -126,6 +126,12 @@ export default function RelationGraph({ mainCriminal, onNodeClick, height = 480 
       focus.addClass('focused');
       cy.elements().difference(focus).addClass('muted');
     });
+    cy.on('unselect', 'node, edge', () => {
+      if (cy.$(':selected').empty()) {
+        setSelected(null);
+        cy.elements().removeClass('muted focused');
+      }
+    });
     cy.on('tap', (event) => {
       if (event.target === cy) {
         cy.elements().unselect().removeClass('muted focused');
@@ -152,6 +158,14 @@ export default function RelationGraph({ mainCriminal, onNodeClick, height = 480 
   }
 
   const activeSelection = network && selected && [...network.nodes, ...network.edges].find((item) => item.id === selected.id);
+
+  useEffect(() => {
+    onSelectionChange?.(activeSelection ? {
+      type: activeSelection.kind ? 'node' : 'edge',
+      id: activeSelection.id,
+      label: activeSelection.kind ? activeSelection.label : `${network.nodes.find((node) => node.id === activeSelection.source)?.label || 'Record'} → ${activeSelection.label} → ${network.nodes.find((node) => node.id === activeSelection.target)?.label || 'Record'}`,
+    } : null);
+  }, [activeSelection, network, onSelectionChange]);
 
   // Legend only lists the node kinds actually present in this network.
   const legendKinds = useMemo(() => {

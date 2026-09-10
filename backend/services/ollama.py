@@ -7,6 +7,46 @@ from ..errors import APIError
 logger = logging.getLogger("uvicorn.error.extraction")
 
 
+async def explain_insight(client, settings, context):
+    """Generate an investigator insight with the locally running Ollama model."""
+    response = await client.post(
+        settings.ollama_base_url.rstrip("/") + "/api/chat",
+        json={
+            "model": settings.ollama_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "Act as an investigative analyst. Write an AI insight under 300 words "
+                        "with sections Recorded facts, Investigative significance, Gaps and "
+                        "alternative explanations, and Next checks. Use only supplied records. "
+                        "Do not invent facts, infer guilt, predict criminality, or treat shared "
+                        "attributes as proof of association. Cite supplied IDs."
+                    ),
+                },
+                {"role": "user", "content": context},
+            ],
+            "stream": False,
+            "think": False,
+            "keep_alive": "10m",
+            "options": {"temperature": 0.2, "num_predict": 1200, "num_ctx": 16384},
+        },
+        timeout=settings.ollama_timeout,
+    )
+    if response.status_code == 404:
+        raise APIError(
+            "Ollama model not found. Run `ollama pull` with the model named in OLLAMA_MODEL.",
+            503,
+        )
+    if not response.is_success:
+        raise APIError("Ollama could not generate an insight. Check the local Ollama server.", 502)
+    body = response.json()
+    answer = (body.get("message") or {}).get("content")
+    if not isinstance(answer, str) or not answer.strip():
+        raise APIError("Ollama returned an empty insight. Please try again.", 502)
+    return answer.strip()
+
+
 async def extraction_choice(client, settings, messages, schema, max_tokens):
     response = await client.post(
         settings.ollama_base_url.rstrip("/") + "/api/chat",

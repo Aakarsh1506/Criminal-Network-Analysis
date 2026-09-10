@@ -4,7 +4,9 @@ from ..errors import APIError, api_errors
 from ..security import require_auth
 from ..services.criminals import PERSONS_SQL, load_profile, map_person
 from ..services.groq import explain_network
+from ..services.insight import build_insight_context, validate_selection
 from ..services.network import fetch_network
+from ..services.ollama import explain_insight
 
 router = APIRouter(
     prefix="/api/criminals", tags=["Criminals"], dependencies=[Depends(require_auth)]
@@ -62,8 +64,15 @@ async def get_network(person_id: str, request: Request):
 
 @router.post("/{person_id}/explain")
 async def explain(person_id: str, request: Request):
+    try:
+        body = await request.json()
+    except ValueError:
+        raise APIError("Select a node or relationship to generate AI insight.", 400) from None
+    selection = body.get("selection") if isinstance(body, dict) else None
+    validate_selection(selection)
     state = request.app.state
-    if not state.settings.groq_api_key.strip():
+    use_ollama = state.settings.extraction_provider == "ollama"
+    if not use_ollama and not state.settings.groq_api_key.strip():
         raise APIError(
             "AI is not configured. Add GROQ_API_KEY to backend/.env and restart the server.", 503
         )
@@ -72,16 +81,26 @@ async def explain(person_id: str, request: Request):
     # No await between checking and incrementing: atomic within this worker's event loop.
     state.active_explanations += 1
     try:
-        with api_errors("Unable to load records for the AI summary. Please try again."):
+        with api_errors("Unable to load records for the AI insight. Please try again."):
             profile = await load_profile(person_id, state.db, state.graph)
             if profile is None:
                 raise APIError("Profile not found.", 404)
-            explanation = await explain_network(
-                profile,
-                api_key=state.settings.groq_api_key,
-                model=state.settings.groq_model,
-                client=state.http_client,
-            )
+            network = await fetch_network(person_id, state.graph.run)
+            context = build_insight_context(network, selection)
+            if use_ollama:
+                import json
+                explanation = await explain_insight(
+                    state.http_client, state.settings,
+                    json.dumps(context, ensure_ascii=False, separators=(",", ":")),
+                )
+            else:
+                explanation = await explain_network(
+                    profile,
+                    insight_context=context,
+                    api_key=state.settings.groq_api_key,
+                    model=state.settings.groq_model,
+                    client=state.http_client,
+                )
             return {"explanation": explanation}
     finally:
         # Release the AI slot even if the request fails or is cancelled.
