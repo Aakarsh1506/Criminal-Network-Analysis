@@ -88,7 +88,9 @@ Supported file formats are PDF, PNG/JPEG/TIFF, UTF-8 TXT/CSV/JSON, and DOCX. CSV
 read as text for extraction; this is not a raw SQL importer or a transaction anomaly detector.
 
 Scanned PDFs and images use local Tesseract OCR. Digital PDFs and Word/text files use their
-embedded text. Extracted text is sent to Groq for JSON entity and relationship extraction.
+embedded text. The default hybrid mode extracts entity candidates locally with spaCy and
+regex, then sends relevant passages and entity references to Groq for relationships only.
+Set `EXTRACTION_MODE=groq` to use the original full AI entity and relationship extraction.
 Groq cites numbered source-line ranges; the server copies the original text into each evidence field. The server validates names, source quotes, references, allowed predicates, and directions.
 This checks structural validity and quoted evidence; it does not independently verify whether
 an allegation or model interpretation is true. Results are staged for review. Entity records and graph relationships are saved only after
@@ -103,8 +105,63 @@ Configure `GROQ_API_KEY` in `backend/.env`. Optional settings:
 
 ```dotenv
 GROQ_EXTRACTION_MODEL=openai/gpt-oss-20b
+EXTRACTION_MODE=hybrid
+SPACY_MODEL=en_core_web_sm
 OCR_LANGUAGE=eng
 ```
+
+The Python requirements include spaCy and its English `en_core_web_sm` model. After pulling
+this change, reinstall `backend/requirements.txt` in your backend virtual environment and
+restart FastAPI. Model loading happens locally on the first extraction and is cached.
+Missing model installations produce a setup error; they do not silently switch to Groq.
+
+Hybrid extraction uses spaCy for people, organizations and places, plus regex for Indian
+mobile numbers, vehicle registrations and FIR IDs. Explicit `Name:`, `Suspect:`, `Witness:`,
+`Company:`, `Crime type:` and similar fields supplement NER. Consecutive labeled fields
+for age, phone/mobile, alias, ISO DOB, city and state immediately after a named-person
+record become attributes. Unlabeled or distant attributes are not inferred. Phone numbers
+also remain separate candidates; the app does not infer ownership from proximity.
+When saving, exact age wording such as `34 years` becomes numeric age `34`. Ranges,
+approximations, unknown values and out-of-range ages remain source text (`age_text` in
+the extracted entity properties), with no guessed numeric age. The reviewed attribute
+and original evidence are retained.
+Explicit `Address:`, `Location:`, `Residence:`, `City:`, `Area:`, `Locality:` and `Last seen:`
+fields are location candidates and take precedence over statistical NER spans. The local
+phrase list in `backend/data/location_names.json` protects known place names such as
+Bandra Kurla Complex and Khar West from being classified as people. Add exact place-name
+variants to that JSON list and restart to extend it. These rules improve known cases;
+the general English NER model can still misclassify unfamiliar names.
+
+Groq receives bounded passages surrounding entity mentions, with nearby context and
+explicit markers where text was omitted. It cannot add entities, and relationships retain
+the existing predicate, direction, evidence and review checks. Entity candidates with no
+relationships still appear for review. The existing rate-limit backoff applies. Logs report
+local entity counts, passage counts and Groq input/output token usage, without source text
+unless debug responses are enabled.
+
+Location entities keep their first detected source sentence in `evidence`, rather than just
+the place name. It is visible under **Source evidence** in review, retained in the staged
+extraction, and saved with the extracted entity after confirmation. Groq receives this
+sentence as location context along with numbered source passages. If a batch boundary cuts
+the saved sentence, a separate bounded passage preserves it. For OCR blocks without useful
+sentence boundaries, evidence falls back to a source line or a maximum 2,000-character
+source window around the mention. Later mentions remain available in relevant passages;
+each accepted relationship has its own source evidence.
+
+`RESIDES_IN` links a person to an explicitly stated residence; `SEEN_AT` records an explicit
+sighting. `OCCURRED_AT` continues to link a case to an incident location. Mere co-occurrence
+does not create any of these links. Restart FastAPI to apply the expanded SQL predicate
+constraint before confirming new extractions. Existing saved records are not re-extracted.
+
+This reduces generated entity JSON and can omit unrelated source text; token savings vary
+with the document and retries. It does not eliminate Groq rate limits. The English model can
+miss names or misclassify entities, and distant references or relationships across batches
+may be missed. Review the results against the document. Use `EXTRACTION_MODE=groq` and
+restart if you need the original extraction behavior. Custom languages require a compatible
+installed spaCy model; the regex rules remain focused on Indian identifiers.
+
+The local pipeline follows spaCy's [model loading](https://spacy.io/usage/models) and
+[entity recognition](https://spacy.io/usage/linguistic-features#named-entities) interfaces.
 
 Run the **FastAPI** backend with `python -m backend.server` from the repository root and your
 virtual environment activated. The repository's `npm run server` still launches the old
@@ -120,7 +177,7 @@ properties also live in `extracted_entities`. Each source relationship lives in
 constraints as well as write nodes and edges.
 
 Supported graph predicates are `MENTIONED_IN`, `WITNESS_IN`, `SUSPECT_IN`, `OCCURRED_AT`,
-`OF_TYPE`, `EMPLOYED_BY`, `OWNS`, and `CONTACTED`, with the requested subject/object types.
+`OF_TYPE`, `EMPLOYED_BY`, `OWNS`, `CONTACTED`, `RESIDES_IN`, and `SEEN_AT`, with the requested subject/object types.
 Unidentified phone owners are not turned into people or inferred `CONTACTED` edges.
 
 Uploads return immediately with status `queued`. A persistent, single-job-per-worker queue
@@ -131,6 +188,13 @@ job keeps its PostgreSQL data and retries only Neo4j. Graph replay uses stable r
 IDs to avoid duplicates. Jobs interrupted by shutdown are requeued; crash-abandoned leases
 become available after 20 minutes. PostgreSQL and Neo4j are eventually consistent, not one
 shared distributed transaction.
+
+The review page requires a Yes/No choice for each entity and relationship before saving.
+Rejecting an entity also excludes relationships connected to it. Rejected items and their
+reasons remain in the document's review history, but are not saved as entity or graph records.
+Use **Remove document** on the review page or document details to permanently delete an
+unconfirmed stored, failed, or awaiting-review document after confirmation. Processing
+documents and confirmed extraction sources remain protected from removal.
 
 The page shows status, source text, entities, relationships, and supporting quotes. Use
 **Process document** to retry extraction, or **Retry Neo4j sync** after fixing graph access.
@@ -177,6 +241,18 @@ or relationship rows, or graph nodes/edges are created before confirmation. Conf
 owner-scoped and checks JSON equality with the staged snapshot; stale or modified snapshots
 are rejected. `confirmed_at` and `confirmed_by` record approval. Retries of an approved import
 reuse that exact extraction. Previously completed imports are retained.
+
+During review, **Reject relationship** excludes an individual suggestion; **Undo rejection**
+restores it before confirmation. Controls in the entity dossiers and complete relationship
+list share the same selections. Pending choices last for the current page; **Confirm and
+save** records them. Entities remain in the draft even if all their relationships are rejected.
+The confirmation API accepts `rejected_relationship_indices`, a list of distinct zero-based
+indices into the original `extraction.relationships`. The server atomically checks ownership
+and equality with that original draft, then moves selected relationships to
+`excluded_relationships` with the reason `Rejected by reviewer during confirmation.`
+The document's confirmation identity/time records the decision. Rejections remain in the
+review history but never enter `extracted_relationships` or the Neo4j graph payload.
+This applies to drafts awaiting review, not links already saved from completed documents.
 
 The configured GPT-OSS models use Groq strict JSON schema output. Temporary rate limits use
 bounded retries respecting `Retry-After`; evidence is still validated against the source.

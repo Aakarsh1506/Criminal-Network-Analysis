@@ -1,5 +1,6 @@
 """Commit extracted records and a replayable graph payload in one SQL transaction."""
 
+import re
 from datetime import date
 
 from psycopg.types.json import Jsonb
@@ -20,22 +21,38 @@ NODE_KEYS = {
 
 def properties_for(entity):
     props = {item.key: item.value for item in entity.attributes}
+    if "age" in props:
+        raw_age = props.pop("age")
+        # Preserve the reviewed wording even when it cannot populate an integer column.
+        match = re.fullmatch(
+            r"([0-9]{1,3})(?:\s*(?:years?(?:\s+old)?|yrs?\.?|y/o))?",
+            raw_age.strip(),
+            flags=re.IGNORECASE,
+        )
+        if match and 0 <= int(match[1]) <= 130:
+            props["age"] = int(match[1])
+        if not match or "age" not in props or raw_age != str(props["age"]):
+            props["age_text"] = raw_age
     for field in ("dob", "last_seen", "case_month"):
         if field in props:
             try:
                 props[field] = date.fromisoformat(props[field]).isoformat()
             except ValueError:
                 raise APIError(f"AI returned an invalid {field} date.", 502) from None
-    for field in ("age", "height_cm"):
+    for field in ("height_cm",):
         if field in props:
             try:
                 props[field] = int(props[field])
-                if not 0 <= props[field] <= (130 if field == "age" else 300):
+                if not 0 <= props[field] <= 300:
                     raise ValueError
             except ValueError:
                 raise APIError(f"AI returned an invalid {field} value.", 502) from None
     # Existing relational columns are bounded to 100 characters.
-    if any(len(str(value)) > 100 for key, value in props.items() if key != "description"):
+    if any(
+        len(str(value)) > 100
+        for key, value in props.items()
+        if key not in {"description", "age_text"}
+    ):
         raise APIError("AI returned a field exceeding the database limit.", 502)
     return props
 

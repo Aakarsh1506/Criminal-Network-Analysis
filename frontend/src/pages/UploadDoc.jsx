@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BackButton from "../components/BackButton";
+import RemoveDocumentButton from "../components/RemoveDocumentButton";
 import {
   fetchDocuments, fetchDocument, fetchSourceTypes, uploadDocument,
   retryDocument, documentFileUrl,
@@ -121,6 +122,11 @@ export default function UploadDoc() {
       </div>
       {detail && <>
         <p role="status">{STATUS[detail.status]}</p>
+        <RemoveDocumentButton document={detail} disabled={retrying} onError={setError}
+          onRemoved={(id) => {
+            setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+            setSelected(null); setDetail(null); setError(null);
+          }} />
         {detail.processingError && <p role="alert" className="upload-error">{detail.processingError}</p>}
         {RETRYABLE.has(detail.status) && <button className="stamp-btn" disabled={retrying} onClick={retry}>
           {retrying ? "Queuing…" : detail.status === "sync_failed" ? "Retry Neo4j sync" : "Process document"}

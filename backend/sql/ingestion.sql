@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS extracted_relationships (
   evidence TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS extracted_relationships_document_idx ON extracted_relationships(document_id);
+-- Extend existing installations as well as new databases with explicit person/location roles.
+ALTER TABLE extracted_relationships DROP CONSTRAINT IF EXISTS extracted_relationships_predicate_check;
+ALTER TABLE extracted_relationships ADD CONSTRAINT extracted_relationships_predicate_check
+  CHECK (predicate IN ('MENTIONED_IN','WITNESS_IN','SUSPECT_IN','OCCURRED_AT','OF_TYPE',
+    'EMPLOYED_BY','OWNS','CONTACTED','RESIDES_IN','SEEN_AT'));
 CREATE INDEX IF NOT EXISTS documents_processing_idx ON officer_documents(processing_status);
 -- Do not invent a state when a report only names a city.
 ALTER TABLE locations ALTER COLUMN state DROP NOT NULL;

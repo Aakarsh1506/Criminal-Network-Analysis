@@ -20,7 +20,9 @@ PROFILE = {
 @pytest.fixture
 def settings(tmp_path):
     return Settings(
-        jwt_secret="test-secret-that-is-at-least-32-characters", upload_dir=tmp_path / "uploads"
+        jwt_secret="test-secret-that-is-at-least-32-characters",
+        upload_dir=tmp_path / "uploads",
+        extraction_mode="groq",
     )
 
 

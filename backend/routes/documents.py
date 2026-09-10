@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Request
 from psycopg.types.json import Jsonb
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, StrictInt
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 from starlette.responses import FileResponse
@@ -12,7 +12,7 @@ from starlette.responses import FileResponse
 from ..errors import APIError, api_errors
 from ..security import require_auth
 from ..services.document_text import FORMATS
-from ..services.extraction import SOURCE_TYPES, Extraction
+from ..services.extraction import SOURCE_TYPES, ExcludedEntity, ExcludedRelationship, Extraction
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
@@ -187,6 +187,8 @@ async def retry_document(document_id: int, request: Request, officer=Depends(req
 
 class ConfirmBody(BaseModel):
     extraction: Extraction
+    rejected_relationship_indices: list[StrictInt] = Field(default_factory=list, max_length=400)
+    rejected_entity_indices: list[StrictInt] = Field(default_factory=list, max_length=200)
 
 
 @router.post("/{document_id}/confirm")
@@ -194,15 +196,53 @@ async def confirm_document(
     document_id: int, body: ConfirmBody, request: Request, officer=Depends(require_auth)
 ):
     with api_errors("Failed to confirm extraction"):
+        rejected = set(body.rejected_relationship_indices)
+        if len(rejected) != len(body.rejected_relationship_indices) or any(
+            index < 0 or index >= len(body.extraction.relationships) for index in rejected
+        ):
+            raise APIError("Rejected relationship selections are invalid. Reload the draft.", 400)
+        reviewed = body.extraction.model_copy(deep=True)
+        rejected_entities = set(body.rejected_entity_indices)
+        if len(rejected_entities) != len(body.rejected_entity_indices) or any(
+            index < 0 or index >= len(body.extraction.entities) for index in rejected_entities
+        ):
+            raise APIError("Rejected entity selections are invalid. Reload the draft.", 400)
+        rejected_refs = {
+            entity.ref for index, entity in enumerate(body.extraction.entities)
+            if index in rejected_entities
+        }
+        reviewed.entities = []
+        for index, entity in enumerate(body.extraction.entities):
+            if index in rejected_entities:
+                reviewed.excluded_entities.append(ExcludedEntity(
+                    **entity.model_dump(), reason="Rejected by reviewer during confirmation."
+                ))
+            else:
+                reviewed.entities.append(entity)
+        reviewed.relationships = []
+        for index, relation in enumerate(body.extraction.relationships):
+            endpoint_rejected = relation.subject in rejected_refs or relation.object in rejected_refs
+            if index in rejected or endpoint_rejected:
+                reviewed.excluded_relationships.append(
+                    ExcludedRelationship(
+                        **relation.model_dump(),
+                        reason="An endpoint entity was rejected by the reviewer."
+                        if endpoint_rejected else "Rejected by reviewer during confirmation."
+                    )
+                )
+            else:
+                reviewed.relationships.append(relation)
         # JSON equality prevents approval of a different or stale draft.
         rows = await request.app.state.db.query(
             """UPDATE officer_documents SET processing_status='queued',
-               confirmed_at=now(), confirmed_by=%s, processing_error=NULL, lease_until=NULL
+               confirmed_at=now(), confirmed_by=%s, processing_error=NULL, lease_until=NULL,
+               extraction=%s
                WHERE document_id=%s AND officer_id=%s AND processing_status='awaiting_review'
                  AND confirmed_at IS NULL AND graph_payload IS NULL AND extraction=%s
                RETURNING *""",
             (
                 officer["officerId"],
+                Jsonb(reviewed.model_dump()),
                 document_id,
                 officer["officerId"],
                 Jsonb(body.extraction.model_dump()),
@@ -210,7 +250,7 @@ async def confirm_document(
         )
         if not rows:
             raise APIError("Draft changed or is unavailable. Reload it before confirming.", 409)
-        return map_document(rows[0])
+        return {**map_document(rows[0]), "extraction": reviewed.model_dump()}
 
 
 @router.get("/{document_id}/file")
@@ -244,7 +284,8 @@ async def delete_document(document_id: int, request: Request, officer=Depends(re
     with api_errors("Failed to delete document"):
         rows = await request.app.state.db.query(
             """DELETE FROM officer_documents WHERE document_id = %s AND officer_id = %s
-               AND processing_status IN ('stored','failed')
+               AND processing_status IN ('stored','failed','awaiting_review')
+               AND confirmed_at IS NULL AND graph_payload IS NULL
                AND NOT EXISTS (SELECT 1 FROM extracted_entities e
                                WHERE e.document_id=officer_documents.document_id)
                RETURNING stored_name""",

@@ -330,13 +330,14 @@ async def test_evidence_correction_is_bounded(settings):
     assert client.post.await_count == 2
 
 
-async def test_groq_json_generation_error_is_retried_without_blaming_key(settings):
+@pytest.mark.parametrize("failed_generation", ["private records", "", "  ", None])
+async def test_groq_json_generation_error_is_retried_without_blaming_key(settings, failed_generation):
     client = AsyncMock()
     client.post.side_effect = [
         httpx.Response(
             400,
             json={
-                "error": {"code": "json_validate_failed", "failed_generation": "private records"}
+                "error": {"code": "json_validate_failed", "failed_generation": failed_generation}
             },
         ),
         httpx.Response(
@@ -353,7 +354,21 @@ async def test_groq_json_generation_error_is_retried_without_blaming_key(setting
     )
     assert result.entities[0].name == "Alice"
     assert client.post.await_count == 2
+    assert client.post.call_args.kwargs["json"]["response_format"] == {"type": "json_object"}
     assert "private records" not in client.post.call_args.kwargs["json"]["messages"][1]["content"]
+
+
+async def test_empty_provider_generation_failure_is_bounded_and_explained(settings):
+    client = AsyncMock()
+    client.post.return_value = httpx.Response(
+        400,
+        json={"error": {"code": "json_validate_failed", "failed_generation": ""}},
+    )
+    with pytest.raises(extraction.ExtractionFailure, match="provider returned no generated JSON"):
+        await extraction.extract_chunk(
+            TEXT, "fir", replace(settings, groq_api_key="fake"), client
+        )
+    assert client.post.await_count == 2
 
 
 @pytest.mark.parametrize(
@@ -500,8 +515,8 @@ async def test_confirmation_scopes_owner_and_exact_snapshot(officer_client, db):
     sql, params = db.query.call_args.args
     assert "officer_id=%s" in sql and "extraction=%s" in sql
     assert "processing_status='awaiting_review'" in sql
-    assert params[:3] == (7, 3, 7)
-    assert params[3].obj == sample().model_dump()
+    assert (params[0], params[2], params[3]) == (7, 3, 7)
+    assert params[1].obj == params[4].obj == sample().model_dump()
 
 
 def test_relationship_resolves_only_unique_exact_names_or_identifiers():
@@ -558,7 +573,9 @@ async def test_invalid_relationship_is_excluded_after_correction(settings):
             ]
         },
     )
-    result = await extraction.extract_chunk(TEXT, "fir", replace(settings, groq_api_key="fake"), client)
+    result = await extraction.extract_chunk(
+        TEXT, "fir", replace(settings, groq_api_key="fake"), client
+    )
     assert result.entities == sample().entities
     assert result.relationships == []
     assert result.excluded_relationships[0].predicate == "OWNS"
@@ -753,11 +770,20 @@ async def test_rate_limits_do_not_trigger_subdivision(settings, monkeypatch):
 
 async def test_markdown_json_wrapper_is_accepted_without_changing_evidence(settings):
     client = AsyncMock()
-    client.post.return_value = httpx.Response(200, json={"choices": [{
-        "message": {"content": "```json\n" + sample().model_dump_json() + "\n```"},
-        "finish_reason": "stop",
-    }]})
-    result = await extraction.extract_chunk(TEXT, "fir", replace(settings, groq_api_key="fake"), client)
+    client.post.return_value = httpx.Response(
+        200,
+        json={
+            "choices": [
+                {
+                    "message": {"content": "```json\n" + sample().model_dump_json() + "\n```"},
+                    "finish_reason": "stop",
+                }
+            ]
+        },
+    )
+    result = await extraction.extract_chunk(
+        TEXT, "fir", replace(settings, groq_api_key="fake"), client
+    )
     assert result == sample()
     assert client.post.await_count == 1
 
@@ -769,14 +795,30 @@ async def test_provider_schema_retry_uses_json_mode_with_local_validation(settin
     invalid["entities"][0]["kind"] = "UnknownKind"
     client = AsyncMock()
     client.post.side_effect = [
-        httpx.Response(400, json={"error": {
-            "code": "json_validate_failed", "failed_generation": json.dumps(invalid),
-        }}),
-        httpx.Response(200, json={"choices": [{
-            "message": {"content": sample().model_dump_json()}, "finish_reason": "stop",
-        }]}),
+        httpx.Response(
+            400,
+            json={
+                "error": {
+                    "code": "json_validate_failed",
+                    "failed_generation": json.dumps(invalid),
+                }
+            },
+        ),
+        httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {"content": sample().model_dump_json()},
+                        "finish_reason": "stop",
+                    }
+                ]
+            },
+        ),
     ]
-    result = await extraction.extract_chunk(TEXT, "fir", replace(settings, groq_api_key="fake"), client)
+    result = await extraction.extract_chunk(
+        TEXT, "fir", replace(settings, groq_api_key="fake"), client
+    )
     assert result == sample()
     request = client.post.call_args.kwargs["json"]
     assert request["response_format"] == {"type": "json_object"}
@@ -794,14 +836,106 @@ async def test_provider_rejected_json_requires_local_evidence(settings, grounded
     if not grounded:
         payload["entities"][0]["name"] = "Invented Person"
     client = AsyncMock()
-    client.post.return_value = httpx.Response(400, json={"error": {
-        "code": "json_validate_failed", "failed_generation": json.dumps(payload),
-    }})
+    client.post.return_value = httpx.Response(
+        400,
+        json={
+            "error": {
+                "code": "json_validate_failed",
+                "failed_generation": json.dumps(payload),
+            }
+        },
+    )
     if grounded:
-        result = await extraction.extract_chunk(TEXT, "fir", replace(settings, groq_api_key="fake"), client)
+        result = await extraction.extract_chunk(
+            TEXT, "fir", replace(settings, groq_api_key="fake"), client
+        )
         assert result.entities[0].name == "Alice"
         assert client.post.await_count == 1
     else:
         with pytest.raises(extraction.ExtractionFailure, match=r"entities\[0\].name"):
-            await extraction.extract_chunk(TEXT, "fir", replace(settings, groq_api_key="fake"), client)
+            await extraction.extract_chunk(
+                TEXT, "fir", replace(settings, groq_api_key="fake"), client
+            )
         assert client.post.await_count == 2
+
+
+@pytest.mark.parametrize("indices", [[-1], [1], [0, 0], [True], ["0"], [0.5]])
+async def test_rejection_indices_are_strict_and_bounded(officer_client, db, indices):
+    response = await officer_client.post(
+        "/api/documents/3/confirm",
+        json={
+            "extraction": sample().model_dump(),
+            "rejected_relationship_indices": indices,
+        },
+    )
+    assert response.status_code == 400
+    db.query.assert_not_called()
+
+
+async def test_rejection_keeps_original_snapshot_check_and_audit(officer_client, db):
+    db.query.return_value = [
+        {
+            "document_id": 3,
+            "original_name": "test.txt",
+            "mime_type": "text/plain",
+            "size_bytes": 10,
+            "uploaded_at": "2026-09-10",
+            "processing_status": "queued",
+        }
+    ]
+    original = sample().model_dump()
+    response = await officer_client.post(
+        "/api/documents/3/confirm",
+        json={
+            "extraction": original,
+            "rejected_relationship_indices": [0],
+        },
+    )
+    assert response.status_code == 200
+    sql, params = db.query.call_args.args
+    assert params[4].obj == original
+    saved = params[1].obj
+    assert saved["entities"] == original["entities"]
+    assert saved["relationships"] == []
+    assert saved["excluded_relationships"][0]["subject"] == original["relationships"][0]["subject"]
+    assert (
+        saved["excluded_relationships"][0]["reason"] == "Rejected by reviewer during confirmation."
+    )
+    assert response.json()["extraction"] == saved
+
+
+@pytest.mark.parametrize("indices", [[-1], [2], [0, 0], [True], ["0"], [0.5]])
+async def test_entity_rejection_indices_are_strict_and_bounded(officer_client, db, indices):
+    response = await officer_client.post(
+        "/api/documents/3/confirm",
+        json={"extraction": sample().model_dump(), "rejected_entity_indices": indices},
+    )
+    assert response.status_code == 400
+    db.query.assert_not_called()
+
+
+@pytest.mark.parametrize("indices", [[0], [0, 1]])
+async def test_entity_rejection_excludes_incident_edges_and_preserves_audit(officer_client, db, indices):
+    db.query.return_value = [{
+        "document_id": 3, "original_name": "test.txt", "mime_type": "text/plain",
+        "size_bytes": 10, "uploaded_at": "2026-09-10", "processing_status": "queued",
+    }]
+    original = sample().model_dump()
+    response = await officer_client.post(
+        "/api/documents/3/confirm",
+        json={"extraction": original, "rejected_entity_indices": indices},
+    )
+    assert response.status_code == 200
+    _, params = db.query.call_args.args
+    assert params[4].obj == original
+    saved = params[1].obj
+    assert len(saved["entities"]) == 2 - len(indices)
+    assert saved["relationships"] == []
+    assert [e["ref"] for e in saved["excluded_entities"]] == [
+        original["entities"][index]["ref"] for index in indices
+    ]
+    assert saved["excluded_relationships"][0]["reason"] == (
+        "An endpoint entity was rejected by the reviewer."
+    )
+    assert Extraction.model_validate(saved).model_dump() == saved
+    assert response.json()["extraction"] == saved

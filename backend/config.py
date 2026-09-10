@@ -29,6 +29,12 @@ class Settings:
     groq_model: str = "openai/gpt-oss-20b"
     groq_extraction_model: str = "openai/gpt-oss-20b"
     groq_debug_responses: bool = False
+    extraction_provider: str = "groq"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen3:4b"
+    ollama_timeout: float = 180
+    extraction_mode: str = "hybrid"
+    spacy_model: str = "en_core_web_sm"
     ocr_language: str = "eng"
     upload_dir: Path = BASE_DIR / "uploads"
 
@@ -61,5 +67,11 @@ class Settings:
             groq_extraction_model=env.get("GROQ_EXTRACTION_MODEL") or "openai/gpt-oss-20b",
             groq_debug_responses=(env.get("GROQ_DEBUG_RESPONSES") or "").lower()
             in ("1", "true", "yes"),
+            extraction_mode=env.get("EXTRACTION_MODE") or "hybrid",
+            extraction_provider=(env.get("EXTRACTION_PROVIDER") or "groq").strip().lower(),
+            ollama_base_url=(env.get("OLLAMA_BASE_URL") or "http://localhost:11434").rstrip("/"),
+            ollama_model=env.get("OLLAMA_MODEL") or "qwen3:4b",
+            ollama_timeout=float(env.get("OLLAMA_TIMEOUT") or 180),
+            spacy_model=env.get("SPACY_MODEL") or "en_core_web_sm",
             ocr_language=env.get("OCR_LANGUAGE") or "eng",
         )

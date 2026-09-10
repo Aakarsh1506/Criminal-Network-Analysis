@@ -312,3 +312,76 @@ async def test_review_gate_then_exact_confirmation(real_db, settings):
     assert (await real_db.query("SELECT COUNT(*) AS n FROM extracted_entities"))[0]["n"] == 0
     payload = await persist_extraction(real_db, doc_id, result)
     assert len(payload["nodes"]) == 8
+
+
+async def test_location_sentence_and_person_links_survive_saving(real_db):
+    result = full_extraction()
+    sentence = "Bob resides in Mumbai."
+    location = next(e for e in result.entities if e.kind == "Location")
+    location.evidence = sentence
+    from backend.services.extraction import Relationship
+
+    result.relationships.extend(
+        [
+            Relationship(
+                subject="b", predicate="RESIDES_IN", object=location.ref, evidence=sentence
+            ),
+            Relationship(
+                subject="a",
+                predicate="SEEN_AT",
+                object=location.ref,
+                evidence="Alice was seen in Mumbai.",
+            ),
+        ]
+    )
+    payload = await persist_extraction(real_db, await add_document(real_db), result)
+    assert {e["predicate"] for e in payload["edges"]} >= {"RESIDES_IN", "SEEN_AT"}
+    assert (await real_db.query("SELECT evidence FROM extracted_entities WHERE kind='Location'"))[
+        0
+    ]["evidence"] == sentence
+    await real_db.ensure_schema()
+    rows = await real_db.query(
+        "SELECT predicate, evidence FROM extracted_relationships WHERE predicate IN ('RESIDES_IN','SEEN_AT') ORDER BY predicate"
+    )
+    assert rows == [
+        {"predicate": "RESIDES_IN", "evidence": sentence},
+        {"predicate": "SEEN_AT", "evidence": "Alice was seen in Mumbai."},
+    ]
+
+
+async def test_rejected_relationships_never_enter_sql_or_graph_payload(real_db):
+    from types import SimpleNamespace
+
+    from backend.routes.documents import ConfirmBody, confirm_document
+
+    result = full_extraction()
+    original = result.model_dump()
+    doc_id = await add_document(real_db, confirmed=False)
+    from psycopg.types.json import Jsonb
+
+    await real_db.query(
+        "UPDATE officer_documents SET processing_status='awaiting_review', extraction=%s WHERE document_id=%s",
+        (Jsonb(original), doc_id),
+    )
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(db=real_db)))
+    await confirm_document(
+        doc_id,
+        ConfirmBody(extraction=result, rejected_relationship_indices=[0, 1]),
+        request,
+        {"officerId": 1},
+    )
+    stored = (
+        await real_db.query(
+            "SELECT extraction FROM officer_documents WHERE document_id=%s", (doc_id,)
+        )
+    )[0]["extraction"]
+    assert len(stored["excluded_relationships"]) == 2
+    assert result.model_dump() == original
+    payload = await persist_extraction(real_db, doc_id, Extraction.model_validate(stored))
+    assert len(payload["edges"]) == len(result.relationships) - 2
+    assert not any(e["predicate"] in {"WITNESS_IN", "SUSPECT_IN"} for e in payload["edges"])
+    assert not await real_db.query(
+        "SELECT * FROM extracted_relationships WHERE predicate IN ('WITNESS_IN','SUSPECT_IN')"
+    )
+    with pytest.raises(APIError, match="Draft changed"):
+        await confirm_document(doc_id, ConfirmBody(extraction=result), request, {"officerId": 1})

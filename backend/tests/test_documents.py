@@ -80,6 +80,28 @@ async def test_other_officer_cannot_read_or_delete(officer_client, db, settings)
     assert path.exists()
 
 
+async def test_remove_review_draft_deletes_file(officer_client, db, settings):
+    path = settings.upload_dir / "draft.txt"
+    path.write_text("Draft evidence")
+    db.query.return_value = [{"stored_name": "draft.txt"}]
+    response = await officer_client.delete("/api/documents/3")
+    assert response.status_code == 200
+    assert not path.exists()
+    sql, params = db.query.call_args.args
+    assert "'awaiting_review'" in sql
+    assert "confirmed_at IS NULL" in sql and "graph_payload IS NULL" in sql
+    assert params == (3, 7)
+
+
+async def test_remove_retained_source_keeps_file(officer_client, db, settings):
+    path = settings.upload_dir / "retained.txt"
+    path.write_text("Saved evidence")
+    db.query.side_effect = [[], [{"document_id": 3}]]
+    response = await officer_client.delete("/api/documents/3")
+    assert response.status_code == 409
+    assert path.exists()
+
+
 async def test_upload_requires_auth_before_saving(client, db, settings):
     response = await client.post(
         "/api/documents", files={"file": ("test.pdf", b"%PDF", "application/pdf")}
