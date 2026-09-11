@@ -23,14 +23,10 @@
 }
 
 .navbar-logo {
-  font-family: var(--font-type);
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #101010;
-  background: var(--accent);
-  padding: 3px 9px;
-  border-radius: 6px;
-  letter-spacing: 1px;
+  height: 36px;
+  width: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .navbar-title {

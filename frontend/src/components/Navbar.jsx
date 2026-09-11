@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../api/auth";
+import logo from "../assets/evidex-logo.png";
 import "./Navbar.css";
 
 const NAV_LINKS = [
@@ -19,8 +20,8 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <span className="navbar-logo">CNA</span>
-        <span className="navbar-title">Criminal Network Analysis</span>
+        <img src={logo} alt="Evidex logo" className="navbar-logo" />
+        <span className="navbar-title">EVIDEX</span>
       </div>
 
       <ul className="navbar-links">
