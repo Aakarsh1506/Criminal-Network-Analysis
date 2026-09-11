@@ -67,11 +67,9 @@ function LandingPage() {
 
       {/* Content below the tape crossing */}
       <div className="cover-content">
-        <span className="cover-eyebrow">AI-Powered</span>
         <h1 className="cover-title">
-          Criminal Network
+          EVIDEX
           <br />
-          Analysis System
         </h1>
         <p className="cover-subtitle">
           Uncover connections. Predict threats. Protect society.
