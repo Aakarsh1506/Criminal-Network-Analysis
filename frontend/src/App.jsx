@@ -10,6 +10,7 @@ import UploadDoc from "./pages/UploadDoc";
 import DocumentReview from "./pages/DocumentReview";
 import CriminalListPage from "./pages/CriminalListPage";
 import AdminPanel from "./pages/AdminPanel";
+import InvestigatorAnalysis from "./pages/InvestigatorAnalysis";
 import "./App.css";
 
 const NO_NAVBAR_PATHS = ["/", "/login", "/admin"];
@@ -29,6 +30,7 @@ function AppLayout() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/search" element={<CriminalList />} />
           <Route path="/criminal/:id" element={<CriminalProfile />} />
+          <Route path="/analysis/:id" element={<InvestigatorAnalysis />} />
           <Route path="/upload" element={<UploadDoc />} />
           <Route path="/documents/:id/review" element={<DocumentReview />} />
           <Route path="/criminal-list" element={<CriminalListPage />} />

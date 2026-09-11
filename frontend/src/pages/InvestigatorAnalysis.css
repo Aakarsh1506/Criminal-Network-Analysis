@@ -1,0 +1,21 @@
+.analysis-page { max-width: 1500px; margin: 0 auto; padding: 34px 24px 60px; color: var(--text); }
+.analysis-header { margin-bottom: 20px; }
+.analysis-header h1 { margin: 4px 0 8px; color: var(--accent); }
+.analysis-header p { color: var(--text-dim); }
+.analysis-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr); gap: 20px; align-items: start; }
+.analysis-connections, .analysis-chat { min-width: 0; border: 1px solid var(--card-border); border-radius: 12px; background: #111; }
+.analysis-connections h2, .analysis-chat h2 { margin: 0; padding: 18px 20px 0; color: var(--accent); font-size: 1rem; text-transform: uppercase; letter-spacing: .06em; }
+.analysis-chat { min-height: 680px; display: flex; flex-direction: column; }
+.analysis-selected { margin: 12px 20px; color: var(--text-dim); font-size: .85rem; }
+.analysis-messages { flex: 1; min-height: 0; max-height: 560px; overflow-y: auto; padding: 10px 20px 20px; scrollbar-color: var(--accent) #171717; }
+.analysis-empty, .analysis-thinking { color: var(--text-dim); font-size: .9rem; line-height: 1.6; }
+.analysis-message { margin: 14px 0; padding: 12px 14px; border-radius: 8px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.analysis-message span { display: block; margin-bottom: 5px; color: var(--accent); font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.analysis-message p { margin: 0; }
+.analysis-message.user { background: rgba(255,255,255,.06); }
+.analysis-message.assistant { border-left: 3px solid var(--accent); background: rgba(217,169,78,.07); }
+.analysis-message.error { color: #ff9999; background: rgba(180,50,50,.12); }
+.analysis-form { display: flex; gap: 8px; padding: 14px 20px 20px; border-top: 1px solid var(--card-border); }
+.analysis-form input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--card-border); border-radius: 7px; background: #0b0b0b; color: var(--text); }
+.analysis-form .stamp-btn { white-space: nowrap; }
+@media (max-width: 900px) { .analysis-layout { grid-template-columns: 1fr; } .analysis-chat { min-height: 500px; } }

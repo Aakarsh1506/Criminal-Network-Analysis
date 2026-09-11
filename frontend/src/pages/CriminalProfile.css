@@ -151,12 +151,17 @@
 @media (max-width: 900px) {
   .dossier-grid { grid-template-columns: 1fr; }
 }
-.network-ai { margin-top: 20px; padding: 24px; border: 1px solid var(--card-border); border-radius: 12px; background: #111; color: var(--text); }
-.network-ai h3 { margin: 0 0 12px; color: var(--accent); }
+.network-ai { margin-top: 20px; padding: 24px; border: 1px solid var(--card-border); border-radius: 12px; background: linear-gradient(145deg, #171717, #101010); color: var(--text); box-shadow: 0 12px 30px rgba(0,0,0,.16); }
+.network-ai h3 { margin: 0 0 12px; color: var(--accent); letter-spacing: .04em; text-transform: uppercase; font-size: .95rem; }
 .network-ai p { color: var(--text-dim); font-size: .85rem; line-height: 1.6; margin: 12px 0; }
-.network-ai .stamp-btn { color: var(--accent); border-color: var(--accent); border-radius: 7px; }
+.network-ai .stamp-btn { color: var(--accent); border-color: var(--accent); border-radius: 7px; margin-right: 10px; margin-bottom: 4px; }
 .network-ai .stamp-btn:disabled { opacity: .55; cursor: wait; }
 .network-ai .stamp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
-.network-ai-answer { margin-top: 20px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; font-size: .9rem; }
+.network-ai-answer { margin-top: 22px; padding: 20px 22px; border: 1px solid rgba(217,169,78,.38); border-left: 4px solid var(--accent); border-radius: 8px; background: rgba(217,169,78,.07); overflow-wrap: anywhere; line-height: 1.75; font-size: .92rem; color: #f1eadc; letter-spacing: .01em; }
+.network-ai-answer::before { content: "INVESTIGATOR'S NOTE"; display: block; margin-bottom: 14px; color: var(--accent); font-size: .68rem; font-weight: 700; letter-spacing: .14em; }
+.network-ai-heading { margin: 18px 0 5px; color: #f4c96d; font-size: 1.08rem; line-height: 1.35; letter-spacing: .02em; }
+.network-ai-heading:first-child { margin-top: 0; font-size: 1.28rem; }
+.network-ai-line { margin: 0 0 9px; color: #f1eadc !important; font-size: .92rem !important; }
+.network-ai-answer strong, .network-ai-answer b { color: #f4c96d; font-weight: 700; }
 .network-ai p.network-ai-error { color: #ff9999; }
 .network-ai p.network-ai-note { font-size: .75rem; margin-bottom: 0; }

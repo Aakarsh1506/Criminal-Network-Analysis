@@ -69,6 +69,9 @@ async def explain(person_id: str, request: Request):
     except ValueError:
         raise APIError("Select a node or relationship to generate AI insight.", 400) from None
     selection = body.get("selection") if isinstance(body, dict) else None
+    question = body.get("question", "") if isinstance(body, dict) else ""
+    if not isinstance(question, str) or len(question) > 2000:
+        raise APIError("Question must be 2,000 characters or fewer.", 400)
     validate_selection(selection)
     state = request.app.state
     use_ollama = state.settings.extraction_provider == "ollama"
@@ -87,11 +90,14 @@ async def explain(person_id: str, request: Request):
                 raise APIError("Profile not found.", 404)
             network = await fetch_network(person_id, state.graph.run)
             context = build_insight_context(network, selection)
+            if question.strip():
+                context["investigator_question"] = question.strip()
             if use_ollama:
                 import json
                 explanation = await explain_insight(
                     state.http_client, state.settings,
                     json.dumps(context, ensure_ascii=False, separators=(",", ":")),
+                    thinking=bool(question.strip()),
                 )
             else:
                 explanation = await explain_network(

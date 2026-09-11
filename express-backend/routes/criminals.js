@@ -199,6 +199,10 @@ router.post("/:id/explain", async (req, res) => {
     if (!profile) return res.status(404).json({ error: "Profile not found." });
     const network = await fetchNetwork(req.params.id, runCypher);
     const insightContext = buildInsightContext(network, req.body.selection);
+    if (typeof req.body.question === "string" && req.body.question.trim()) {
+      if (req.body.question.length > 2000) return res.status(400).json({ error: "Question must be 2,000 characters or fewer." });
+      insightContext.investigator_question = req.body.question.trim();
+    }
     const explanation = await explainNetwork(profile, { insightContext });
     res.json({ explanation });
   } catch (err) {

@@ -19,6 +19,7 @@ async def explain_network(profile, *, api_key, client, model="openai/gpt-oss-20b
         raise AIError("Groq API key is not configured.", 503)
     criminal, relations = profile["criminal"], profile["relations"]
     # Send only the source fields needed for the summary, with explicit data limits.
+    chat_instruction = "" if insight_context is None or not insight_context.get("investigator_question") else " Answer only the investigator's question in about 100 words. Think through the evidence internally, then give one concise answer. You may include one brief sentence labeled 'Investigator insight:' when useful. Do not output Gaps, Next Checks, Investigator Question, or Answer headings, and do not repeat the question."
     context = json.dumps(
         insight_context if insight_context is not None else {
             "profile": {key: criminal.get(key) for key in ("id", "name", "recordStatus")},
@@ -46,7 +47,7 @@ async def explain_network(profile, *, api_key, client, model="openai/gpt-oss-20b
                     "temperature": 0.2,
                     "max_completion_tokens": 1200,
                     "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "system", "content": SYSTEM_PROMPT + chat_instruction},
                         {"role": "user", "content": context},
                     ],
                 },

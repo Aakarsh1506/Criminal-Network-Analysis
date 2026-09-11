@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 
+function formatInsight(text) {
+  return text.split("\n").map((line, index) => {
+    const heading = line.trim().match(/^\*\*(.+?)\*\*:?$/);
+    if (heading) return <h4 className="network-ai-heading" key={`${index}-${line}`}>{heading[1]}</h4>;
+    const parts = line.split(/(\*\*.+?\*\*)/g);
+    return <p className="network-ai-line" key={`${index}-${line}`}>{parts.map((part, partIndex) => {
+      const bold = part.match(/^\*\*(.+?)\*\*$/);
+      return bold ? <strong key={partIndex}>{bold[1]}</strong> : part;
+    })}</p>;
+  });
+}
+
 export default function NetworkExplanation({ id, selection, onClear }) {
   const [explanation, setExplanation] = useState("");
   const [error, setError] = useState("");
@@ -41,14 +53,14 @@ export default function NetworkExplanation({ id, selection, onClear }) {
       <h3 id="network-ai-title">AI insight</h3>
       <p>{selection ? `Selected: ${selection.label}` : "Select a node or relationship in the graph to enable AI insight."}</p>
       {selection && <p>Review the evidence, investigative significance, and follow-up checks for this selection. The configured AI provider receives the relevant records.</p>}
-      <button className="stamp-btn" onClick={explain} disabled={!selection || loading}>
+      <button className="stamp-btn small" onClick={explain} disabled={!selection || loading}>
         {loading ? "Generating insight…" : explanation ? "Regenerate insight" : "AI insight"}
       </button>
       {selection && <button className="stamp-btn small" type="button" onClick={onClear}>Clear selection</button>}
       {loading && <p role="status">Reading the available records…</p>}
       {error && <p className="network-ai-error" role="alert">{error}</p>}
-      {explanation && <div className="network-ai-answer" aria-live="polite">{explanation}</div>}
-      <p className="network-ai-note">AI can make mistakes. Verify against source records. Shared attributes do not establish a personal relationship or guilt.</p>
+      {explanation && <div className="network-ai-answer" aria-live="polite">{formatInsight(explanation)}</div>}
+
     </section>
   );
 }

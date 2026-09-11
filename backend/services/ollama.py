@@ -7,8 +7,15 @@ from ..errors import APIError
 logger = logging.getLogger("uvicorn.error.extraction")
 
 
-async def explain_insight(client, settings, context):
+async def explain_insight(client, settings, context, *, thinking=False):
     """Generate an investigator insight with the locally running Ollama model."""
+    chat_prompt = (
+        " Answer only the investigator's question in about 100 words. Think through the "
+        "evidence internally, then give one concise answer. You may include one brief "
+        "sentence labeled 'Investigator insight:' when useful. Do not output headings such "
+        "as Gaps, Next Checks, Investigator Question, or Answer, and do not repeat the question."
+        if thinking else ""
+    )
     response = await client.post(
         settings.ollama_base_url.rstrip("/") + "/api/chat",
         json={
@@ -21,15 +28,17 @@ async def explain_insight(client, settings, context):
                         "with sections Recorded facts, Investigative significance, Gaps and "
                         "alternative explanations, and Next checks. Use only supplied records. "
                         "Do not invent facts, infer guilt, predict criminality, or treat shared "
-                        "attributes as proof of association. Cite supplied IDs."
+                        "attributes as proof of association. Cite supplied IDs." + chat_prompt
                     ),
                 },
                 {"role": "user", "content": context},
             ],
             "stream": False,
-            "think": False,
+            "think": thinking,
             "keep_alive": "10m",
-            "options": {"temperature": 0.2, "num_predict": 1200, "num_ctx": 16384},
+            # Thinking tokens and answer tokens share num_predict. Leave enough
+            # room for both, otherwise qwen3 can finish with an empty content field.
+            "options": {"temperature": 0.2, "num_predict": 800 if thinking else 1200, "num_ctx": 16384},
         },
         timeout=settings.ollama_timeout,
     )
@@ -41,7 +50,8 @@ async def explain_insight(client, settings, context):
     if not response.is_success:
         raise APIError("Ollama could not generate an insight. Check the local Ollama server.", 502)
     body = response.json()
-    answer = (body.get("message") or {}).get("content")
+    message = body.get("message") or {}
+    answer = message.get("content") or body.get("response")
     if not isinstance(answer, str) or not answer.strip():
         raise APIError("Ollama returned an empty insight. Please try again.", 502)
     return answer.strip()

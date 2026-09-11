@@ -560,15 +560,36 @@ async def _extract_chunk_once(text, source_type, settings, client, correction, c
     def parse_payload(payload):
         if catalog is not None:
             schema_model.model_validate(payload)
+            # Ollama sometimes emits an exact entity name despite the ref-only prompt.
+            # Normalize only exact, unique names/identifiers; unknown endpoints remain invalid.
+            by_name = {}
+            for entity in catalog:
+                for value in (entity.name, entity.identifier):
+                    if value:
+                        by_name.setdefault(value.casefold(), []).append(entity.ref)
+            normalized = []
+            for relation in payload["relationships"]:
+                item = dict(relation)
+                for endpoint in ("subject", "object"):
+                    matches = by_name.get(str(item[endpoint]).casefold(), [])
+                    if len(matches) == 1:
+                        item[endpoint] = matches[0]
+                normalized.append(item)
             refs = {entity.ref for entity in catalog}
-            if any(
-                r[endpoint] not in refs
-                for r in payload["relationships"]
+            if not (local and correction) and any(
+                relation[endpoint] not in refs
+                for relation in normalized
                 for endpoint in ("subject", "object")
             ):
                 raise GenerationError("Relationship endpoints must use the supplied entity refs.")
+            payload = {**payload, "relationships": normalized}
             payload = {**payload, "entities": [entity.model_dump() for entity in catalog]}
-        return validate_extraction(resolve_evidence_spans(payload, text), text)
+        # On Ollama's correction pass, preserve malformed relationships for review
+        # instead of failing the entire document; valid entities and edges continue.
+        return validate_extraction(
+            resolve_evidence_spans(payload, text), text,
+            exclude_invalid=bool(catalog is not None and correction is not None),
+        )
 
     # Provider schema failures get one JSON-mode correction; local validation stays strict.
     response_format = (
