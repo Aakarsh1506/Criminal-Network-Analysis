@@ -12,8 +12,8 @@ import "./UploadDoc.css";
 const STATUS = {
   awaiting_review: "Ready to review · confirmation needed",
   stored: "Stored · ready to process", queued: "Queued", processing: "Extracting text and entities",
-  syncing: "Saving relationships to Neo4j", complete: "Saved to PostgreSQL and Neo4j",
-  failed: "Processing failed", sync_failed: "Saved to PostgreSQL · Neo4j sync failed",
+  syncing: "Saving Relationships", complete: "Relations Saved",
+  failed: "Processing failed", sync_failed: "Sync Failed",
   cancelled: "Processing stopped",
 };
 const BUSY = new Set(["queued", "processing", "syncing"]);
@@ -99,8 +99,6 @@ export default function UploadDoc() {
         onChange={(event) => setSourceType(event.target.value)}>
         {Object.entries(types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select>
-      <p>PDF, PNG, JPEG, TIFF, TXT, CSV, JSON, or Word (.docx). Up to 20 MB, 30 scanned pages, and 60,000 extracted characters.</p>
-      <p>Scans use OCR. Records are analyzed using the configured AI provider; you can review every entity and relationship before confirming the database save.</p>
       <input ref={input} className="upload-input-hidden" type="file" accept={extensions.join(",")}
         onChange={upload} />
       <button className="stamp-btn upload-btn-center" disabled={uploading || loading || !extensions.length}
