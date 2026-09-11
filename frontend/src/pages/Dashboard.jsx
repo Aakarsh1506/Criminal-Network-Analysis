@@ -132,7 +132,7 @@ function Dashboard() {
       </div>
 
       <div className="working-section">
-        <h3 className="working-heading">Currently working on / researching</h3>
+        <h3 className="working-heading">Currently Pinned</h3>
 
         <div className="working-grid">
           {/* Map now occupies the full wide (2fr) column instead of a single narrow slot */}
