@@ -7,6 +7,7 @@ from ..services.groq import explain_network
 from ..services.insight import build_insight_context, validate_selection
 from ..services.network import fetch_network
 from ..services.ollama import explain_insight
+from ..services.rag import retrieve_context
 
 router = APIRouter(
     prefix="/api/criminals", tags=["Criminals"], dependencies=[Depends(require_auth)]
@@ -63,7 +64,7 @@ async def get_network(person_id: str, request: Request):
 
 
 @router.post("/{person_id}/explain")
-async def explain(person_id: str, request: Request):
+async def explain(person_id: str, request: Request, officer=Depends(require_auth)):
     try:
         body = await request.json()
     except ValueError:
@@ -92,6 +93,16 @@ async def explain(person_id: str, request: Request):
             context = build_insight_context(network, selection)
             if question.strip():
                 context["investigator_question"] = question.strip()
+                context["retrieved_evidence"] = [
+                    {
+                        "documentId": row["document_id"],
+                        "document": row["original_name"],
+                        "sourceStart": row["source_start"],
+                        "sourceEnd": row["source_end"],
+                        "text": row["chunk_text"],
+                    }
+                    for row in await retrieve_context(state.db, officer["officerId"], question)
+                ]
             if use_ollama:
                 import json
                 explanation = await explain_insight(

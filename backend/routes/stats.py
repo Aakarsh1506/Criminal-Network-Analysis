@@ -28,11 +28,16 @@ async def get_stats(request: Request):
         )
         traced = 0
         try:
-            rows = await db.query("SELECT COUNT(*)::int AS count FROM associations")
-            traced = rows[0]["count"]
-        except UndefinedTable:
-            # Older databases may not have the optional associations table.
-            pass
+            graph_rows = await request.app.state.graph.run("MATCH ()-[r]->() RETURN count(r) AS count")
+            if graph_rows:
+                traced = int(graph_rows[0].get("count", 0))
+        except Exception:
+            try:
+                rows = await db.query("SELECT COUNT(*)::int AS count FROM associations")
+                traced = rows[0]["count"]
+            except UndefinedTable:
+                # Older databases may not have the optional associations table.
+                pass
         return {
             "totalCriminals": totals[0]["count"],
             "totalCases": cases[0]["count"],

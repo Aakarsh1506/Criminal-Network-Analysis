@@ -72,6 +72,8 @@ class Attribute(StrictModel):
         "registration",
         "phone",
         "description",
+        "family_known",
+        "record_status",
     ]
     value: str = Field(min_length=1, max_length=500)
 

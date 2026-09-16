@@ -4,9 +4,8 @@
   --bg: #050505;
   --panel: #111110;
   --panel-edge: #262421;
-  --ink: #f4efe2;       /* brightened — was too dim to read */
-  --ink-dim: #b5ad9b;    /* brightened — was too dim to read */
-  --red: #d1453c;
+  --ink: #f4efe2;      
+  --ink-dim: #b5ad9b;  
 }
 
 body {

@@ -7,7 +7,7 @@ export default function RemoveDocumentButton({ document, disabled, onRemoved, on
 
   async function remove() {
     if (!allowed || removing || disabled) return;
-    if (!window.confirm(`Remove “${document.name}”?\n\nThis permanently deletes the uploaded file and its extraction draft. This cannot be undone.`)) return;
+    if (!window.confirm(`Remove “${document.name}”?\n\nThis permanently deletes the uploaded file, source text, extracted entities, relationships, and AI search chunks. Shared criminal and case records remain. This cannot be undone.`)) return;
     setRemoving(true);
     onBusyChange?.(true);
     try {
@@ -19,7 +19,7 @@ export default function RemoveDocumentButton({ document, disabled, onRemoved, on
 
   return <button type="button" className="stamp-btn" onClick={remove}
     disabled={!allowed || disabled || removing}
-    title={allowed ? "Remove this document and its draft" : "Processing documents and confirmed extraction sources cannot be removed"}>
+    title={allowed ? "Remove this document and its extracted data" : "Stop processing before removing this document"}>
     {removing ? "Removing…" : "Remove document"}
   </button>;
 }

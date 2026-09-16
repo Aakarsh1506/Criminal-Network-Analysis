@@ -10,6 +10,7 @@ from ..errors import APIError
 from .document_text import extract_text
 from .extraction import Extraction, extract_entities
 from .ingestion_store import persist_extraction, sync_graph
+from .rag import index_document
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ async def process_document(state, doc):
                         "UPDATE officer_documents SET extracted_text=%s WHERE document_id=%s",
                         (text, document_id),
                     )
+                await index_document(state.db, document_id, text)
                 if doc.get("extraction") is not None:
                     result = Extraction.model_validate(doc["extraction"])
                 else:
@@ -96,9 +98,15 @@ async def process_document(state, doc):
         logger.info("Document %s processing stopped by officer", document_id)
         return
     except Exception as exc:
-        logger.warning("Document %s processing failed (%s)", document_id, type(exc).__name__)
+        safe_message = exc.message if isinstance(exc, APIError) else "Processing failed. Retry this document."
+        logger.warning(
+            "Document %s processing failed (%s): %s",
+            document_id,
+            type(exc).__name__,
+            safe_message,
+        )
         message = (
-            exc.message if isinstance(exc, APIError) else "Processing failed. Retry this document."
+            safe_message
         )
         await state.db.query(
             """UPDATE officer_documents

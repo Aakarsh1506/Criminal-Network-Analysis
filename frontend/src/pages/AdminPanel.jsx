@@ -109,7 +109,7 @@ function AdminPanel() {
           </label>
 
           <label>
-            Temporary password
+            Password
             <div className="password-field">
               <input
                 type={showPassword ? "text" : "password"}

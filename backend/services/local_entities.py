@@ -59,7 +59,7 @@ PATTERNS = [
 # Explicit fields complement statistical NER; the field label is not part of the name.
 FIELDS = re.compile(
     r"^\s*(?:[-*]\s*)?(Name|Suspect(?: name)?|Witness(?: name)?|Complainant(?: name)?|"
-    r"Organization|Company|Crime type|Offen[cs]e)\s*:\s*([^\n,;]+)",
+    r"Organization|Company|Crime type|Crime committed|Crime|Offen[cs]e(?: committed)?)\s*:\s*([^\n,;]+)",
     re.I | re.M,
 )
 LOCATION_FIELDS = re.compile(
@@ -131,7 +131,7 @@ def extract_local(text, model):
             else "Organization"
             if label in {"organization", "company"}
             else "CrimeType"
-            if label in {"crime type", "offence", "offense"}
+            if label in {"crime type", "crime committed", "crime", "offence", "offense", "offence committed", "offense committed"}
             else "Person"
         )
         start, end = match.span(2)
@@ -174,19 +174,23 @@ def extract_local(text, model):
         fields = []
         for line in tail.splitlines()[1:]:
             field = re.fullmatch(
-                r"\s*(Age|Phone|Mobile|Alias|DOB|City|State)\s*:\s*(.+?)\s*", line, re.I
+                r"\s*(Age|Phone|Mobile|Alias|DOB|City|State|Last seen|Family(?: known)?|Status|Record status)\s*:\s*(.+?)\s*", line, re.I
             )
             if field is None:
                 break
-            key = {"mobile": "phone"}.get(field[1].lower(), field[1].lower())
+            key = {"mobile": "phone", "last seen": "last_seen", "family": "family_known", "family known": "family_known", "status": "record_status", "record status": "record_status"}.get(field[1].lower(), field[1].lower())
             value = field[2]
             if len(value) > 500:
                 break
-            if key == "dob":
+            if key in {"dob", "last_seen"}:
                 try:
                     if date.fromisoformat(value).isoformat() != value:
                         break
                 except ValueError:
+                    # A place-only "Last seen:" belongs to the location candidate;
+                    # only store a person last_seen attribute when it is a date.
+                    if key == "last_seen":
+                        continue
                     break
             fields.append(Attribute(key=key, value=value))
             if len(fields) == 20:

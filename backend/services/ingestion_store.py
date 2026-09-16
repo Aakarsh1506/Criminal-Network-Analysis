@@ -92,9 +92,17 @@ async def canonical_entity(tx, entity, entity_id, props):
         if kind == "Person":
             await tx.query(
                 """INSERT INTO persons (person_id, name, alias, dob, age, height_cm,
-                   city, state, last_seen, record_status)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'Extracted (unverified)')
-                   ON CONFLICT (person_id) DO NOTHING""",
+                   city, state, last_seen, family_known, record_status)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   ON CONFLICT (person_id) DO UPDATE SET
+                     alias=COALESCE(persons.alias, EXCLUDED.alias),
+                     dob=COALESCE(persons.dob, EXCLUDED.dob),
+                     age=COALESCE(persons.age, EXCLUDED.age),
+                     height_cm=COALESCE(persons.height_cm, EXCLUDED.height_cm),
+                     city=COALESCE(persons.city, EXCLUDED.city),
+                     state=COALESCE(persons.state, EXCLUDED.state),
+                     last_seen=COALESCE(persons.last_seen, EXCLUDED.last_seen),
+                     family_known=COALESCE(persons.family_known, EXCLUDED.family_known)""",
                 (
                     canonical,
                     entity.name,
@@ -105,6 +113,8 @@ async def canonical_entity(tx, entity, entity_id, props):
                     props.get("city"),
                     props.get("state"),
                     props.get("last_seen"),
+                    props.get("family_known"),
+                    props.get("record_status") or "Extracted (unverified)",
                 ),
             )
         elif kind == "Case":
@@ -229,13 +239,31 @@ async def persist_extraction(db, document_id, result):
                 }
             )
             # Populate legacy single-value case columns only for newly imported cases.
-            if relation.predicate in ("OCCURRED_AT", "OF_TYPE") and str(subject["id"]).startswith(
-                "D"
-            ):
+            if relation.predicate in ("OCCURRED_AT", "OF_TYPE") and subject["kind"] == "Case":
                 column = "location_id" if relation.predicate == "OCCURRED_AT" else "crime_id"
                 await tx.query(
                     f"UPDATE cases SET {column}=COALESCE({column},%s) WHERE case_id=%s",
                     (target["id"], subject["id"]),
+                )
+        # Some local models return the explicit crime field as an entity but omit
+        # the OF_TYPE edge. When the FIR has exactly one case and one crime type,
+        # preserve that explicit source assertion without guessing across cases.
+        cases = [entity for entity in result.entities if entity.kind == "Case"]
+        crime_types = [
+            entity for entity in result.entities
+            if entity.kind == "CrimeType"
+            and any(word in entity.evidence.casefold() for word in ("crime", "offence", "offense"))
+        ]
+        if len(cases) == 1 and len(crime_types) == 1:
+            case_ref, crime_ref = refs[cases[0].ref], refs[crime_types[0].ref]
+            if not any(
+                relation.predicate == "OF_TYPE"
+                and relation.subject == cases[0].ref
+                for relation in result.relationships
+            ):
+                await tx.query(
+                    "UPDATE cases SET crime_id=COALESCE(crime_id,%s) WHERE case_id=%s",
+                    (crime_ref["id"], case_ref["id"]),
                 )
         payload = {"document_id": document_id, "nodes": nodes, "edges": edges}
         await tx.query(

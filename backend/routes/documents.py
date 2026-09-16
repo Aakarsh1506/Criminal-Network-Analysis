@@ -310,23 +310,25 @@ async def get_document(document_id: int, request: Request, officer=Depends(requi
 @router.delete("/{document_id}")
 async def delete_document(document_id: int, request: Request, officer=Depends(require_auth)):
     with api_errors("Failed to delete document"):
-        rows = await request.app.state.db.query(
-            """DELETE FROM officer_documents WHERE document_id = %s AND officer_id = %s
-               AND processing_status IN ('stored','failed','awaiting_review')
-               AND confirmed_at IS NULL AND graph_payload IS NULL
-               AND NOT EXISTS (SELECT 1 FROM extracted_entities e
-                               WHERE e.document_id=officer_documents.document_id)
-               RETURNING stored_name""",
+        existing = await request.app.state.db.query(
+            "SELECT document_id, stored_name, processing_status FROM officer_documents "
+            "WHERE document_id=%s AND officer_id=%s",
             (document_id, officer["officerId"]),
         )
-        if not rows:
-            existing = await request.app.state.db.query(
-                "SELECT document_id FROM officer_documents WHERE document_id = %s AND officer_id = %s",
-                (document_id, officer["officerId"]),
-            )
-            if not existing:
-                raise APIError("Document not found", 404)
-            raise APIError("Document is processing or retained as an extraction source", 409)
-        path = document_path(request.app.state.settings.upload_dir, rows[0]["stored_name"])
+        if not existing:
+            raise APIError("Document not found", 404)
+        if existing[0].get("processing_status") in ("queued", "processing", "syncing"):
+            raise APIError("Stop document processing before removing it.", 409)
+        await request.app.state.db.query(
+            """WITH removed_relationships AS (
+                 DELETE FROM extracted_relationships WHERE document_id=%s
+               ), removed_entities AS (
+                 DELETE FROM extracted_entities WHERE document_id=%s
+               )
+               DELETE FROM officer_documents WHERE document_id=%s AND officer_id=%s
+               RETURNING stored_name""",
+            (document_id, document_id, document_id, officer["officerId"]),
+        )
+        path = document_path(request.app.state.settings.upload_dir, existing[0]["stored_name"])
         await run_in_threadpool(remove_file, path)
         return {"ok": True}

@@ -248,7 +248,12 @@ function Dashboard() {
           <div className="pin-number">{stats ? stats.totalCriminals : "…"}</div>
           <p className="pin-note">Criminals currently tracked</p>
         </div>
-
+      <div className="pin-card card-4">
+          <span className="pin" />
+          <h3>Traced connections</h3>
+          <div className="pin-number">{stats ? stats.tracedConnections : "…"}</div>
+          <p className="pin-note">Links between known associates</p>
+        </div>
         <div className="pin-card card-2 wide">
           <span className="pin" />
           <h3>Crime tag frequency</h3>
@@ -278,12 +283,6 @@ function Dashboard() {
           </ul>
         </div>
 
-        <div className="pin-card card-4">
-          <span className="pin" />
-          <h3>Traced connections</h3>
-          <div className="pin-number">{stats ? stats.tracedConnections : "…"}</div>
-          <p className="pin-note">Links between known associates</p>
-        </div>
       </div>
     </div>
   );

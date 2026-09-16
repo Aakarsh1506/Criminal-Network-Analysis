@@ -48,6 +48,16 @@ ALTER TABLE extracted_relationships ADD CONSTRAINT extracted_relationships_predi
   CHECK (predicate IN ('MENTIONED_IN','WITNESS_IN','SUSPECT_IN','OCCURRED_AT','OF_TYPE',
     'EMPLOYED_BY','OWNS','CONTACTED','RESIDES_IN','SEEN_AT'));
 CREATE INDEX IF NOT EXISTS documents_processing_idx ON officer_documents(processing_status);
+CREATE TABLE IF NOT EXISTS document_chunks (
+  chunk_id BIGSERIAL PRIMARY KEY,
+  document_id INTEGER NOT NULL REFERENCES officer_documents(document_id) ON DELETE CASCADE,
+  chunk_text TEXT NOT NULL,
+  source_start INTEGER NOT NULL,
+  source_end INTEGER NOT NULL,
+  search_vector tsvector NOT NULL
+);
+CREATE INDEX IF NOT EXISTS document_chunks_search_idx ON document_chunks USING GIN(search_vector);
+CREATE INDEX IF NOT EXISTS document_chunks_document_idx ON document_chunks(document_id);
 -- Do not invent a state when a report only names a city.
 ALTER TABLE locations ALTER COLUMN state DROP NOT NULL;
 
