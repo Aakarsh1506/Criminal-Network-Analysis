@@ -1,0 +1,20 @@
+.activity-timeline { margin-top: 20px; padding: 22px; border: 1px solid var(--card-border); border-radius: 12px; background: #131313; color: var(--text); }
+.activity-timeline h3 { margin-bottom: 8px; color: var(--accent); font-size: 1rem; }
+.activity-timeline header p { color: var(--text-dim); font-size: .8rem; line-height: 1.6; margin-bottom: 18px; }
+.activity-scroll { max-height: 560px; overflow-y: auto; scrollbar-color: var(--accent) #171717; padding: 3px 10px 3px 3px; }
+.activity-timeline ol { list-style: none; margin: 0 0 0 6px; padding: 0 0 0 20px; border-left: 1px solid var(--accent-dim); }
+.activity-timeline li { position: relative; padding: 0 0 24px; overflow-wrap: anywhere; }
+.activity-timeline li::before { content: ""; position: absolute; width: 7px; height: 7px; top: 6px; left: -24px; border-radius: 50%; background: var(--accent); }
+.activity-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-size: .7rem; color: var(--text-dim); margin-bottom: 8px; }
+.activity-meta > span:first-child { color: var(--accent); }
+.activity-subject { font-size: .85rem; font-weight: 600; }
+.activity-timeline blockquote { margin: 10px 0; padding: 10px 12px; background: #ffffff06; border-left: 2px solid #514632; font-size: .82rem; line-height: 1.6; white-space: pre-wrap; }
+.activity-timeline small, .activity-empty { font-size: .78rem; color: var(--text-dim); }
+.activity-timeline a { text-decoration: underline; color: var(--accent); }
+.activity-timeline button { border: 1px solid var(--accent-dim); color: var(--accent); padding: 5px 10px; border-radius: 4px; }
+.activity-cases { border-top: 1px solid var(--card-border); margin-top: 14px; padding-top: 14px; font-size: .8rem; }
+.activity-cases summary { cursor: pointer; color: var(--accent); margin-bottom: 16px; }
+.activity-timeline :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.activity-needs-review .activity-review-note { color: #efb17c; font-size: .8rem; line-height: 1.6; margin: 8px 0; }
+.activity-needs-review details { margin-bottom: 10px; }
+.activity-needs-review summary { cursor: pointer; font-size: .75rem; color: var(--text-dim); }

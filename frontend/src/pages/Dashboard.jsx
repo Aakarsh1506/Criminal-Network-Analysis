@@ -6,9 +6,11 @@ import { fetchWorkspace, unpinCriminal, removeFromWorkingList } from "../api/wor
 import NetworkGraph from "../components/NetworkGraph";
 import RelationGraph from "../components/RelationGraph";
 import "./Dashboard.css";
+import { useTranslation } from "../i18n";
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -99,22 +101,22 @@ function Dashboard() {
           <input
             type="text"
             className="search-input"
-            placeholder="Search a name, or type a crime — robbery, fraud..."
+            placeholder={`${t("search")} a name, or type a crime — robbery, fraud...`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setShowDropdown(true)}
             onKeyDown={handleKeyDown}
           />
           <button className="stamp-btn small" onClick={handleSearch}>
-            Search
+            {t("search")}
           </button>
         </div>
 
         {showDropdown && (
           <div className="tag-note">
             <div className="tag-note-head">
-              <span>Known crime tags</span>
-              <button onClick={() => setShowDropdown(false)}>Close</button>
+              <span>{t("crimeFrequency")}</span>
+              <button onClick={() => setShowDropdown(false)}>{t("close")}</button>
             </div>
             <div className="tag-chip-list">
               {presetTags.map((tag) => (
@@ -132,7 +134,7 @@ function Dashboard() {
       </div>
 
       <div className="working-section">
-        <h3 className="working-heading">Currently Pinned</h3>
+        <h3 className="working-heading">{t("pinned")}</h3>
 
         <div className="working-grid">
           {/* Map now occupies the full wide (2fr) column instead of a single narrow slot */}
@@ -140,20 +142,20 @@ function Dashboard() {
             {pinnedCriminal ? (
               <>
                 <div className="working-map-toolbar">
-                  <div className="graph-toggle" role="tablist" aria-label="Graph view">
+                  <div className="graph-toggle" role="tablist" aria-label={t("networkAnalysis")}>
                     <button
                       type="button"
                       className={`graph-toggle-btn ${graphMode === "map" ? "graph-toggle-active" : ""}`}
                       onClick={() => setGraphMode("map")}
                     >
-                      Map
+                      {t("map") || "Map"}
                     </button>
                     <button
                       type="button"
                       className={`graph-toggle-btn ${graphMode === "network" ? "graph-toggle-active" : ""}`}
                       onClick={() => setGraphMode("network")}
                     >
-                      Network
+                      {t("network") || "Network"}
                     </button>
                   </div>
                 </div>
@@ -176,7 +178,7 @@ function Dashboard() {
               </>
             ) : (
               <div className="working-empty">
-                <p className="empty-note">Not working on anyone currently</p>
+                <p className="empty-note">{t("noWorking")}</p>
               </div>
             )}
           </div>
@@ -189,7 +191,7 @@ function Dashboard() {
                   <img src={pinnedCriminal.photo} alt={pinnedCriminal.name} className="mini-photo" />
                   <h4>{pinnedCriminal.name}</h4>
                   <p className="dossier-alias">Known as "{pinnedCriminal.alias}"</p>
-                  <div className="dossier-row"><span>Last seen</span><span>{pinnedCriminal.lastSeen}</span></div>
+                  <div className="dossier-row"><span>{t("lastSeen")}</span><span>{pinnedCriminal.lastSeen}</span></div>
                   <div className="tag-row">
                     {pinnedCriminal.crimeTags.map((tag) => (
                       <span key={tag} className="tag-stamp">{tag}</span>
@@ -197,16 +199,16 @@ function Dashboard() {
                   </div>
                   <div className="mini-actions">
                     <button className="stamp-btn small" onClick={() => navigate(`/criminal/${pinnedCriminal.id}`)}>
-                      Open file
+                      {t("openFile") || "Open file"}
                     </button>
                     <button className="stamp-btn small" onClick={handleUnpin}>
-                      Unpin
+                      {t("unpin") || "Unpin"}
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="working-empty">
-                  <p className="empty-note">Not working on anyone currently</p>
+                <p className="empty-note">{t("noWorking")}</p>
                 </div>
               )}
             </div>
@@ -214,9 +216,9 @@ function Dashboard() {
             <div className="working-side-divider" />
 
             <div className="working-side-bottom">
-              <h4 className="working-list-title">On the list</h4>
+              <h4 className="working-list-title">{t("onTheList") || "On the list"}</h4>
               {workingList.length === 0 ? (
-                <p className="empty-note">No cases added yet</p>
+                <p className="empty-note">{t("noCases") || "No cases added yet"}</p>
               ) : (
                 <ul className="working-list-items">
                   {workingList.map((c) => (
@@ -244,19 +246,19 @@ function Dashboard() {
       <div className="pinboard">
         <div className="pin-card card-1">
           <span className="pin" />
-          <h3>Records on file</h3>
+              <h3>{t("recordsOnFile")}</h3>
           <div className="pin-number">{stats ? stats.totalCriminals : "…"}</div>
-          <p className="pin-note">Criminals currently tracked</p>
+          <p className="pin-note">{t("tracked") || "Criminals currently tracked"}</p>
         </div>
       <div className="pin-card card-4">
           <span className="pin" />
-          <h3>Traced connections</h3>
+              <h3>{t("tracedConnections")}</h3>
           <div className="pin-number">{stats ? stats.tracedConnections : "…"}</div>
-          <p className="pin-note">Links between known associates</p>
+          <p className="pin-note">{t("linksKnown")}</p>
         </div>
         <div className="pin-card card-2 wide">
           <span className="pin" />
-          <h3>Crime tag frequency</h3>
+          <h3>{t("crimeFrequency")}</h3>
           <div className="bar-list">
             {tagCounts.map(([tag, count]) => (
               <div className="bar-row" key={tag}>
@@ -272,7 +274,7 @@ function Dashboard() {
 
         <div className="pin-card card-3">
           <span className="pin" />
-          <h3>Cities under watch</h3>
+          <h3>{t("citiesWatch")}</h3>
           <ul className="city-list">
             {cityCounts.map(([city, count]) => (
               <li key={city}>

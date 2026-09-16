@@ -5,17 +5,19 @@ import {
   fetchWorkspace, pinCriminal, unpinCriminal,
   addToWorkingList, removeFromWorkingList,
 } from "../api/workspace";
-import NetworkExplanation from "../components/NetworkExplanation";
+import ActivityTimeline from "../components/ActivityTimeline";
 import NetworkGraph from "../components/NetworkGraph";
 import BackButton from "../components/BackButton";
 import "./CriminalProfile.css";
 import RelationGraph from "../components/RelationGraph";
+import { useTranslation } from "../i18n";
 
 function CriminalProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  const [graphRevision, setGraphRevision] = useState(0);
+  const [connectedLocation, setConnectedLocation] = useState(null);
   const [selection, setSelection] = useState(null);
   const [criminal, setCriminal] = useState(null);
   const [relations, setRelations] = useState([]);
@@ -57,7 +59,7 @@ function CriminalProfile() {
   }, [id]);
 
   if (loading) {
-    return <div className="dossier-page"><p className="empty-note">Loading file…</p></div>;
+    return <div className="dossier-page"><p className="empty-note">{t("loading")}</p></div>;
   }
 
   if (notFound || !criminal) {
@@ -70,6 +72,9 @@ function CriminalProfile() {
   }
 
   const isPinned = pinnedId === criminal.id;
+  const location = (connectedLocation?.id === id && connectedLocation.location) || criminal.location;
+  const profileLocation = [location?.city, location?.state].filter(Boolean).join(", ");
+  const displayedCriminal = { ...criminal, location };
 
   const handlePinToggle = async () => {
     try {
@@ -113,21 +118,22 @@ function CriminalProfile() {
               <p className="dossier-alias">Known as "{criminal.alias}"</p>
             </div>
 
-            <div className="dossier-row"><span>Date of birth</span><span>{criminal.dob}</span></div>
+            <div className="dossier-row"><span>{t("dateBirth")}</span><span>{criminal.dob}</span></div>
             <div className="dossier-row"><span>Age</span><span>{criminal.age}</span></div>
-            <div className="dossier-row"><span>Height</span><span>{criminal.heightCm} cm</span></div>
-            <div className="dossier-row"><span>Last seen</span><span>{criminal.lastSeen}</span></div>
-            <div className="dossier-row"><span>Status</span><span>{criminal.recordStatus}</span></div>
+            <div className="dossier-row"><span>{t("height")}</span><span>{criminal.heightCm} cm</span></div>
+            <div className="dossier-row"><span>{t("connectedLocation")}</span><span>{profileLocation || t("locationNotRecorded")}</span></div>
+            <div className="dossier-row"><span>{t("lastSeen")}</span><span>{criminal.lastSeenDate || t("locationNotRecorded")}</span></div>
+            <div className="dossier-row"><span>{t("status")}</span><span>{criminal.recordStatus}</span></div>
 
             {criminal.familyKnown && (
               <div className="dossier-section">
-                <h4>Family known</h4>
+                <h4>{t("familyKnown")}</h4>
                 <p>{criminal.familyKnown}</p>
               </div>
             )}
 
             <div className="dossier-section">
-              <h4>Crimes committed</h4>
+              <h4>{t("crimesCommitted")}</h4>
               <div className="tag-row">
                 {criminal.crimeTags.map((tag) => <span key={tag} className="tag-stamp">{tag}</span>)}
               </div>
@@ -135,7 +141,7 @@ function CriminalProfile() {
 
             {criminal.cases && criminal.cases.length > 0 && (
               <div className="dossier-section">
-                <h4>Case history</h4>
+                <h4>{t("caseHistory")}</h4>
                 {criminal.cases.map((c) => (
                   <div className="dossier-row" key={c.caseId}>
                     <span>{c.caseId} — {c.crime}, {c.location}</span>
@@ -182,9 +188,9 @@ function CriminalProfile() {
           >
             {graphMode === "network" ? (
               <RelationGraph
-                key={`${id}:${graphRevision}`}
+                key={id}
                 onSelectionChange={setSelection}
-                mainCriminal={criminal}
+                mainCriminal={displayedCriminal}
                 onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
                 height={520}
               />
@@ -192,14 +198,14 @@ function CriminalProfile() {
               <NetworkGraph
                 onSelectionChange={setSelection}
                 selection={selection}
-                mainCriminal={criminal}
+                mainCriminal={displayedCriminal}
                 relations={relations}
                 onNodeClick={(relatedId) => navigate(`/criminal/${relatedId}`)}
                 height={520}
               />
             )}
           </div>
-          <NetworkExplanation key={`${id}:${selection?.type}:${selection?.id}`} id={id} selection={selection} onClear={() => { setSelection(null); setGraphRevision((value) => value + 1); }} />
+          <ActivityTimeline key={id} personId={id} cases={criminal.cases} onLocationChange={setConnectedLocation} />
         </div>
       </div>
     </div>

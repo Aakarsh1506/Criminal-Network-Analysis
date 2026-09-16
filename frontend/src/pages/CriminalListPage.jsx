@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { fetchAllCriminals } from "../api/criminals";
 import { fetchWorkspace, addToWorkingList, removeFromWorkingList } from "../api/workspace";
 import BackButton from "../components/BackButton";
+import { useTranslation } from "../i18n";
 import "./CriminalList.css";
 
 function CriminalListPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [listedIds, setListedIds] = useState([]);
   const [criminals, setCriminals] = useState([]);
@@ -56,13 +58,13 @@ function CriminalListPage() {
       <BackButton />
 
       <header className="list-top">
-        <h2>{loading ? "Loading records…" : `${criminals.length} criminal${criminals.length !== 1 ? "s" : ""} on file`}</h2>
+        <h2>{loading ? t("loadingRecords") : `${criminals.length} ${t("criminalsOnFile")}`}</h2>
       </header>
 
       <div className="folder-stack">
         {error && <p className="empty-note">{error}</p>}
         {!loading && !error && criminals.length === 0 && (
-          <p className="empty-note">No records found in the database.</p>
+          <p className="empty-note">{t("noRecords")}</p>
         )}
 
         {criminals.map((c, i) => (
@@ -76,7 +78,7 @@ function CriminalListPage() {
             <img src={c.photo} alt={c.name} className="folder-photo" />
             <div className="folder-info">
               <h3>{c.name}</h3>
-              <p className="folder-alias">Known as "{c.alias}", based in {c.location.city}</p>
+            <p className="folder-alias">{t("basedIn")} {c.location.city}{c.alias ? ` · ${c.alias}` : ""}</p>
               <div className="tag-row">
                 {c.crimeTags.map((tag) => <span key={tag} className="tag-stamp">{tag}</span>)}
               </div>
@@ -85,7 +87,7 @@ function CriminalListPage() {
               className={`list-toggle-btn ${listedIds.includes(c.id) ? "list-toggle-active" : ""}`}
               onClick={(e) => handleToggleList(e, c)}
             >
-              {listedIds.includes(c.id) ? "Remove from list" : "Add to list"}
+              {listedIds.includes(c.id) ? t("removeFromList") : t("addToList")}
             </button>
           </div>
         ))}

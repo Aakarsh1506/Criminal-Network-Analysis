@@ -36,6 +36,12 @@ export async function fetchCriminalNetwork(id, { signal } = {}) {
   return res.json();
 }
 
+export async function fetchCriminalActivity(id, { signal } = {}) {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/activity`, { signal });
+  if (!res.ok) throw new Error("Failed to load activity timeline");
+  return res.json();
+}
+
 export async function fetchCrimeTypes() {
   const res = await fetch("/api/crime-types");
   if (!res.ok) throw new Error("Failed to load crime types");

@@ -10,6 +10,15 @@ from backend.errors import APIError
 from backend.services import extraction, local_entities
 
 
+@pytest.fixture(autouse=True)
+def reviewed_entities(monkeypatch):
+    # This module tests relationship extraction; the AI entity-check stage has
+    # provider and end-to-end coverage in test_entity_review.py.
+    async def passthrough(text, result, *args, **kwargs):
+        return result
+    monkeypatch.setattr(local_entities, "verify_entities", passthrough)
+
+
 @pytest.fixture
 def local_pipeline(monkeypatch):
     monkeypatch.setattr(
@@ -62,9 +71,9 @@ def test_ner_maps_people_organizations_and_places(monkeypatch):
 
 def test_passages_omit_unrelated_text_and_keep_negation(local_pipeline):
     text = (
-        "irrelevant boilerplate\n" * 100
+        "Irrelevant boilerplate.\n" * 100
         + "Name: Alice\nName: Bob\nAlice did not contact Bob.\n"
-        + "footer\n" * 100
+        + "Footer.\n" * 100
     )
     entities = local_entities.extract_local(text, "test").entities
     batches = list(local_entities.relevant_batches(text, entities))
@@ -164,7 +173,7 @@ async def test_hybrid_retains_rate_limit_backoff(settings, local_pipeline, monke
         )
     )
     await extraction.extract_entities(
-        "Name: Alice\nName: Bob",
+        "Name: Alice\nName: Bob\nAlice contacted Bob.",
         "fir",
         replace(settings, extraction_mode="hybrid", groq_api_key="fake"),
         client,
@@ -212,7 +221,7 @@ async def test_hybrid_provider_schema_error_retries_relationships_only(settings,
         )
     )
     await extraction.extract_entities(
-        "Name: Alice\nName: Bob",
+        "Name: Alice\nName: Bob\nAlice contacted Bob.",
         "fir",
         replace(settings, extraction_mode="hybrid", groq_api_key="fake"),
         client,
@@ -224,8 +233,13 @@ async def test_hybrid_provider_schema_error_retries_relationships_only(settings,
 
 
 @pytest.mark.asyncio
-async def test_hybrid_rejects_evidence_crossing_omitted_text(settings, local_pipeline):
-    text = "Name: Alice\n" + "unrelated\n" * 20 + "Name: Bob\n"
+async def test_hybrid_rejects_evidence_crossing_omitted_text(settings, local_pipeline, monkeypatch):
+    text = "Alice called a friend.\n" + "Unrelated information.\n" * 20 + "Bob called a colleague.\n"
+    # Explicit candidates are supplied so this test focuses on evidence joining.
+    entities = [extraction.Entity(ref=ref, kind="Person", name=name, identifier=None,
+                 attributes=[], evidence=name) for ref, name in [("e1", "Alice"), ("e2", "Bob")]]
+    monkeypatch.setattr(local_entities, "extract_local", lambda *args:
+                        extraction.Extraction(entities=entities, relationships=[]))
 
     async def post(*args, **kwargs):
         request = json.loads(kwargs["json"]["messages"][1]["content"])
@@ -254,7 +268,7 @@ async def test_hybrid_rejects_evidence_crossing_omitted_text(settings, local_pip
 def test_batches_remain_bounded_and_preserve_late_mentions(local_pipeline):
     text = (
         "Name: Alice\nName: Bob\n"
-        + ("Alice did not contact Bob. " * 200)
+        + " ".join(f"Alice did not contact Bob on day {i}." for i in range(200))
         + "\nAlice contacted Bob yesterday."
     )
     entities = local_entities.extract_local(text, "test").entities

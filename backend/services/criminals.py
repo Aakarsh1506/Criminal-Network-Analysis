@@ -53,6 +53,7 @@ def map_person(row):
         "heightCm": row.get("height_cm"),
         "location": {"city": city, "state": row.get("state"), **coordinates_for_city(city)},
         "lastSeen": last_seen or city,
+        "lastSeenDate": date_string(row.get("last_seen")),
         "familyKnown": row.get("family_known"),
         "recordStatus": row.get("record_status"),
         "crimeTags": list(filter(None, row.get("crime_tags") or [])),
@@ -99,7 +100,7 @@ async def load_profile(person_id, db, graph):
         {
             "caseId": row["case_id"],
             "crime": row.get("crime_name"),
-            "location": f"{row['city']}, {row.get('state')}" if row.get("city") else None,
+            "location": ", ".join(filter(None, (row.get("city"), row.get("state")))) or None,
             "status": row.get("case_status"),
             "month": date_string(row.get("case_month")),
         }

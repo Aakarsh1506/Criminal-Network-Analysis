@@ -52,7 +52,7 @@ async def test_ollama_extraction_uses_local_schema_and_evidence_without_key(sett
     assert set(request["format"]["properties"]) == (
         {"relationships"} if hybrid else {"entities", "relationships"}
     )
-    assert "JSON schema:" in request["messages"][0]["content"]
+    assert ("Output format:" if hybrid else "JSON schema:") in request["messages"][0]["content"]
 
 
 async def test_ollama_corrects_invalid_evidence(settings):

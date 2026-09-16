@@ -7,7 +7,7 @@ export default function RemoveDocumentButton({ document, disabled, onRemoved, on
 
   async function remove() {
     if (!allowed || removing || disabled) return;
-    if (!window.confirm(`Remove “${document.name}”?\n\nThis permanently deletes the uploaded file, source text, extracted entities, relationships, and AI search chunks. Shared criminal and case records remain. This cannot be undone.`)) return;
+    if (!window.confirm(`Remove “${document.name}”?\n\nThis permanently deletes the uploaded file, source text, extracted relationships in PostgreSQL and Neo4j, and AI search chunks. Records created by this import are removed when no other source uses them. Shared and pre-existing records remain. This cannot be undone.`)) return;
     setRemoving(true);
     onBusyChange?.(true);
     try {

@@ -8,6 +8,7 @@ from ..services.insight import build_insight_context, validate_selection
 from ..services.network import fetch_network
 from ..services.ollama import explain_insight
 from ..services.rag import retrieve_context
+from ..services.profile_activity import load_activity
 
 router = APIRouter(
     prefix="/api/criminals", tags=["Criminals"], dependencies=[Depends(require_auth)]
@@ -61,6 +62,18 @@ async def get_network(person_id: str, request: Request):
         if network is None:
             raise APIError("Network not found for this person", 404)
         return network
+
+
+@router.get("/{person_id}/activity")
+async def get_activity(person_id: str, request: Request, officer=Depends(require_auth)):
+    with api_errors("Failed to load activity timeline"):
+        rows = await request.app.state.db.query(
+            "SELECT person_id FROM persons WHERE person_id=%s", (person_id,),
+        )
+        if not rows:
+            raise APIError("Profile not found", 404)
+        return await load_activity(person_id, request.app.state.db, officer["officerId"],
+                                   request.app.state.graph)
 
 
 @router.post("/{person_id}/explain")

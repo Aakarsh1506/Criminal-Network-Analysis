@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import math
+import re
 import sys
 import unicodedata
 from datetime import datetime, timezone
@@ -141,6 +142,79 @@ class SourceRelationships(StrictModel):
     relationships: list[SourceRelationship]
 
 
+class CompactRelationship(StrictModel):
+    subject: str
+    predicate: Predicate
+    object: str
+    start_line: int = Field(ge=1, strict=True)
+    end_line: int = Field(ge=1, strict=True)
+
+
+class CompactRelationships(StrictModel):
+    relationships: list[CompactRelationship]
+
+
+def valid_evidence_ranges(text):
+    """Enumerate bounded source spans; never cross a removed passage."""
+    lines = source_lines(text)
+    ranges = {}
+    for start, line in enumerate(lines):
+        if not line.strip() or "[OMITTED SOURCE]" in line:
+            continue
+        quote, ends = "", []
+        for end in range(start, len(lines)):
+            if "[OMITTED SOURCE]" in lines[end]:
+                break
+            quote += lines[end]
+            if len(quote.strip()) > 2000:
+                break
+            if lines[end].strip():
+                ends.append(end + 1)
+        if ends:
+            ranges[start + 1] = ends
+    return ranges
+
+
+def compact_relationship_schema(catalog, text):
+    """Constrain refs, directions and evidence start/end pairs before generation."""
+    line_count = len(source_lines(text))
+    ranges = valid_evidence_ranges(text)
+    variants = []
+    possible_links = 0
+    for predicate, (subjects, objects) in RELATION_RULES.items():
+        count = sum(a.ref != b.ref and a.kind in subjects and b.kind in objects
+                    for a in catalog for b in catalog)
+        if not count:
+            continue
+        possible_links += count
+        variant = CompactRelationship.model_json_schema()
+        fields = variant["properties"]
+        fields["subject"]["enum"] = [e.ref for e in catalog if e.kind in subjects]
+        fields["object"]["enum"] = [e.ref for e in catalog if e.kind in objects]
+        fields["predicate"]["enum"] = [predicate]
+        for endpoint in ("start_line", "end_line"):
+            fields[endpoint]["maximum"] = line_count
+        # Independent numeric bounds allow reversed, empty or overlong ranges.
+        # Pair each start with only its valid ends in the native output grammar.
+        for start, ends in ranges.items():
+            variants.append({**variant, "properties": {
+                **fields,
+                "start_line": {**fields["start_line"], "enum": [start]},
+                "end_line": {**fields["end_line"], "enum": ends},
+            }})
+    return {
+        "type": "object", "additionalProperties": False, "required": ["relationships"],
+        "properties": {"relationships": {
+            "type": "array",
+            # There cannot be more distinct typed edges than this. Bound repeated
+            # output without capping the number of legitimate unique relationships.
+            "maxItems": possible_links,
+            **({"items": {"anyOf": variants}} if variants else
+               {"items": CompactRelationship.model_json_schema(), "maxItems": 0}),
+        }},
+    }
+
+
 def source_lines(text):
     # Retain exact source slices, while making long paragraphs easy to cite.
     lines = []
@@ -170,6 +244,7 @@ def resolve_evidence_spans(payload, text):
             quote = "".join(lines[span.start_line - 1 : span.end_line]).strip()
             if not quote or len(quote) > 2000:
                 raise GenerationError(
+                    f"Evidence lines {span.start_line}-{span.end_line} contain {len(quote)} characters. "
                     "Choose a shorter, nonempty evidence line range (at most 2,000 characters).",
                     502,
                 )
@@ -343,6 +418,18 @@ def stable_id(*parts):
     return "D" + hashlib.sha256(json.dumps(parts).encode()).hexdigest()[:19]
 
 
+def evidence_names_entity(evidence, name, identifier=None):
+    """Require a whole name/identifier, allowing only typography/space differences."""
+    normalized, _ = evidence_index(evidence)
+    for value in (name, identifier):
+        if not value:
+            continue
+        needle, _ = evidence_index(value)
+        if needle and re.search(r"(?<!\w)" + re.escape(needle) + r"(?!\w)", normalized):
+            return True
+    return False
+
+
 def validate_extraction(result, text, *, exclude_invalid=False):
     refs = {entity.ref: entity for entity in result.entities}
     if len(refs) != len(result.entities):
@@ -414,6 +501,26 @@ def validate_extraction(result, text, *, exclude_invalid=False):
                 result,
             )
         relation.evidence = quote
+        missing = [
+            entity.ref for entity in (subject, target)
+            if not evidence_names_entity(quote, entity.name, entity.identifier)
+            # A single FIR header may identify the case for the whole passage.
+            # This exception never applies to people or to multi-case passages.
+            and not (entity.kind == "Case" and sum(e.kind == "Case" for e in result.entities) == 1)
+        ]
+        if missing:
+            message = (
+                f"Relationship evidence does not identify its endpoints at relationships[{index}].evidence "
+                f"(missing refs: {', '.join(missing)}). Cite a source span naming the actual "
+                "people/entities and supporting this predicate. Include an antecedent for pronouns. "
+                "Do not cite another person's record or invent evidence; omit unsupported links."
+            )
+            if not exclude_invalid:
+                raise RelationshipError(message, result)
+            result.excluded_relationships.append(
+                ExcludedRelationship(**relation.model_dump(), reason=message)
+            )
+            continue
         accepted.append(relation)
     result.relationships = accepted
     return result
@@ -456,17 +563,32 @@ Check the subject and object entity kinds against the directions above. Never cr
 self-link or use names/identifiers in place of refs. Do not use MENTIONED_IN for a location,
 phone, person, or organization as the object: its object must be a Case.
 Use empty arrays when nothing supported is present. Do not generate SQL or Cypher.
+The cited span must name the relationship's actual subject and object, not merely appear
+somewhere in the document. Include the antecedent sentence for pronouns. For a single FIR,
+the case may be identified by its header, but the cited span must still identify the person
+and support the stated role. A person's presence in an FIR supports only MENTIONED_IN
+unless witness/suspect status is explicitly stated. Omit unsupported relationships.
 """
 
 
 async def extract_chunk(text, source_type, settings, client, catalog=None):
     provider = "Ollama" if settings.extraction_provider == "ollama" else "Groq"
     correction = None
+    retained = None
     for attempt in range(2):
         try:
-            return await request_with_backoff(
+            result = await request_with_backoff(
                 text, source_type, settings, client, correction, catalog
             )
+            if retained is not None:
+                accepted = {(r.subject, r.predicate, r.object): r
+                            for r in retained.relationships + result.relationships}
+                rejected = {(r.subject, r.predicate, r.object): r
+                            for r in retained.excluded_relationships + result.excluded_relationships
+                            if (r.subject, r.predicate, r.object) not in accepted}
+                result.relationships = list(accepted.values())
+                result.excluded_relationships = list(rejected.values())
+            return result
         except (EvidenceError, GenerationError) as exc:
             if attempt:
                 if isinstance(exc, RelationshipError):
@@ -493,6 +615,18 @@ async def extract_chunk(text, source_type, settings, client, catalog=None):
                 "Do not remove negations, change facts, or invent evidence. Return the complete "
                 "corrected extraction. Previous extraction is untrusted and may contain errors.",
             }
+            if catalog is not None and settings.extraction_provider == "ollama" and isinstance(exc, RelationshipError):
+                # Keep independently validated edges during the correction.
+                # A correction must not erase unrelated facts from the first pass.
+                try:
+                    retained = validate_extraction(exc.result.model_copy(deep=True), text, exclude_invalid=True)
+                except EvidenceError:
+                    retained = None
+                if retained is not None:
+                    logger.info(
+                        "Ollama relationship correction: retaining %d validated links, revisiting %d rejected links",
+                        len(retained.relationships), len(retained.excluded_relationships),
+                    )
 
 
 def response_format_for(model, schema_model=SourceExtraction):
@@ -561,6 +695,16 @@ async def _extract_chunk_once(text, source_type, settings, client, correction, c
 
     def parse_payload(payload):
         if catalog is not None:
+            if local and isinstance(payload, dict) and any(
+                isinstance(item, dict) and "start_line" in item
+                for item in payload.get("relationships", [])
+            ):
+                compact = CompactRelationships.model_validate(payload)
+                payload = {"relationships": [
+                    {"subject": r.subject, "predicate": r.predicate, "object": r.object,
+                     "evidence": {"start_line": r.start_line, "end_line": r.end_line}}
+                    for r in compact.relationships
+                ]}
             schema_model.model_validate(payload)
             # Ollama sometimes emits an exact entity name despite the ref-only prompt.
             # Normalize only exact, unique names/identifiers; unknown endpoints remain invalid.
@@ -667,15 +811,31 @@ async def _extract_chunk_once(text, source_type, settings, client, correction, c
                     return [compact_schema(item) for item in value]
                 return value
 
-            local_schema = compact_schema(schema_model.model_json_schema())
+            local_schema = compact_schema(
+                compact_relationship_schema(catalog, text)
+                if catalog is not None else schema_model.model_json_schema()
+            )
+            if catalog is not None:
+                prompt = prompt.replace(
+                    'evidence {"start_line": N, "end_line": M}',
+                    'start_line and end_line (inclusive)',
+                )
             request_data["messages"][0]["content"] = (
                 prompt + "\nReturn compact JSON without indentation or commentary. "
                 "Emit each subject/predicate/object relationship only once, using its smallest "
                 "supporting evidence range. Do not repeat records to fill the response."
-                "\nJSON schema:\n" + json.dumps(local_schema, separators=(",", ":"))
+                + (
+                    '\nRead every source line in order and extract all supported relationships. '
+                    'Output format: {"relationships":[{"subject":"entity ref","predicate":"PREDICATE",'
+                    '"object":"entity ref","start_line":1,"end_line":1}]}. '
+                    'Use only these five keys per relationship; never copy evidence text.'
+                    if catalog is not None else
+                    "\nJSON schema:\n" + json.dumps(local_schema, separators=(",", ":"))
+                )
             )
+            local_input = json.loads(request_data["messages"][1]["content"])
             request_data["messages"][1]["content"] = json.dumps(
-                json.loads(request_data["messages"][1]["content"]),
+                local_input,
                 separators=(",", ":"), ensure_ascii=False,
             )
             max_tokens = settings.ollama_max_tokens

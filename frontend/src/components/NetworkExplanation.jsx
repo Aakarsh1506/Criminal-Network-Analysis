@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 
 function formatInsight(text) {
   return text.split("\n").map((line, index) => {
@@ -13,6 +14,7 @@ function formatInsight(text) {
 }
 
 export default function NetworkExplanation({ id, selection, onClear }) {
+  const { t } = useTranslation();
   const [explanation, setExplanation] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,7 +52,7 @@ export default function NetworkExplanation({ id, selection, onClear }) {
 
   return (
     <section className="network-ai" aria-labelledby="network-ai-title" aria-busy={loading}>
-      <h3 id="network-ai-title">AI insight</h3>
+      <h3 id="network-ai-title">{t("aiInsight")}</h3>
       <p>{selection ? `Selected: ${selection.label}` : "Select a node or relationship in the graph to enable AI insight."}</p>
       {selection && <p>Review the evidence, investigative significance, and follow-up checks for this selection. The configured AI provider receives the relevant records.</p>}
       <button className="stamp-btn small" onClick={explain} disabled={!selection || loading}>

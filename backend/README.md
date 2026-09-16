@@ -88,8 +88,15 @@ Supported file formats are PDF, PNG/JPEG/TIFF, UTF-8 TXT/CSV/JSON, and DOCX. CSV
 read as text for extraction; this is not a raw SQL importer or a transaction anomaly detector.
 
 Scanned PDFs and images use local Tesseract OCR. Digital PDFs and Word/text files use their
-embedded text. The default hybrid mode extracts entity candidates locally with spaCy and
-regex, then sends relevant passages and entity references to Groq for relationships only.
+embedded text. The default hybrid mode extracts entity candidates across the document with
+spaCy and regex, then sends every candidate's name, type, ref, and source context to the
+configured AI provider for checking. The AI may correct a type or flag an invalid candidate;
+flagged candidates remain visible in the review screen. Every candidate must receive one
+check, including entities without relationships. Names are not rewritten or invented.
+Next, relationship cues such as “contacted”, “mentioned”, “witness”, “resides”, and “seen”
+select complete source sentences for relationship extraction. A cue is not proof of a link:
+the AI checks the sentence, negations, endpoint types, and source evidence before returning
+relationships. Preceding sentences are included for pronoun context.
 Set `EXTRACTION_MODE=groq` to use the original full AI entity and relationship extraction.
 Groq cites numbered source-line ranges; the server copies the original text into each evidence field. The server validates names, source quotes, references, allowed predicates, and directions.
 This checks structural validity and quoted evidence; it does not independently verify whether
@@ -198,9 +205,17 @@ shared distributed transaction.
 The review page requires a Yes/No choice for each entity and relationship before saving.
 Rejecting an entity also excludes relationships connected to it. Rejected items and their
 reasons remain in the document's review history, but are not saved as entity or graph records.
-Use **Remove document** on the review page or document details to permanently delete an
-unconfirmed stored, failed, or awaiting-review document after confirmation. Processing
-documents and confirmed extraction sources remain protected from removal.
+Use **Remove document** to delete a stopped, draft, or completed document, its extraction
+rows, search chunks, and document-specific Neo4j links. Unshared import-created canonical
+records and isolated import-created graph nodes are removed too. Shared and pre-existing
+records are preserved. Processing documents must be stopped first.
+Removal holds a PostgreSQL transaction until Neo4j cleanup succeeds; if Neo4j fails, the
+document remains available for retry. Cleanup is idempotent if SQL commit fails after
+Neo4j succeeds. Restart the backend after upgrading to install the import-ownership table.
+For older data, ownership is backfilled only when the extraction ID proves the record was
+created by ingestion; existing numeric location/crime rows are retained when ownership
+cannot be established. Already-deleted source documents require separately reviewed
+cleanup because the previous implementation removed their provenance.
 
 The page shows status, source text, entities, relationships, and supporting quotes. Use
 **Process document** to retry extraction, or **Retry Neo4j sync** after fixing graph access.
@@ -283,7 +298,8 @@ OLLAMA_MAX_TOKENS=4096
 SPACY_MODEL=en_core_web_sm
 ```
 
-Hybrid mode uses spaCy for entities and Ollama for relationships. Install the configured
+Hybrid mode uses spaCy/regex for entity candidates and Ollama for entity checking and
+sentence-based relationship extraction. Install the configured
 spaCy model with `backend/.venv/bin/python -m spacy download en_core_web_sm` if needed.
 `EXTRACTION_MODE=groq` is the legacy name for full model extraction; it also respects
 `EXTRACTION_PROVIDER=ollama` and does not require a Groq key in that configuration.
@@ -296,6 +312,45 @@ correction retries, and the Yes/No review flow still apply. There is no automati
 fallback. Logs show token counts and generation/load durations for comparing performance.
 Truncated output retries with twice the configured output budget, capped at 8192 tokens.
 `OLLAMA_MAX_TOKENS` accepts 256–8192; truncated JSON is never accepted as a complete extraction.
+In hybrid Ollama mode, evidence is generated as flat `start_line`/`end_line` fields and
+converted back to exact source quotes by the server. The native JSON schema restricts
+each predicate to existing refs with the correct entity types and direction. Source,
+endpoint-identity, and evidence-range validation still run before saving any links.
+The model prompt no longer repeats the full JSON schema.
+
+Entity checks run in small batches (up to eight candidates). Relationship batches group
+whole cue sentences; at 1,024 output tokens the target is four sentence spans and 2,048
+source characters. A full sentence and its pronoun context can exceed that soft target;
+neither is cut to fit. Identical sentence/context repeats are analyzed once. Single-FIR
+context is retained, and omissions are marked so they cannot be joined into false quotes.
+The output schema allows only nonempty evidence ranges of at most 2,000 characters and
+bounds the number of returned edges by the number of possible typed endpoint pairs.
+To extend relationship cues, edit `RELATIONSHIP_CUES` in
+`backend/services/relationship_sentences.py`. Keyword selection can miss unfamiliar
+wording, and local entity detection is not a guarantee of finding every real entity.
+Requests remain sequential, with at most one correction attempt per batch; there is
+no recursive retry tree and no change to investigator-chat thinking settings. If a group
+still fails extraction, it can be retried once as its individual complete source sentences.
+Pronoun context is preserved; an unsplittable sentence or failed individual retry stops
+processing instead of silently treating a partial result as complete.
+If a complete response has invalid relationships, valid relationships are retained in
+memory and merged with the corrected response, so a retry cannot silently erase them.
+Uncorrected suggestions remain excluded for review. Truncated or malformed JSON is retried as a whole response;
+it is never accepted as a completed extraction.
+
+To measure relationship extraction on labelled synthetic examples without writing to
+either database, run from the repository root:
+
+```bash
+backend/.venv/bin/python -m backend.scripts.benchmark_relationships
+```
+
+The benchmark uses the configured local Ollama model and reports runtime, tokens,
+missing/extra relationships, and errors for explicit facts, negation/shared-location
+checks, and dense records. Use `--runs 3` for repeated measurements or
+`--sample explicit_facts` for a quick check. It exits unsuccessfully if any expected
+relationship is missing, any extra relationship appears, or extraction fails. These
+synthetic checks are a regression aid, not an accuracy estimate for real FIRs.
 See [Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs).
 
 ### Debug Groq responses

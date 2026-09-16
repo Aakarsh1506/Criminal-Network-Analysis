@@ -12,6 +12,7 @@ import CriminalListPage from "./pages/CriminalListPage";
 import AdminPanel from "./pages/AdminPanel";
 import InvestigatorAnalysis from "./pages/InvestigatorAnalysis";
 import "./App.css";
+import { LanguageProvider } from "./i18n";
 
 const NO_NAVBAR_PATHS = ["/", "/login", "/admin"];
 
@@ -31,6 +32,7 @@ function AppLayout() {
           <Route path="/search" element={<CriminalList />} />
           <Route path="/criminal/:id" element={<CriminalProfile />} />
           <Route path="/analysis/:id" element={<InvestigatorAnalysis />} />
+          <Route path="/analysis" element={<InvestigatorAnalysis />} />
           <Route path="/upload" element={<UploadDoc />} />
           <Route path="/documents/:id/review" element={<DocumentReview />} />
           <Route path="/criminal-list" element={<CriminalListPage />} />
@@ -43,9 +45,7 @@ function AppLayout() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppLayout />
-    </BrowserRouter>
+    <LanguageProvider><BrowserRouter><AppLayout /></BrowserRouter></LanguageProvider>
   );
 }
 

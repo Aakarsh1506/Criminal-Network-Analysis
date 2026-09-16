@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import BackButton from "../components/BackButton";
 import DocumentActions from "../components/DocumentActions";
 import DocumentProgress from "../components/DocumentProgress";
+import { useTranslation } from "../i18n";
 import {
   fetchDocuments, fetchDocument, fetchSourceTypes, uploadDocument,
   documentFileUrl,
@@ -20,6 +21,7 @@ const BUSY = new Set(["queued", "processing", "syncing"]);
 
 export default function UploadDoc() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const input = useRef(null);
   const [documents, setDocuments] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -93,8 +95,8 @@ export default function UploadDoc() {
   return <div className="upload-page">
     <BackButton />
     <section className="upload-top upload-controls">
-      <h2>Upload and analyze records</h2>
-      <label htmlFor="source-type">Record source</label>
+      <h2>{t("uploadAnalyze")}</h2>
+      <label htmlFor="source-type">{t("recordSource")}</label>
       <select id="source-type" value={sourceType} disabled={loading || uploading}
         onChange={(event) => setSourceType(event.target.value)}>
         {Object.entries(types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -102,11 +104,11 @@ export default function UploadDoc() {
       <input ref={input} className="upload-input-hidden" type="file" accept={extensions.join(",")}
         onChange={upload} />
       <button className="stamp-btn upload-btn-center" disabled={uploading || loading || !extensions.length}
-        onClick={() => input.current?.click()}>{uploading ? "Uploading…" : "Upload and extract"}</button>
+        onClick={() => input.current?.click()}>{uploading ? `${t("upload")}…` : `${t("upload")} and extract`}</button>
       {uploading && <DocumentProgress uploading />}
     </section>
     {error && <p role="alert" className="upload-error">{error}</p>}
-    {loading ? <p role="status" className="empty-note">Loading documents…</p> :
+    {loading ? <p role="status" className="empty-note">{t("loadingRecords")}</p> :
       <div className="doc-grid">
         {documents.map((doc) => <article className="doc-card" key={doc.id}>
           <button type="button" className="doc-card-open"
@@ -120,12 +122,12 @@ export default function UploadDoc() {
           <DocumentActions document={doc} onUpdated={updatedDocument}
             onRemoved={removedDocument} onError={setError} />
         </article>)}
-        {!documents.length && <p className="empty-note">No documents uploaded yet.</p>}
+        {!documents.length && <p className="empty-note">{t("noDocuments")}</p>}
       </div>}
     {selected !== null && <section className="doc-preview extraction-detail" aria-live="polite">
       <div className="doc-preview-header">
         <h2>{detail?.name || "Loading extracted information…"}</h2>
-        <button className="doc-preview-close" onClick={() => { setSelected(null); setDetail(null); }}>Close</button>
+        <button className="doc-preview-close" onClick={() => { setSelected(null); setDetail(null); }}>{t("close")}</button>
       </div>
       {detail && <>
         <p role="status">{STATUS[detail.status]}</p>
@@ -133,7 +135,7 @@ export default function UploadDoc() {
         <DocumentActions document={detail} onUpdated={updatedDocument}
           onRemoved={removedDocument} onError={setError} />
         {detail.processingError && <p role="alert" className="upload-error">{detail.processingError}</p>}
-        <p><a href={documentFileUrl(detail.id)} target="_blank" rel="noreferrer">Open original document</a></p>
+        <p><a href={documentFileUrl(detail.id)} target="_blank" rel="noreferrer">{t("openOriginal")}</a></p>
         {detail.extraction && <>
           <p><Link to={`/documents/${detail.id}/review`}>Open full entity review →</Link></p>
           <h3>{entities.length} entities · {relationships.length} relationships</h3>

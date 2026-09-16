@@ -1,8 +1,17 @@
 from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 
 import pytest
 
 from backend.routes.documents import MAX_FILE_SIZE
+
+
+@pytest.fixture(autouse=True)
+def document_transactions(db):
+    @asynccontextmanager
+    async def transaction():
+        yield db
+    db.transaction = transaction
 
 
 async def test_upload_list_download_delete_preserves_contract(officer_client, db, settings):
@@ -10,6 +19,8 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
     now = datetime(2026, 9, 8, 12, tzinfo=timezone.utc)
 
     async def query(sql, params=()):
+        if "pg_advisory_xact_lock" in sql or "extracted_entities" in sql or "extracted_relationships" in sql:
+            return []
         if sql.lstrip().startswith("INSERT"):
             officer_id, original, stored, mime, size, source_type = params
             assert officer_id == 7
@@ -64,6 +75,7 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
     assert download.status_code == 200 and download.content == content
     assert download.headers["content-type"] == "application/pdf"
     assert download.headers["content-disposition"].startswith("inline;")
+    files[1]["processing_status"] = "awaiting_review"
     assert (await officer_client.delete("/api/documents/1")).json() == {"ok": True}
     assert not (settings.upload_dir / stored).exists()
     assert (await officer_client.get("/api/documents/1/file")).status_code == 404
@@ -84,20 +96,22 @@ async def test_other_officer_cannot_read_or_delete(officer_client, db, settings)
 async def test_remove_review_draft_deletes_file(officer_client, db, settings):
     path = settings.upload_dir / "draft.txt"
     path.write_text("Draft evidence")
-    db.query.return_value = [{"stored_name": "draft.txt"}]
+    db.query.side_effect = lambda sql, params=(): (
+        [{"stored_name": "draft.txt", "processing_status": "awaiting_review"}]
+        if sql.startswith("SELECT * FROM officer_documents") else []
+    )
     response = await officer_client.delete("/api/documents/3")
     assert response.status_code == 200
     assert not path.exists()
     sql, params = db.query.call_args.args
-    assert "'awaiting_review'" in sql
-    assert "confirmed_at IS NULL" in sql and "graph_payload IS NULL" in sql
+    assert "DELETE FROM officer_documents" in sql
     assert params == (3, 7)
 
 
-async def test_remove_retained_source_keeps_file(officer_client, db, settings):
+async def test_remove_processing_document_keeps_file(officer_client, db, settings):
     path = settings.upload_dir / "retained.txt"
     path.write_text("Saved evidence")
-    db.query.side_effect = [[], [{"document_id": 3}]]
+    db.query.side_effect = [[], [{"document_id": 3, "processing_status": "processing"}]]
     response = await officer_client.delete("/api/documents/3")
     assert response.status_code == 409
     assert path.exists()

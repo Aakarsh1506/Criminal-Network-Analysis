@@ -1,0 +1,26 @@
+.language-toggle {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(2, 36px);
+  align-items: center;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid #8a744a;
+  border-radius: 999px;
+  background: #111;
+  color: #8f8f8f;
+  user-select: none;
+  isolation: isolate;
+  transition: border-color .2s ease, opacity .2s ease;
+}
+.language-toggle:hover { border-color: #c9a463; }
+.language-toggle-disabled { opacity: .5; cursor: not-allowed; }
+.language-toggle:not(.language-toggle-disabled) { cursor: pointer; }
+.language-toggle-slider { position: absolute; z-index: 0; top: 0; left: 0; width: 36px; height: 36px; border-radius: 999px; background: #c9a463; transition: transform .2s ease; }
+.language-toggle-slider-en { transform: translateX(36px); }
+.language-toggle-option { position: relative; z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; background: transparent; color: #8f8f8f; font: 800 .72rem/1 var(--font-body, sans-serif); cursor: inherit; }
+.language-toggle-option[aria-checked="true"] { color: #111; }
+.language-toggle-option:not([aria-checked="true"]):hover { color: #f2f2f2; }
+.language-toggle-option:focus-visible { outline: 2px solid #f2d58e; outline-offset: 2px; border-radius: 999px; }
+.language-toggle-option:disabled { cursor: not-allowed; }
+@media (max-width: 640px) { .language-toggle { grid-template-columns: repeat(2, 36px); } }

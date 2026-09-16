@@ -18,6 +18,12 @@ NODE_KEYS = {
     "PhoneNumber": "phone_id",
 }
 
+async def mark_import_owned(tx, kind, canonical):
+    await tx.query(
+        """INSERT INTO ingestion_owned_entities (kind,canonical_id) VALUES (%s,%s)
+           ON CONFLICT DO NOTHING""", (kind, str(canonical)),
+    )
+
 
 def properties_for(entity):
     props = {item.key: item.value for item in entity.attributes}
@@ -89,6 +95,7 @@ async def canonical_entity(tx, entity, entity_id, props):
                     raise APIError("An extracted person ID conflicts with an existing name.", 409)
                 return identifier, rows[0]
         canonical = entity_id
+        await mark_import_owned(tx, kind, canonical)
         if kind == "Person":
             await tx.query(
                 """INSERT INTO persons (person_id, name, alias, dob, age, height_cm,
@@ -151,6 +158,7 @@ async def canonical_entity(tx, entity, entity_id, props):
                    RETURNING *""",
                 (entity.name, props.get("description")),
             )
+            await mark_import_owned(tx, kind, rows[0]["crime_id"])
         return rows[0]["crime_id"], rows[0]
     if kind == "Location":
         city, state = props.get("city") or entity.name, props.get("state")
@@ -162,8 +170,10 @@ async def canonical_entity(tx, entity, entity_id, props):
             rows = await tx.query(
                 "INSERT INTO locations (city,state) VALUES (%s,%s) RETURNING *", (city, state)
             )
+            await mark_import_owned(tx, kind, rows[0]["location_id"])
         # Geometry is not a Neo4j property; preserve only the mapped source fields.
         return rows[0]["location_id"], {k: v for k, v in rows[0].items() if k != "geom"}
+    await mark_import_owned(tx, kind, entity_id)
     return entity_id, {"name": entity.name, "number": identifier or entity.name}
 
 
@@ -265,6 +275,36 @@ async def persist_extraction(db, document_id, result):
                     "UPDATE cases SET crime_id=COALESCE(crime_id,%s) WHERE case_id=%s",
                     (crime_ref["id"], case_ref["id"]),
                 )
+        # Use an explicitly connected location (direct links first, then a case).
+        # An incident location is a connected place, not proof of a sighting.
+        by_ref = {entity.ref: entity for entity in result.entities}
+        node_by_id = {(node["kind"], str(node["id"])): node for node in nodes}
+        for person_ref, person in refs.items():
+            if person["kind"] != "Person":
+                continue
+            choices = []
+            linked_cases = {
+                relation.object for relation in result.relationships
+                if relation.subject == person_ref
+                and relation.predicate in ("MENTIONED_IN", "WITNESS_IN", "SUSPECT_IN")
+            }
+            for relation in result.relationships:
+                if relation.subject == person_ref and relation.predicate in ("SEEN_AT", "RESIDES_IN"):
+                    choices.append((0 if relation.predicate == "SEEN_AT" else 1, relation.object))
+                elif relation.subject in linked_cases and relation.predicate == "OCCURRED_AT":
+                    choices.append((2, relation.object))
+            if not choices:
+                continue
+            location_ref = min(choices)[1]
+            location = by_ref[location_ref]
+            location_node = node_by_id[("Location", str(refs[location_ref]["id"]))]
+            city = location_node["properties"].get("city") or location.name
+            state = location_node["properties"].get("state")
+            await tx.query(
+                "UPDATE persons SET city=%s,state=%s WHERE person_id=%s",
+                (city, state, person["id"]),
+            )
+            node_by_id[("Person", str(person["id"]))]["properties"].update(city=city, state=state)
         payload = {"document_id": document_id, "nodes": nodes, "edges": edges}
         await tx.query(
             """UPDATE officer_documents SET graph_payload=%s,
@@ -285,6 +325,13 @@ async def sync_graph(graph, payload):
                 props=node["properties"],
             )
             await result.consume()
+            if kind == "Person" and node["properties"].get("city"):
+                result = await tx.run(
+                    "MATCH (n:Person {person_id:$id}) SET n.city=$city,n.state=$state",
+                    id=node["id"], city=node["properties"]["city"],
+                    state=node["properties"].get("state"),
+                )
+                await result.consume()
         for edge in payload["edges"]:
             subject, target = edge["subject"], edge["object"]
             # Validate again at the database boundary, including replays from stored payloads.

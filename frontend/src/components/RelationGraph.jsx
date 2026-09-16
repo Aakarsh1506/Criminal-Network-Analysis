@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import cytoscape from 'cytoscape';
 import { fetchCriminalNetwork } from '../api/criminals';
 import './RelationGraph.css';
+import { useTranslation } from '../i18n';
 
 // Per-kind palette: a saturated fill plus a paler halo used for the border,
 // mirroring the soft-glow node treatment common to modern network charts.
@@ -65,12 +66,13 @@ const stylesheet = [
 // Keep the selected person fixed at the origin.
 function networkElements(network) {
   const spread = Math.max(300, Math.sqrt(network.nodes.length) * 140);
+  const roots = network.nodes.filter((node) => node.depth === 0);
   return [
     ...network.nodes.map((node) => {
       const root = node.depth === 0;
       return {
         data: node,
-        position: root ? { x: 0, y: 0 } : { x: (Math.random() - 0.5) * spread, y: (Math.random() - 0.5) * spread },
+        position: root ? { x: (roots.indexOf(node) - (roots.length - 1) / 2) * 280, y: 0 } : { x: (Math.random() - 0.5) * spread, y: (Math.random() - 0.5) * spread },
         locked: root,
       };
     }),
@@ -85,22 +87,24 @@ function fitAroundPerson(cy) {
   cy.fit(cy.elements(), 60);
 }
 
-export default function RelationGraph({ mainCriminal, onNodeClick, onSelectionChange, height = 480 }) {
+export default function RelationGraph({ mainCriminal, network: suppliedNetwork, onNodeClick, onSelectionChange, height = 480 }) {
+  const { t } = useTranslation();
   const [result, setResult] = useState(null);
   const [retry, setRetry] = useState(0);
   const [selected, setSelected] = useState(null);
   const container = useRef(null);
   const cyRef = useRef(null);
-  const network = result?.id === mainCriminal.id ? result.data : null;
-  const error = result?.id === mainCriminal.id ? result.error : '';
+  const network = suppliedNetwork ?? (result?.id === mainCriminal.id ? result.data : null);
+  const error = suppliedNetwork ? '' : result?.id === mainCriminal.id ? result.error : '';
 
   useEffect(() => {
+    if (suppliedNetwork) return;
     const controller = new AbortController();
     fetchCriminalNetwork(mainCriminal.id, { signal: controller.signal })
       .then((data) => { if (!controller.signal.aborted) setResult({ id: mainCriminal.id, data }); })
       .catch((err) => { if (!controller.signal.aborted) setResult({ id: mainCriminal.id, error: err.message }); });
     return () => controller.abort();
-  }, [mainCriminal.id, retry]);
+  }, [mainCriminal.id, retry, suppliedNetwork]);
 
   useEffect(() => {
     if (!network || !container.current) return;
@@ -163,9 +167,10 @@ export default function RelationGraph({ mainCriminal, onNodeClick, onSelectionCh
     onSelectionChange?.(activeSelection ? {
       type: activeSelection.kind ? 'node' : 'edge',
       id: activeSelection.id,
+      personId: activeSelection.originPersonId || mainCriminal.id,
       label: activeSelection.kind ? activeSelection.label : `${network.nodes.find((node) => node.id === activeSelection.source)?.label || 'Record'} → ${activeSelection.label} → ${network.nodes.find((node) => node.id === activeSelection.target)?.label || 'Record'}`,
     } : null);
-  }, [activeSelection, network, onSelectionChange]);
+  }, [activeSelection, network, onSelectionChange, mainCriminal.id]);
 
   // Legend only lists the node kinds actually present in this network.
   const legendKinds = useMemo(() => {
@@ -177,14 +182,14 @@ export default function RelationGraph({ mainCriminal, onNodeClick, onSelectionCh
   return <div className="relation-graph">
     <div className="relation-graph__toolbar">
       <div role="group" aria-label="Graph controls" className="relation-graph__controls">
-        <button className="rg-btn" type="button" aria-label="Zoom in" disabled={!network} onClick={() => zoom(1.3)}>+</button>
-        <button className="rg-btn" type="button" aria-label="Zoom out" disabled={!network} onClick={() => zoom(1 / 1.3)}>−</button>
-        <button className="rg-btn" type="button" disabled={!network} onClick={() => { if (cyRef.current) fitAroundPerson(cyRef.current); }}>Fit</button>
+        <button className="rg-btn" type="button" aria-label={t("zoomIn")} disabled={!network} onClick={() => zoom(1.3)}>+</button>
+        <button className="rg-btn" type="button" aria-label={t("zoomOut")} disabled={!network} onClick={() => zoom(1 / 1.3)}>−</button>
+        <button className="rg-btn" type="button" disabled={!network} onClick={() => { if (cyRef.current) fitAroundPerson(cyRef.current); }}>{t("fit")}</button>
       </div>
     </div>
 
     {legendKinds.length > 0 && <div className="relation-graph__legend" aria-hidden="true">
-      <span className="rg-legend-item"><span className="rg-legend-swatch" style={{ background: ROOT_STYLE.fill }} />Selected person</span>
+      <span className="rg-legend-item"><span className="rg-legend-swatch" style={{ background: ROOT_STYLE.fill }} />{t("selectedPerson")}</span>
       {legendKinds.map((kind) => (
         <span key={kind} className="rg-legend-item">
           <span className="rg-legend-swatch" style={{ background: KIND_STYLE[kind].fill }} />{KIND_STYLE[kind].label}
@@ -192,13 +197,13 @@ export default function RelationGraph({ mainCriminal, onNodeClick, onSelectionCh
       ))}
     </div>}
 
-    {error ? <p role="alert" className="relation-graph__status">{error} <button className="rg-btn" type="button" onClick={() => { setResult(null); setSelected(null); setRetry((value) => value + 1); }}>Retry</button></p>
-      : !network ? <p role="status" className="relation-graph__status">Loading relationships…</p>
+    {error ? <p role="alert" className="relation-graph__status">{error} <button className="rg-btn" type="button" onClick={() => { setResult(null); setSelected(null); setRetry((value) => value + 1); }}>{t("retry")}</button></p>
+      : !network ? <p role="status" className="relation-graph__status">{t("loadingRecords")}</p>
       : <>
         <div className="relation-graph__canvas-wrap">
           <div ref={container} className="relation-graph__canvas" style={{ height }} role="img" aria-label={`Relationship graph centered on ${mainCriminal.name}. Use the selector below to inspect nodes and links.`} />
         </div>
-        {network.edges.length === 0 && <p className="relation-graph__empty">No relationships are recorded for this person.</p>}
+        {network.edges.length === 0 && <p className="relation-graph__empty">{t("noRelationships") || "No relationships are recorded for this person."}</p>}
         {network.truncated && <p role="status" className="relation-graph__truncated">Showing the first {network.pathLimit.toLocaleString()} paths; some connections are omitted.</p>}
 
         <div aria-live="polite">{activeSelection && <div className="relation-graph__panel">
@@ -211,7 +216,7 @@ export default function RelationGraph({ mainCriminal, onNodeClick, onSelectionCh
           {activeSelection.provenance && <span className="relation-graph__panel-meta">Source: {activeSelection.provenance}</span>}
           <div className="relation-graph__panel-actions">
             {activeSelection.personId && activeSelection.personId !== String(mainCriminal.id) && onNodeClick && <button className="rg-btn" type="button" onClick={() => onNodeClick(activeSelection.personId)}>Open profile</button>}
-            <button className="rg-btn" type="button" onClick={() => inspect('')}>Clear selection</button>
+            <button className="rg-btn" type="button" onClick={() => inspect('')}>{t("clearSelection") || "Clear selection"}</button>
           </div>
         </div>}</div>
       </>}

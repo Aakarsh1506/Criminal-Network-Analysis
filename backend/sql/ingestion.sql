@@ -32,6 +32,19 @@ CREATE TABLE IF NOT EXISTS extracted_entities (
   evidence TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS extracted_entities_document_idx ON extracted_entities(document_id);
+-- Track ownership independently of an individual source: a record can outlive
+-- its first document while another document still uses it.
+CREATE TABLE IF NOT EXISTS ingestion_owned_entities (
+  kind TEXT NOT NULL,
+  canonical_id TEXT NOT NULL,
+  PRIMARY KEY (kind, canonical_id)
+);
+-- Older imports used the extraction ID as the canonical ID for new records.
+-- Numeric location/crime IDs cannot safely be backfilled as import-owned.
+INSERT INTO ingestion_owned_entities (kind, canonical_id)
+SELECT DISTINCT kind, canonical_id FROM extracted_entities
+WHERE entity_id=canonical_id
+ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS extracted_relationships (
   relationship_id VARCHAR(20) PRIMARY KEY,
   document_id INTEGER NOT NULL REFERENCES officer_documents(document_id),

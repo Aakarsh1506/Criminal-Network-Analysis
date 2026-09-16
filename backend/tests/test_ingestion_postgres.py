@@ -336,6 +336,8 @@ async def test_location_sentence_and_person_links_survive_saving(real_db):
     )
     payload = await persist_extraction(real_db, await add_document(real_db), result)
     assert {e["predicate"] for e in payload["edges"]} >= {"RESIDES_IN", "SEEN_AT"}
+    assert all(row["city"] == "Mumbai" for row in await real_db.query("SELECT city FROM persons"))
+    assert all(node["properties"]["city"] == "Mumbai" for node in payload["nodes"] if node["kind"] == "Person")
     assert (await real_db.query("SELECT evidence FROM extracted_entities WHERE kind='Location'"))[
         0
     ]["evidence"] == sentence
@@ -385,3 +387,126 @@ async def test_rejected_relationships_never_enter_sql_or_graph_payload(real_db):
     )
     with pytest.raises(APIError, match="Draft changed"):
         await confirm_document(doc_id, ConfirmBody(extraction=result), request, {"officerId": 1})
+
+
+@pytest.fixture
+def removal_graph():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, MagicMock
+    tx = AsyncMock()
+    session = AsyncMock()
+
+    async def write(callback):
+        await callback(tx)
+
+    session.execute_write.side_effect = write
+    graph = SimpleNamespace(driver=MagicMock(), run=AsyncMock(return_value=[]), tx=tx)
+    graph.driver.session.return_value.__aenter__.return_value = session
+    return graph
+
+
+async def test_document_removal_deletes_owned_records_and_graph_connections(real_db, removal_graph):
+    from backend.services.document_removal import remove_document_records
+    doc_id = await add_document(real_db)
+    payload = await persist_extraction(real_db, doc_id, full_extraction())
+    await real_db.query("UPDATE officer_documents SET processing_status='complete'")
+    person_id = next(node['id'] for node in payload['nodes'] if node['kind'] == 'Person' and node['id'] != 'P001')
+    await real_db.query("INSERT INTO officer_working_list (officer_id,person_id) VALUES (1,%s)", (person_id,))
+    await real_db.query("INSERT INTO officer_pinned_criminal (officer_id,person_id) VALUES (1,%s)", (person_id,))
+    await real_db.query("INSERT INTO document_chunks (document_id,chunk_text,source_start,source_end,search_vector) VALUES (%s,'test',0,4,to_tsvector('test'))", (doc_id,))
+    assert await remove_document_records(real_db, removal_graph, doc_id, 1) == 'source.txt'
+    for table in ('officer_documents','extracted_entities','extracted_relationships','cases','organizations','vehicles','locations','document_chunks','ingestion_owned_entities','officer_working_list','officer_pinned_criminal'):
+        assert (await real_db.query(f'SELECT count(*) AS n FROM {table}'))[0]['n'] == 0, table
+    assert [row['person_id'] for row in await real_db.query('SELECT person_id FROM persons')] == ['P001']
+    assert len(await real_db.query('SELECT * FROM crime_types')) == 2  # Seed crimes remain.
+    calls = removal_graph.tx.run.call_args_list
+    assert 'r.document_id=$document' in calls[0].args[0]
+    assert calls[0].kwargs['document'] == doc_id
+    assert all('DETACH DELETE' not in call.args[0] for call in calls)
+    assert any(person_id in call.kwargs.get('ids', []) for call in calls)
+    assert all("n.source='document_extraction'" in call.args[0] for call in calls[1:])
+
+
+async def test_removal_preserves_shared_entities_until_last_source(real_db, removal_graph):
+    from backend.services.document_removal import remove_document_records
+    first, second = await add_document(real_db), await add_document(real_db)
+    result = full_extraction()
+    result.entities[1].identifier = 'BOB-RECORD'
+    await persist_extraction(real_db, first, result)
+    await persist_extraction(real_db, second, result)
+    await real_db.query("UPDATE officer_documents SET processing_status='complete'")
+    await remove_document_records(real_db, removal_graph, first, 1)
+    assert len(await real_db.query('SELECT * FROM persons')) == 2
+    assert len(await real_db.query('SELECT * FROM cases')) == 1
+    assert len(await real_db.query('SELECT * FROM extracted_relationships')) == 9
+    await remove_document_records(real_db, removal_graph, second, 1)
+    assert len(await real_db.query('SELECT * FROM persons')) == 1
+    assert not await real_db.query('SELECT * FROM cases')
+    assert not await real_db.query('SELECT * FROM locations')
+
+
+async def test_neo4j_failure_rolls_back_removal_and_allows_retry(real_db, removal_graph):
+    from backend.services.document_removal import remove_document_records
+    doc_id = await add_document(real_db)
+    await persist_extraction(real_db, doc_id, full_extraction())
+    await real_db.query("UPDATE officer_documents SET processing_status='complete'")
+    removal_graph.tx.run.side_effect = RuntimeError('Neo4j offline')
+    with pytest.raises(APIError, match='document was retained'):
+        await remove_document_records(real_db, removal_graph, doc_id, 1)
+    assert len(await real_db.query('SELECT * FROM extracted_entities')) == 8
+    assert len(await real_db.query('SELECT * FROM extracted_relationships')) == 9
+    assert len(await real_db.query('SELECT * FROM persons')) == 2
+    assert len(await real_db.query('SELECT * FROM officer_documents')) == 1
+    removal_graph.tx.run.side_effect = None
+    await remove_document_records(real_db, removal_graph, doc_id, 1)
+    assert not await real_db.query('SELECT * FROM officer_documents')
+
+
+async def test_removal_preserves_independent_sql_and_graph_links(real_db, removal_graph):
+    from backend.services.document_removal import remove_document_records
+    doc_id = await add_document(real_db)
+    payload = await persist_extraction(real_db, doc_id, full_extraction())
+    await real_db.query("UPDATE officer_documents SET processing_status='complete'")
+    person_id = next(n['id'] for n in payload['nodes'] if n['kind'] == 'Person' and n['id'] != 'P001')
+    org_id = next(n['id'] for n in payload['nodes'] if n['kind'] == 'Organization')
+    await real_db.query('CREATE TABLE independent_links (person_id varchar(20) REFERENCES persons ON DELETE CASCADE)')
+    await real_db.query('INSERT INTO independent_links VALUES (%s)', (person_id,))
+    removal_graph.run.side_effect = lambda query, params: [{'id': org_id}] if 'n:Organization' in query else []
+    await remove_document_records(real_db, removal_graph, doc_id, 1)
+    assert len(await real_db.query('SELECT * FROM persons')) == 2
+    assert len(await real_db.query('SELECT * FROM independent_links')) == 1
+    assert len(await real_db.query('SELECT * FROM organizations')) == 1
+
+
+async def test_old_import_ownership_backfill_is_safe_and_repeatable(real_db, removal_graph):
+    from backend.services.document_removal import remove_document_records
+    doc_id = await add_document(real_db)
+    await persist_extraction(real_db, doc_id, full_extraction())
+    await real_db.query('DELETE FROM ingestion_owned_entities')
+    await real_db.ensure_schema()
+    await real_db.ensure_schema()
+    await real_db.query("UPDATE officer_documents SET processing_status='complete'")
+    await remove_document_records(real_db, removal_graph, doc_id, 1)
+    assert len(await real_db.query('SELECT * FROM persons')) == 1
+    assert not await real_db.query('SELECT * FROM cases')
+    # Older numeric IDs cannot prove whether the lookup record predated the import.
+    assert len(await real_db.query('SELECT * FROM locations')) == 1
+    assert any('n:Location' in call.args[0] for call in removal_graph.tx.run.call_args_list)
+
+
+async def test_profile_activity_uses_connections_and_disappears_with_source(real_db, removal_graph):
+    from backend.services.profile_activity import load_activity
+    from backend.services.document_removal import remove_document_records
+    doc_id = await add_document(real_db)
+    await persist_extraction(real_db, doc_id, full_extraction())
+    # Alice is linked to the case in Mumbai, without a direct residence/sighting edge.
+    person = (await real_db.query("SELECT * FROM persons WHERE person_id='P001'"))[0]
+    assert person['city'] == 'Mumbai'
+    assert person['last_seen'] is None
+    data = await load_activity('P001', real_db, 1)
+    assert data['location']['city'] == 'Mumbai'
+    assert {entry['kind'] for entry in data['entries']} == {'PERSON_RECORD','WITNESS_IN','EMPLOYED_BY','CONTACTED'}
+    assert all(entry['canOpenSource'] for entry in data['entries'])
+    await real_db.query("UPDATE officer_documents SET processing_status='complete'")
+    await remove_document_records(real_db, removal_graph, doc_id, 1)
+    assert await load_activity('P001', real_db, 1) == {'entries': [], 'location': None}

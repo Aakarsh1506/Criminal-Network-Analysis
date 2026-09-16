@@ -41,6 +41,7 @@ def test_route_inventory_matches_express(app):
     assert actual == sorted(
         expected
         + [
+            ["GET", "/api/criminals/{id}/activity"],
             ["GET", "/api/documents/source-types"],
             ["GET", "/api/documents/{id}"],
             ["POST", "/api/documents/{id}/process"],
@@ -79,6 +80,7 @@ async def test_health_and_cors(client):
         "/api/documents",
         "/api/auth/me",
         "/api/criminals/P001/network",
+        "/api/criminals/P001/activity",
     ],
 )
 async def test_protected_routes_require_cookie(client, db, path):

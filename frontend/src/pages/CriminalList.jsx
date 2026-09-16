@@ -3,11 +3,13 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { fetchCriminals } from "../api/criminals";
 import { fetchWorkspace, addToWorkingList, removeFromWorkingList } from "../api/workspace";
 import BackButton from "../components/BackButton";
+import { useTranslation } from "../i18n";
 import "./CriminalList.css";
 
 function CriminalList() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [listedIds, setListedIds] = useState([]);
   const [results, setResults] = useState([]);
@@ -60,13 +62,13 @@ function CriminalList() {
       <BackButton />
 
       <header className="list-top">
-        <h2>{loading ? "Searching…" : `${results.length} file${results.length !== 1 ? "s" : ""} matched`}</h2>
+        <h2>{loading ? t("search") : `${results.length} ${t("searchResults")}`}</h2>
       </header>
 
       <div className="folder-stack">
         {error && <p className="empty-note">{error}</p>}
         {!loading && !error && results.length === 0 && (
-          <p className="empty-note">No case file matches that search.</p>
+          <p className="empty-note">{t("noSearchMatches")}</p>
         )}
 
         {results.map((c, i) => (
@@ -80,7 +82,7 @@ function CriminalList() {
             <img src={c.photo} alt={c.name} className="folder-photo" />
             <div className="folder-info">
               <h3>{c.name}</h3>
-              <p className="folder-alias">Known as "{c.alias}", based in {c.location.city}</p>
+            <p className="folder-alias">{t("basedIn")} {c.location.city}{c.alias ? ` · ${c.alias}` : ""}</p>
               <div className="tag-row">
                 {c.crimeTags.map((tag) => <span key={tag} className="tag-stamp">{tag}</span>)}
               </div>
@@ -89,7 +91,7 @@ function CriminalList() {
               className={`list-toggle-btn ${listedIds.includes(c.id) ? "list-toggle-active" : ""}`}
               onClick={(e) => handleToggleList(e, c)}
             >
-              {listedIds.includes(c.id) ? "Remove from list" : "Add to list"}
+              {listedIds.includes(c.id) ? t("removeFromList") : t("addToList")}
             </button>
           </div>
         ))}
