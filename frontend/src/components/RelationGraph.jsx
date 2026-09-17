@@ -52,19 +52,45 @@ const stylesheet = [
     'text-background-padding': 4, 'text-background-shape': 'roundrectangle', 'overlay-opacity': 0,
     'transition-property': 'opacity, width, line-color, target-arrow-color', 'transition-duration': '160ms',
   } },
+  { selector: 'edge[count > 1]', style: { width: 'mapData(count, 2, 6, 2, 3.4)', opacity: 0.7 } },
+  { selector: 'edge.bidirectional', style: { 'source-arrow-shape': 'triangle', 'source-arrow-color': '#5c6b82' } },
   { selector: 'node:selected, node.hovered', style: {
     'border-width': 3.5, 'overlay-opacity': 0.22, 'overlay-padding': 7,
   } },
   { selector: 'edge.focused, edge:selected, edge.hovered', style: {
-    width: 2.6, 'line-color': '#e0b072', 'target-arrow-color': '#e0b072', opacity: 1, 'z-index': 15,
+    width: 2.6, 'line-color': '#e0b072', 'target-arrow-color': '#e0b072', 'source-arrow-color': '#e0b072',
+    opacity: 1, 'z-index': 15,
   } },
   { selector: 'node.focused', style: { 'z-index': 12 } },
   { selector: '.muted', style: { opacity: 0.12 } },
 ];
 
+// Draw one line per pair of nodes. Several recorded relationships between the same two
+// records (e.g. MENTIONED_IN and SUSPECT_IN) are kept on the line and listed when selected.
+function mergeEdges(edges) {
+  const pairs = new Map();
+  for (const edge of edges) {
+    const key = [edge.source, edge.target].sort().join('\u0000');
+    if (!pairs.has(key)) pairs.set(key, []);
+    pairs.get(key).push(edge);
+  }
+  return [...pairs.values()].map((group) => {
+    const [first] = group;
+    const labels = [...new Set(group.map((edge) => edge.label).filter(Boolean))];
+    const bidirectional = group.some((edge) => edge.source !== first.source);
+    return {
+      ...first,
+      label: labels.join(' · '),
+      count: group.length,
+      bidirectional,
+      relationships: group,
+    };
+  });
+}
+
 // Scatter starting positions so the force simulation can form natural clusters.
-// Keep the selected person fixed at the origin.
-function networkElements(network) {
+// Start the selected person near the center; every node remains draggable.
+function networkElements(network, edges) {
   const spread = Math.max(300, Math.sqrt(network.nodes.length) * 140);
   const roots = network.nodes.filter((node) => node.depth === 0);
   return [
@@ -73,10 +99,10 @@ function networkElements(network) {
       return {
         data: node,
         position: root ? { x: (roots.indexOf(node) - (roots.length - 1) / 2) * 280, y: 0 } : { x: (Math.random() - 0.5) * spread, y: (Math.random() - 0.5) * spread },
-        locked: root,
+        grabbable: true,
       };
     }),
-    ...network.edges.map((edge) => ({ data: edge })),
+    ...edges.map((edge) => ({ data: edge, classes: edge.bidirectional ? 'bidirectional' : '' })),
   ];
 }
 
@@ -96,6 +122,7 @@ export default function RelationGraph({ mainCriminal, network: suppliedNetwork, 
   const cyRef = useRef(null);
   const network = suppliedNetwork ?? (result?.id === mainCriminal.id ? result.data : null);
   const error = suppliedNetwork ? '' : result?.id === mainCriminal.id ? result.error : '';
+  const edges = useMemo(() => (network ? mergeEdges(network.edges) : []), [network]);
 
   useEffect(() => {
     if (suppliedNetwork) return;
@@ -109,7 +136,7 @@ export default function RelationGraph({ mainCriminal, network: suppliedNetwork, 
   useEffect(() => {
     if (!network || !container.current) return;
     const cy = cytoscape({
-      container: container.current, elements: networkElements(network),
+      container: container.current, elements: networkElements(network, edges),
       style: stylesheet, layout: { name: 'preset', fit: false },
       minZoom: 0.05, maxZoom: 4, wheelSensitivity: 0.2, selectionType: 'single',
     });
@@ -123,6 +150,7 @@ export default function RelationGraph({ mainCriminal, network: suppliedNetwork, 
       stop: () => fitAroundPerson(cy),
     });
     forceLayout.run();
+    cy.on('grab', 'node', () => forceLayout.stop());
     cy.on('select', 'node, edge', ({ target }) => {
       setSelected(target.data());
       cy.elements().removeClass('muted focused');
@@ -147,7 +175,7 @@ export default function RelationGraph({ mainCriminal, network: suppliedNetwork, 
     const observer = new ResizeObserver(() => { cy.resize(); fitAroundPerson(cy); });
     observer.observe(container.current);
     return () => { observer.disconnect(); forceLayout.stop(); cy.destroy(); cyRef.current = null; };
-  }, [network]);
+  }, [network, edges]);
 
   function inspect(id) {
     const cy = cyRef.current;
@@ -161,14 +189,14 @@ export default function RelationGraph({ mainCriminal, network: suppliedNetwork, 
     if (cy) cy.zoom({ level: Math.max(cy.minZoom(), Math.min(cy.maxZoom(), cy.zoom() * factor)), renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
   }
 
-  const activeSelection = network && selected && [...network.nodes, ...network.edges].find((item) => item.id === selected.id);
+  const activeSelection = network && selected && [...network.nodes, ...edges].find((item) => item.id === selected.id);
 
   useEffect(() => {
     onSelectionChange?.(activeSelection ? {
       type: activeSelection.kind ? 'node' : 'edge',
       id: activeSelection.id,
       personId: activeSelection.originPersonId || mainCriminal.id,
-      label: activeSelection.kind ? activeSelection.label : `${network.nodes.find((node) => node.id === activeSelection.source)?.label || 'Record'} → ${activeSelection.label} → ${network.nodes.find((node) => node.id === activeSelection.target)?.label || 'Record'}`,
+      label: activeSelection.kind ? activeSelection.label : `${network.nodes.find((node) => node.id === activeSelection.source)?.label || 'Record'} ${activeSelection.bidirectional ? '↔' : '→'} ${activeSelection.label} ${activeSelection.bidirectional ? '↔' : '→'} ${network.nodes.find((node) => node.id === activeSelection.target)?.label || 'Record'}`,
     } : null);
   }, [activeSelection, network, onSelectionChange, mainCriminal.id]);
 
@@ -210,10 +238,13 @@ export default function RelationGraph({ mainCriminal, network: suppliedNetwork, 
           <span className="relation-graph__panel-title">{activeSelection.label}</span>
           <span className="relation-graph__panel-meta">{activeSelection.kind ? `${activeSelection.kind} · ${activeSelection.depth === 0 ? 'Selected person' : `${activeSelection.depth} graph steps away`}` : 'Recorded relationship'}</span>
           {activeSelection.personId && <span className="relation-graph__panel-meta">{activeSelection.alias ? `"${activeSelection.alias}" · ` : ''}{activeSelection.personId} · {activeSelection.city || 'City unavailable'}</span>}
-          {activeSelection.reason && <span className="relation-graph__panel-meta">{activeSelection.reason}</span>}
-          {activeSelection.evidence && <span className="relation-graph__panel-meta">Evidence: {activeSelection.evidence}</span>}
-          {activeSelection.reviewStatus && <span className="relation-graph__panel-meta">Review: {activeSelection.reviewStatus}</span>}
-          {activeSelection.provenance && <span className="relation-graph__panel-meta">Source: {activeSelection.provenance}</span>}
+          {(activeSelection.relationships ?? [activeSelection]).map((relation) => <div className="relation-graph__panel-relation" key={relation.id}>
+            {activeSelection.count > 1 && <span className="relation-graph__panel-meta relation-graph__panel-label">{relation.label}</span>}
+            {relation.reason && <span className="relation-graph__panel-meta">{relation.reason}</span>}
+            {relation.evidence && <span className="relation-graph__panel-meta">Evidence: {relation.evidence}</span>}
+            {relation.reviewStatus && <span className="relation-graph__panel-meta">Review: {relation.reviewStatus}</span>}
+            {relation.provenance && <span className="relation-graph__panel-meta">Source: {relation.provenance}</span>}
+          </div>)}
           <div className="relation-graph__panel-actions">
             {activeSelection.personId && activeSelection.personId !== String(mainCriminal.id) && onNodeClick && <button className="rg-btn" type="button" onClick={() => onNodeClick(activeSelection.personId)}>Open profile</button>}
             <button className="rg-btn" type="button" onClick={() => inspect('')}>{t("clearSelection") || "Clear selection"}</button>

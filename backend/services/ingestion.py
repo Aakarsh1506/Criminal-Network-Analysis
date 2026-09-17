@@ -75,6 +75,8 @@ async def process_document(state, doc):
                         (document_id,),
                     )
                     return
+                await progress(25, "Indexing reviewed source passages")
+                await index_document(state.db, document_id, text, settings=state.settings, client=state.http_client)
                 await progress(30, "Saving reviewed records")
                 payload = await persist_extraction(state.db, document_id, result)
             await progress(85, "Saving network relationships")

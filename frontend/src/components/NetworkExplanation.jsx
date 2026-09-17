@@ -1,17 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../i18n";
-
-function formatInsight(text) {
-  return text.split("\n").map((line, index) => {
-    const heading = line.trim().match(/^\*\*(.+?)\*\*:?$/);
-    if (heading) return <h4 className="network-ai-heading" key={`${index}-${line}`}>{heading[1]}</h4>;
-    const parts = line.split(/(\*\*.+?\*\*)/g);
-    return <p className="network-ai-line" key={`${index}-${line}`}>{parts.map((part, partIndex) => {
-      const bold = part.match(/^\*\*(.+?)\*\*$/);
-      return bold ? <strong key={partIndex}>{bold[1]}</strong> : part;
-    })}</p>;
-  });
-}
+import formatInsight from "../utils/formatInsight";
 
 export default function NetworkExplanation({ id, selection, onClear }) {
   const { t } = useTranslation();

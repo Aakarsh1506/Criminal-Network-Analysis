@@ -152,6 +152,49 @@ async def test_persistence_maps_all_kinds_roles_and_repairs_sequence(real_db):
     assert (await real_db.query("SELECT COUNT(*) AS n FROM persons WHERE name='Bob'"))[0]["n"] == 2
 
 
+async def test_crime_type_is_saved_with_a_capital_first_letter(real_db):
+    doc_id = await add_document(real_db)
+    result = full_extraction()
+    crime = next(e for e in result.entities if e.kind == "CrimeType")
+    crime.name = crime.evidence = "financial fraud"
+    payload = await persist_extraction(real_db, doc_id, result)
+    rows = await real_db.query("SELECT crime_name FROM crime_types WHERE crime_id > 10")
+    assert [row["crime_name"] for row in rows] == ["Financial fraud"]
+    saved = await real_db.query("SELECT name, evidence FROM extracted_entities WHERE kind='CrimeType'")
+    assert saved == [{"name": "Financial fraud", "evidence": "financial fraud"}]
+    node = next(n for n in payload["nodes"] if n["kind"] == "CrimeType")
+    assert node["properties"]["crime_name"] == "Financial fraud"
+    assert crime.name == "financial fraud"  # The reviewed snapshot is not modified.
+
+async def test_same_person_in_three_firs_is_offered_or_reused_not_silently_duplicated(real_db):
+    from backend.services.entity_resolution import person_suggestions
+
+    def fir(case, phone=None):
+        attributes = [{"key": "phone", "value": phone}] if phone else []
+        return Extraction.model_validate({"entities": [
+            {"ref": "r", "kind": "Person", "name": "Rohan Mehta", "identifier": None,
+             "attributes": attributes, "evidence": "Rohan Mehta"},
+            {"ref": "c", "kind": "Case", "name": case, "identifier": case, "attributes": [],
+             "evidence": case},
+        ], "relationships": [{"subject": "r", "predicate": "SUSPECT_IN", "object": "c",
+                              "evidence": "Rohan Mehta " + case}]})
+
+    graph = type("Graph", (), {"run": staticmethod(lambda *args: _no_rows())})()
+    first = await persist_extraction(real_db, await add_document(real_db), fir("FIR-1", "9876543210"))
+    rohan = next(n["id"] for n in first["nodes"] if n["kind"] == "Person")
+    # No phone: the officer is offered the existing person instead of a silent duplicate.
+    second = fir("FIR-2")
+    assert [s["personId"] for s in await person_suggestions(real_db, graph, second)] == [rohan]
+    # The same recorded phone number identifies the same person automatically.
+    third = await persist_extraction(real_db, await add_document(real_db), fir("FIR-3", "+91 98765 43210"))
+    assert next(n["id"] for n in third["nodes"] if n["kind"] == "Person") == rohan
+    rows = await real_db.query("SELECT person_id FROM persons WHERE name='Rohan Mehta'")
+    assert [row["person_id"] for row in rows] == [rohan]
+
+
+async def _no_rows():
+    return []
+
 async def test_sql_failure_rolls_back_entities_and_outbox(real_db):
     doc_id = await add_document(real_db)
     result = full_extraction()
@@ -241,7 +284,8 @@ async def test_uploaded_text_flows_through_ai_sql_and_graph(real_db, settings, m
     assert "WITNESS_IN" in tx.run.call_args.args[0]
     profile = await load_profile("P001", real_db, graph)
     assert len(profile["criminal"]["cases"]) == 1
-    assert provider.post.await_count == 1
+    assert len([call for call in provider.post.call_args_list if call.args[0].endswith("/chat/completions")]) == 1
+    assert len([call for call in provider.post.call_args_list if call.args[0].endswith("/api/embed")]) == 1
 
 
 async def test_review_gate_then_exact_confirmation(real_db, settings):
@@ -495,8 +539,8 @@ async def test_old_import_ownership_backfill_is_safe_and_repeatable(real_db, rem
 
 
 async def test_profile_activity_uses_connections_and_disappears_with_source(real_db, removal_graph):
-    from backend.services.profile_activity import load_activity
     from backend.services.document_removal import remove_document_records
+    from backend.services.profile_activity import load_activity
     doc_id = await add_document(real_db)
     await persist_extraction(real_db, doc_id, full_extraction())
     # Alice is linked to the case in Mumbai, without a direct residence/sighting edge.
@@ -510,3 +554,84 @@ async def test_profile_activity_uses_connections_and_disappears_with_source(real
     await real_db.query("UPDATE officer_documents SET processing_status='complete'")
     await remove_document_records(real_db, removal_graph, doc_id, 1)
     assert await load_activity('P001', real_db, 1) == {'entries': [], 'location': None}
+
+
+async def test_entity_reuse_and_reviewed_person_identity_survive_source_removal(real_db, removal_graph):
+    from types import SimpleNamespace
+
+    from psycopg.types.json import Jsonb
+
+    from backend.routes.documents import ConfirmBody, confirm_document
+    from backend.services.document_removal import remove_document_records
+    from backend.services.entity_resolution import person_suggestions
+    from backend.services.extraction import Relationship
+
+    original = full_extraction()
+    original.relationships += [
+        Relationship(subject='b', predicate='EMPLOYED_BY', object='o', evidence='Bob works at Acme'),
+        Relationship(subject='b', predicate='RESIDES_IN', object='l', evidence='Bob resides in Mumbai'),
+    ]
+    first = await add_document(real_db)
+    payload = await persist_extraction(real_db, first, original)
+    bob_id = next(n['id'] for n in payload['nodes'] if n['kind'] == 'Person' and n['properties']['name'] == 'Bob')
+    second = await add_document(real_db, confirmed=False)
+    # Alternate formatting should resolve to the original phone and organization.
+    reviewed = original.model_copy(deep=True)
+    phone = next(e for e in reviewed.entities if e.kind == 'PhoneNumber')
+    phone.name = phone.identifier = '+91 12345 67890'
+    organization = next(e for e in reviewed.entities if e.kind == 'Organization')
+    organization.identifier = None
+    organization.name = ' ACME '
+    await real_db.query("UPDATE officer_documents SET processing_status='awaiting_review',extraction=%s WHERE document_id=%s",
+                        (Jsonb(reviewed.model_dump()), second))
+    graph = removal_graph
+    suggestions = await person_suggestions(real_db, graph, reviewed)
+    bob = next(s for s in suggestions if s['ref'] == 'b')
+    assert bob['personId'] == bob_id
+    assert len(bob['sharedConnections']) >= 3
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(db=real_db, graph=graph)))
+    await confirm_document(second, ConfirmBody(extraction=reviewed, person_matches={'b': bob_id}), request, {'officerId': 1})
+    second_payload = await persist_extraction(real_db, second, reviewed)
+    assert {(n['kind'], n['id']) for n in second_payload['nodes']} == {(n['kind'], n['id']) for n in payload['nodes']}
+    assert (await real_db.query('SELECT COUNT(*) AS n FROM persons'))[0]['n'] == 2
+    assert len(await real_db.query('SELECT DISTINCT canonical_id FROM extracted_entities WHERE kind=\'PhoneNumber\'')) == 1
+    await real_db.query("UPDATE officer_documents SET processing_status='complete' WHERE document_id IN (%s,%s)", (first, second))
+    await remove_document_records(real_db, graph, first, 1)
+    assert await real_db.query('SELECT 1 FROM persons WHERE person_id=%s', (bob_id,))
+    assert len(await real_db.query('SELECT * FROM extracted_entities WHERE document_id=%s', (second,))) == len(reviewed.entities)
+    await remove_document_records(real_db, graph, second, 1)
+    assert not await real_db.query('SELECT 1 FROM persons WHERE person_id=%s', (bob_id,))
+    assert await real_db.query("SELECT 1 FROM persons WHERE person_id='P001'")
+
+
+async def test_hybrid_search_keeps_person_and_officer_scope_and_exact_offsets(real_db, settings):
+    from unittest.mock import AsyncMock
+
+    import httpx
+
+    from backend.services.rag import index_document, retrieve_context
+
+    client = AsyncMock()
+    async def embeddings(*args, **kwargs):
+        texts = kwargs['json']['input']
+        return httpx.Response(200, json={'embeddings': [[1, 0, 0] for _ in texts]})
+    client.post.side_effect = embeddings
+    first = await add_document(real_db)
+    second = await add_document(real_db)
+    pending = await add_document(real_db, confirmed=False)
+    await persist_extraction(real_db, first, full_extraction())
+    different = full_extraction()
+    different.entities[0].identifier = 'P009'
+    different.entities[0].name = 'Other Person'
+    await persist_extraction(real_db, second, different)
+    source = '   Alice lives in Mumbai.\n\nAlice witnessed a case.  '
+    for identifier in (first, second, pending):
+        result = await index_document(real_db, identifier, source, settings=settings, client=client)
+        assert result['embedded'] == result['chunks'] > 0
+    chunks = await retrieve_context(real_db, 1, 'Where does Alice reside?', person_id='P001', settings=settings, client=client)
+    assert {row['document_id'] for row in chunks} == {first}
+    assert chunks[0]['retrieval_mode'] == 'hybrid'
+    assert source[chunks[0]['source_start'] - 1:chunks[0]['source_end']] == chunks[0]['chunk_text']
+    assert await retrieve_context(real_db, 99, 'Alice', person_id='P001', settings=settings, client=client) == []
+    await index_document(real_db, first, source, settings=settings, client=client)
+    assert (await real_db.query('SELECT count(*) AS n FROM document_chunks WHERE document_id=%s', (first,)))[0]['n'] == 1

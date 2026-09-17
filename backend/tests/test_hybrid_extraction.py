@@ -402,3 +402,50 @@ def test_address_fields_override_statistical_person_predictions(monkeypatch):
         ("Example Gardens", "Location"),
         ("Unknown District", "Location"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_structural_edges_are_saved_and_outrank_a_conflicting_model_role(settings, monkeypatch):
+    text = ("FIR No. FIR-SYN-2026-1\nDetails of known / suspected accused\n1. Rohan Mehta, age 29\n"
+            "Kavita Rao witnessed Rohan Mehta near the shop.\n")
+    rows = [("c", "Case", "FIR No. FIR-SYN-2026-1"), ("r", "Person", "Rohan Mehta"), ("k", "Person", "Kavita Rao")]
+    local = extraction.Extraction(entities=[
+        extraction.Entity(ref=ref, kind=kind, name=name, identifier=name if kind == "Case" else None,
+                          attributes=[], evidence=name) for ref, kind, name in rows], relationships=[])
+    monkeypatch.setattr(local_entities, "extract_local", lambda *args: local)
+    async def post(*args, **kwargs):
+        lines = json.loads(kwargs["json"]["messages"][1]["content"])["source_lines"]
+        line = next(item["line"] for item in lines if "Kavita Rao witnessed" in item["text"])
+        span = {"start_line": line, "end_line": line}
+        return response({"relationships": [
+            {"subject": "r", "predicate": "WITNESS_IN", "object": "c", "evidence": span},
+            {"subject": "k", "predicate": "WITNESS_IN", "object": "c", "evidence": span},
+        ]})
+
+    client = SimpleNamespace(post=AsyncMock(side_effect=post))
+    result = await extraction.extract_entities(
+        text, "fir", replace(settings, extraction_mode="hybrid", groq_api_key="fake"), client)
+    saved = {(r.subject, r.predicate, r.object) for r in result.relationships}
+    assert {("r", "SUSPECT_IN", "c"), ("r", "MENTIONED_IN", "c"), ("k", "MENTIONED_IN", "c"),
+            ("k", "WITNESS_IN", "c")} <= saved
+    assert ("r", "WITNESS_IN", "c") not in saved
+    assert [(r.subject, r.predicate) for r in result.excluded_relationships] == [("r", "WITNESS_IN")]
+    assert "SUSPECT_IN" in result.excluded_relationships[0].reason
+
+
+@pytest.mark.asyncio
+async def test_model_role_without_role_wording_is_excluded(settings, local_pipeline):
+    text = "FIR/2026/0589\nName: Alice\nAlice reportedly resides in Mumbai and contacted the bank."
+
+    async def post(*args, **kwargs):
+        request = json.loads(kwargs["json"]["messages"][1]["content"])
+        refs = {e["name"]: e["ref"] for e in request["entities"]}
+        line = next(i["line"] for i in request["source_lines"] if "resides" in i["text"])
+        return response({"relationships": [{"subject": refs["Alice"], "predicate": "WITNESS_IN",
+                         "object": refs["FIR/2026/0589"], "evidence": {"start_line": line, "end_line": line}}]})
+
+    result = await extraction.extract_entities(
+        text, "fir", replace(settings, extraction_mode="hybrid", groq_api_key="fake"),
+        SimpleNamespace(post=AsyncMock(side_effect=post)))
+    assert not any(r.predicate == "WITNESS_IN" for r in result.relationships)
+    assert "no wording" in result.excluded_relationships[0].reason

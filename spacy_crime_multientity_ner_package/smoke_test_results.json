@@ -1,0 +1,74 @@
+[
+  {
+    "text": "Inspector Farah Qureshi interviewed Ritesh Batra in Jaipur.",
+    "entities": [
+      [
+        "Farah Qureshi",
+        "PERSON"
+      ],
+      [
+        "Ritesh Batra",
+        "PERSON"
+      ],
+      [
+        "Jaipur",
+        "GPE"
+      ]
+    ]
+  },
+  {
+    "text": "Anita Desai contacted Saanvi Kapoor outside Lotus Textiles in Thane.",
+    "entities": [
+      [
+        "Anita Desai",
+        "PERSON"
+      ],
+      [
+        "Saanvi Kapoor",
+        "PERSON"
+      ],
+      [
+        "Lotus Textiles",
+        "ORG"
+      ],
+      [
+        "Thane",
+        "GPE"
+      ]
+    ]
+  },
+  {
+    "text": "CCTV footage and Call Detail Records were entered in the case file.",
+    "entities": []
+  },
+  {
+    "text": "Meera Kulkarni was seen near Old Mill Road.",
+    "entities": [
+      [
+        "Meera Kulkarni",
+        "PERSON"
+      ],
+      [
+        "Mill Road",
+        "ORG"
+      ]
+    ]
+  },
+  {
+    "text": "The consignment was stored at Sunrise Warehouse in Surat.",
+    "entities": [
+      [
+        "Sunrise Warehouse",
+        "ORG"
+      ],
+      [
+        "Surat",
+        "GPE"
+      ]
+    ]
+  },
+  {
+    "text": "Financial records and the police report were reviewed by investigators.",
+    "entities": []
+  }
+]

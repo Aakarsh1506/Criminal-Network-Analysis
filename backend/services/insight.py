@@ -26,11 +26,120 @@ def build_insight_context(network, selection):
         ids.add(selected["id"])
     return {
         "selection": {"type": "edge" if kind == "edge" else "node", "record": selected},
+        "analysis": network_analysis(network, selected if kind != "edge" else None),
         "nodes": [node for node in network["nodes"] if node["id"] in ids],
         "relationships": edges,
         "limitations": {
             "networkTruncated": bool(network.get("truncated")),
             "connectionsOmitted": len(connected) > len(edges),
             "scope": "Selected record and at most 25 immediate connections. Graph steps do not prove personal association. Evidence and review status may be missing; recorded claims are not automatically verified.",
+        },
+    }
+
+
+ROLE_LABELS = {"SUSPECT IN", "WITNESS IN", "MENTIONED IN"}
+PLACE_LABELS = {"RESIDES IN", "SEEN AT"}
+
+
+def network_analysis(network, selected, limit=5):
+    """Patterns a small model cannot reliably compute from raw graph JSON.
+
+    Every item names the records it is derived from. Shared records are listed as
+    leads to check, never as proof that people know each other.
+    """
+    # Missing fields are tolerated: older graph rows can lack a label or kind.
+    nodes = {node["id"]: {**node, "kind": node.get("kind") or "Record", "label": node.get("label") or node["id"]}
+             for node in network["nodes"]}
+    neighbours, labelled = {}, []
+    for edge in network["edges"]:
+        if edge.get("source") in nodes and edge.get("target") in nodes:
+            edge = {**edge, "label": edge.get("label") or ""}
+            neighbours.setdefault(edge["source"], set()).add(edge["target"])
+            neighbours.setdefault(edge["target"], set()).add(edge["source"])
+            labelled.append(edge)
+
+    def name(node_id):
+        node = nodes[node_id]
+        return f"{node['label']} ({node['kind']})"
+
+    unverified = sum(1 for edge in labelled if (edge.get("reviewStatus") or "unverified") != "verified")
+    missing_evidence = sum(1 for edge in labelled if not edge.get("evidence"))
+    summary = {
+        "records_in_network": {kind: sum(1 for node in nodes.values() if node["kind"] == kind)
+                               for kind in sorted({node["kind"] for node in nodes.values()})},
+        "relationships_unverified": unverified,
+        "relationships_without_evidence": missing_evidence,
+    }
+    if selected is None:
+        return summary
+    me = selected["id"]
+    if me not in nodes:
+        return summary
+    direct = [edge for edge in labelled if me in (edge["source"], edge["target"])]
+    other = lambda edge: edge["target"] if edge["source"] == me else edge["source"]  # noqa: E731
+
+    roles = {}
+    for edge in direct:
+        if edge["label"] in ROLE_LABELS and nodes[other(edge)]["kind"] == "Case":
+            roles.setdefault(edge["label"], []).append(nodes[other(edge)]["label"])
+    # People who appear in the same records as the selected one, ranked by how many.
+    shared = []
+    for node_id, node in nodes.items():
+        if node_id == me or node["kind"] != "Person":
+            continue
+        common = neighbours.get(me, set()) & neighbours.get(node_id, set())
+        if common:
+            shared.append({"person": node["label"], "shared_records": sorted(name(item) for item in common)})
+    shared.sort(key=lambda item: (-len(item["shared_records"]), item["person"]))
+    # Records around the selection that connect several people (e.g. one case, many suspects).
+    hubs = []
+    for node_id in neighbours.get(me, set()):
+        people = sorted(nodes[item]["label"] for item in neighbours.get(node_id, set())
+                        if item != me and nodes[item]["kind"] == "Person")
+        if len(people) >= 2:
+            hubs.append({"record": name(node_id), "other_people": people[:8], "count": len(people)})
+    hubs.sort(key=lambda item: -item["count"])
+    # A place the person resides in or was seen at that is also a case's place of occurrence.
+    places = {other(edge): edge["label"] for edge in direct
+              if edge["label"] in PLACE_LABELS and nodes[other(edge)]["kind"] == "Location"}
+    overlaps = []
+    for edge in labelled:
+        if edge["label"] == "OCCURRED AT" and edge["target"] in places:
+            overlaps.append({"place": nodes[edge["target"]]["label"], "person_link": places[edge["target"]],
+                             "case": nodes[edge["source"]]["label"]})
+    cases = [nodes[other(edge)] for edge in direct if nodes[other(edge)]["kind"] == "Case"]
+    typed = {edge["source"] for edge in labelled if edge["label"] == "OF TYPE"}
+    untyped = sorted({case["label"] for case in cases if case["id"] not in typed})
+    direct_unverified = sum(1 for edge in direct if (edge.get("reviewStatus") or "unverified") != "verified")
+    # Plain sentences for a small model to reason from; each names its records.
+    subject = nodes[me]["label"]
+    observations = []
+    if roles:
+        observations.append(f"{subject} is recorded as " + "; ".join(
+            f"{label.lower()} {len(items)} case(s): {', '.join(sorted(items))}" for label, items in sorted(roles.items())) + ".")
+    for item in shared[:3]:
+        cases_shared = [record for record in item["shared_records"] if record.endswith("(Case)")]
+        if len(item["shared_records"]) >= 2 or len(cases_shared) >= 1:
+            observations.append(f"{item['person']} appears with {subject} in {len(item['shared_records'])} record(s): "
+                                f"{', '.join(item['shared_records'])}.")
+    for item in overlaps[:2]:
+        link = "resides" if item["person_link"] == "RESIDES IN" else "was seen"
+        observations.append(f"{item['place']}, where {subject} {link}, is also the place of occurrence of {item['case']}.")
+    for item in hubs[:2]:
+        observations.append(f"{item['record']} links {subject} with {item['count']} other people: {', '.join(item['other_people'])}.")
+    if direct_unverified or untyped:
+        observations.append(f"{direct_unverified} of {len(direct)} direct links are unverified"
+                            + (f"; no crime type is recorded for {', '.join(untyped)}" if untyped else "") + ".")
+    return {
+        **summary,
+        "key_observations": observations[:7],
+        "selected_roles_by_case": roles,
+        "people_sharing_records_with_selected": shared[:limit],
+        "records_linking_several_people": hubs[:limit],
+        "places_also_linked_to_a_case": overlaps[:limit],
+        "evidence_gaps": {
+            "direct_links_unverified": direct_unverified,
+            "direct_links_without_evidence": sum(1 for edge in direct if not edge.get("evidence")),
+            "cases_without_recorded_crime_type": untyped,
         },
     }

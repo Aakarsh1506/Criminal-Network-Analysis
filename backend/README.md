@@ -89,14 +89,13 @@ read as text for extraction; this is not a raw SQL importer or a transaction ano
 
 Scanned PDFs and images use local Tesseract OCR. Digital PDFs and Word/text files use their
 embedded text. The default hybrid mode extracts entity candidates across the document with
-spaCy and regex, then sends every candidate's name, type, ref, and source context to the
-configured AI provider for checking. The AI may correct a type or flag an invalid candidate;
-flagged candidates remain visible in the review screen. Every candidate must receive one
-check, including entities without relationships. Names are not rewritten or invented.
+spaCy and regex. Candidates are retained with source context and sent to the AI only for
+relationship cue sentences; there is no separate AI entity-checking stage. Names and types
+come from the local extractor and remain visible in the review screen.
 Crime candidates also come from literal offence phrases in narratives (for example,
 “suspected financial fraud”), not just `Crime type:` fields. Vocabulary lives in
-`backend/services/crime_terms.py`. The source wording and qualifiers are retained for
-AI checking; a crime mention alone does not assign that crime to a case or person.
+`backend/services/crime_terms.py`. The source wording and qualifiers are retained as
+evidence; a crime mention alone does not assign that crime to a case or person.
 Next, relationship cues such as “contacted”, “mentioned”, “witness”, “resides”, and “seen”
 select complete source sentences for relationship extraction. A cue is not proof of a link:
 the AI checks the sentence, negations, endpoint types, and source evidence before returning
@@ -138,10 +137,37 @@ the extracted entity properties), with no guessed numeric age. The reviewed attr
 and original evidence are retained.
 Explicit `Address:`, `Location:`, `Residence:`, `City:`, `Area:`, `Locality:` and `Last seen:`
 fields are location candidates and take precedence over statistical NER spans. The local
-phrase list in `backend/data/location_names.json` protects known place names such as
-Bandra Kurla Complex and Khar West from being classified as people. Add exact place-name
-variants to that JSON list and restart to extend it. These rules improve known cases;
-the general English NER model can still misclassify unfamiliar names.
+phrase list in `backend/data/location_names.json` (Indian states, union territories, major
+cities and localities such as Bandra Kurla Complex) marks known places after NER, so a place
+word cannot split a longer name such as "Goa Marine Exports". Single-word entries match only
+when capitalized. Add exact place-name variants to that JSON list and restart to extend it.
+
+`services/entity_spans.py` cleans every NER prediction before review: it drops dates, times,
+amounts, bullets and form labels ("Age", "Page 1", "September 2026", "INR 3,20,000"), splits
+spans at hard line breaks ("Anita Desai⏎Age"), uses explicit suffixes to fix kinds
+("… Pvt. Ltd.", "… Police Station", "… Road"), and keeps one kind per name. These rules only
+trim or discard source spans; they never invent names. NER can still misclassify unfamiliar
+names without a suffix (for example, a telecom brand tagged as a place). Statutes and sections
+("BNS 318(4)", "Bharatiya Nyaya Sanhita"), courts and the State ("State Sessions Court", "State
+of Maharashtra"), ranks and FIR form labels ("Nationality", "P.S.") are never entity candidates.
+
+`services/structural_relations.py` adds relationships an FIR states through its layout or in
+fixed phrasing, without a model: people listed under an accused or witness heading
+(`SUSPECT_IN`/`WITNESS_IN`), `Accused:`/`Witness:` fields, `Address:` in a person's record and
+"resident of" in a clause naming one person (`RESIDES_IN`), `Place of occurrence:` (`OCCURRED_AT`),
+`Nature of complaint:`/`Offence:` (`OF_TYPE`), "X called Y", "calls between X and Y", "X was seen
+at/visited L" and "X, an employee of O". Every named person, organization and vehicle is
+`MENTIONED_IN` the document's own FIR. Labels may be followed by their value on the same line
+("Accused: …") or on the next line (table layouts). Case edges attach only to the document's own
+FIR: its only case, or the only case printed under an "FIR No." label. Other FIR numbers referenced
+in the text get no case edges, and a document with two labelled FIRs gets none. "FIR No." is not
+part of a case ID, so "FIR No. FIR-SYN-2026-0142" and "FIR-SYN-2026-0142" are the same case.
+Phrases require the words to be adjacent, so negations do not match. Each edge cites a
+contiguous source span and passes the same validation as model output.
+
+Model suggestions add to these edges. A model edge is excluded for review when its citation has no
+wording for its type (a `WITNESS_IN` citation must mention a witness, for example), or when it
+gives a person a different role from the FIR's own accused/witness listing.
 
 Groq receives bounded passages surrounding entity mentions, with nearby context and
 explicit markers where text was omitted. It cannot add entities, and relationships retain
@@ -302,7 +328,7 @@ OLLAMA_MAX_TOKENS=4096
 SPACY_MODEL=en_core_web_sm
 ```
 
-Hybrid mode uses spaCy/regex for entity candidates and Ollama for entity checking and
+Hybrid mode uses spaCy/regex for entity candidates and Ollama only for
 sentence-based relationship extraction. Install the configured
 spaCy model with `backend/.venv/bin/python -m spacy download en_core_web_sm` if needed.
 `EXTRACTION_MODE=groq` is the legacy name for full model extraction; it also respects
@@ -322,7 +348,7 @@ each predicate to existing refs with the correct entity types and direction. Sou
 endpoint-identity, and evidence-range validation still run before saving any links.
 The model prompt no longer repeats the full JSON schema.
 
-Entity checks run in small batches (up to eight candidates). Relationship batches group
+Relationship batches group
 whole cue sentences; at 1,024 output tokens the target is four sentence spans and 2,048
 source characters. A full sentence and its pronoun context can exceed that soft target;
 neither is cut to fit. Identical sentence/context repeats are analyzed once. Single-FIR
@@ -364,3 +390,81 @@ attempt prints the HTTP response body to the backend console, followed by the ge
 JSON or `error.failed_generation` when Groq rejects it. Output is captured before validation,
 so failed attempts are visible too. API keys are redacted; request headers are never printed.
 Full responses can contain source document data. Set the flag to `false` when finished.
+
+### Reusing existing entities and reviewing person identities
+
+New imports look up existing records before creating graph nodes. Stable source IDs are
+reused; organizations/crime types use normalized names, vehicles use normalized registration,
+and locations use city/state (a missing state can reuse only an unambiguous city). Imported
+phone numbers ignore formatting, including equivalent Indian +91/0091 prefixes. Ambiguous
+identities are not guessed. These rules prevent new duplicates; they do not consolidate old ones.
+
+On **Confirm and save**, document review checks same-name people. If an existing person and
+the extracted person share at least **three distinct, already-resolved neighbouring nodes**,
+a dialog lists the shared nodes and asks whether to reuse that person or keep a separate
+record. Multiple edges to one neighbour count once; direction/predicate differences do not
+create additional shared neighbours. Rejected entities and relationships do not contribute.
+Names alone never automatically merge people. Existing exact person IDs still resolve directly.
+
+Suggestions combine imported SQL links and Neo4j connections. If Neo4j cannot be checked,
+identity review reports an error rather than silently treating it as no match. Approved
+choices are checked server-side and stored with the officer's document confirmation. Each
+document retains separate source evidence, so removing one source preserves shared records.
+Restart FastAPI to apply the idempotent `person_matches` column migration before using this flow.
+
+### Investigator chat answers
+
+Investigator questions use a separate question-led prompt for Ollama and Groq. The latest
+question is the final user message; at most six recent messages from the same selected
+record provide follow-up context. Previous answers are not treated as source evidence.
+The provider returns two fields, rendered as **Recorded facts** and **Investigator insight**,
+with a target of about 100 words total. Answers focus on the requested detail, state when
+it is unknown, and separate documented facts from analytical observations. Ollama thinking
+remains enabled for investigator questions. Malformed or cut-off answers report an error
+rather than displaying incomplete sections.
+
+### Detailed profile records and hybrid document retrieval
+
+The profile's timeline is replaced by a detailed record: identity fields, cases, connected
+locations, source-backed relationships, and additional extracted attributes. Stored details
+load without an AI call. **Generate detailed AI record** creates a cited synthesis of those
+facts and retrieved source passages. Source quotes that fail the existing person-name checks
+are marked for review and excluded from the structured AI input. The model still needs human
+verification; citation validation checks source IDs, not the truth of generated statements.
+
+Confirmed document text is indexed into overlapping passages of at most 1,600 characters
+with 240-character overlap, preferring sentence/paragraph boundaries. Citations use exact
+one-based inclusive character ranges in the extracted text, not PDF page coordinates.
+`RAG_EMBEDDING_MODEL=embeddinggemma` enables local vectors through Ollama's
+[embedding API](https://docs.ollama.com/api/embed); run `ollama pull embeddinggemma` first.
+Vectors are normalized and stored beside the passages in PostgreSQL `double precision[]`,
+with embedding model and index-version metadata. No separate vector server or extension is
+required. This implementation uses exact cosine search over accessible document vectors;
+large deployments should add an indexed vector engine such as pgvector instead of a full scan.
+
+Retrieval combines keyword and semantic rankings with reciprocal-rank fusion, suppresses
+near-duplicate overlapping passages, and restricts both queries to the signed-in officer's
+confirmed documents linked to the selected canonical person. A shared document can mention
+several people; generated records must not attribute another person's facts to the selection.
+Embeddings are built after confirmation, leaving entity/relationship extraction in batches.
+If the embedding service is unavailable, keyword search continues and the profile displays
+the number of passages lacking embeddings. Original documents, provenance, and graph links
+remain authoritative. Deleting a document cascades to its passages and vectors.
+
+To apply the idempotent schema migration and rebuild the index for existing confirmed text:
+
+```sh
+backend/.venv/bin/python -m backend.scripts.reindex_documents
+# Or rebuild a single confirmed source:
+backend/.venv/bin/python -m backend.scripts.reindex_documents --document 5
+```
+
+An index replacement is transactional. Reindexing does not rerun AI extraction or change
+person/graph records. Generated records include at most 20 retrieved passages and bounded
+model context; all stored profile facts remain visible even when the AI context is smaller.
+Restart FastAPI after updating the backend.
+
+Entity verification also bounds each Ollama request by both candidate count and combined
+source-context size. If a long-context group still returns incomplete JSON, it is retried
+per candidate; unchecked candidates are never accepted. This keeps the full context for
+review while preventing one long sentence from consuming the entire response budget.

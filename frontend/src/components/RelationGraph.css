@@ -160,6 +160,15 @@
   color: var(--rg-text-dim);
 }
 
+/* A merged line lists each recorded relationship between the two records. */
+.relation-graph__panel-relation { display: contents; }
+.relation-graph__panel-relation + .relation-graph__panel-relation .relation-graph__panel-label {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+.relation-graph__panel-label { color: #e7d3ab; font-weight: 600; }
+
 .relation-graph__panel-actions {
   display: flex;
   flex-wrap: wrap;

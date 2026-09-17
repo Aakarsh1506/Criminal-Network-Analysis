@@ -107,13 +107,38 @@ async def verify_entities(text, local, settings, client, progress=None):
     spans = sentence_spans(text)
     contexts = {e.ref: entity_context(text, e, spans) for e in local.entities}
     size = max(1, min(8, settings.ollama_max_tokens // 64)) if settings.extraction_provider == "ollama" else 8
-    batches = [local.entities[i:i + size] for i in range(0, len(local.entities), size)]
+    # Full source sentences can be large. Keep each verification request bounded by
+    # both candidate count and context characters so a later batch cannot exhaust
+    # the model before it emits the required checks array.
+    batches, batch, batch_chars = [], [], 0
+    for entity in local.entities:
+        context_size = len(contexts[entity.ref])
+        if batch and (len(batch) >= size or batch_chars + context_size > 6000):
+            batches.append(batch)
+            batch, batch_chars = [], 0
+        batch.append(entity)
+        batch_chars += context_size
+    if batch:
+        batches.append(batch)
     accepted, excluded = [], list(local.excluded_entities)
     for index, candidates in enumerate(batches):
         if progress:
             await progress(20 + int(10 * index / len(batches)),
                            f"Checking entity names and types: batch {index + 1} of {len(batches)}")
-        checks = await check_batch(candidates, contexts, settings, client)
+        try:
+            checks = await check_batch(candidates, contexts, settings, client)
+        except APIError as exc:
+            # A small local model can still fail on one unusually long context. Retry
+            # that bounded group one candidate at a time; every candidate is still
+            # checked and no unchecked record is accepted.
+            if (settings.extraction_provider != "ollama"
+                    or "incomplete" not in exc.message.lower()
+                    or len(candidates) <= 1
+                    or max(len(contexts[candidate.ref]) for candidate in candidates) <= 1200):
+                raise
+            checks = {}
+            for candidate in candidates:
+                checks.update(await check_batch([candidate], contexts, settings, client))
         for entity in candidates:
             check = checks[entity.ref]
             if not check.valid:

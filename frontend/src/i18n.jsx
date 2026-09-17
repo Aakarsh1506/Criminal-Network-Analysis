@@ -66,6 +66,32 @@ Object.assign(messages.hi, {
   analysisThinking: "विचार कर रहे हैं…", analysisReviewing: "रिकॉर्ड की समीक्षा हो रही है…",
   analysisFailed: "विश्लेषण नहीं बन सका। कृपया फिर प्रयास करें।"
 });
+Object.assign(messages.en, {
+  identityEyebrow: "Identity check", identityTitle: "Possible existing people", identityHint: "These names match existing records. A shared name does not prove the same person: compare the shared connections, cases and details before deciding.",
+  identityUse: "Use existing person", identityAge: "Age", identityPlace: "Recorded place", identityCases: "Already in", identityNoCases: "No linked FIRs yet", identityRecordId: "Record ID", identityShared: "shared connections", identitySeparate: "Keep as a separate person",
+  identityBack: "Back to review", identitySave: "Confirm identities and save", identitySaving: "Saving…"
+});
+Object.assign(messages.hi, {
+  identityEyebrow: "पहचान जाँच", identityTitle: "संभावित मौजूदा व्यक्ति", identityHint: "ये नाम मौजूदा रिकॉर्ड से मेल खाते हैं। समान नाम से एक ही व्यक्ति सिद्ध नहीं होता: निर्णय लेने से पहले साझा संबंधों, मामलों और विवरणों की तुलना करें।",
+  identityUse: "मौजूदा व्यक्ति का उपयोग करें", identityAge: "आयु", identityPlace: "दर्ज स्थान", identityCases: "पहले से शामिल", identityNoCases: "अभी कोई जुड़ी एफआईआर नहीं", identityRecordId: "रिकॉर्ड आईडी", identityShared: "साझा संबंध", identitySeparate: "अलग व्यक्ति के रूप में रखें",
+  identityBack: "समीक्षा पर लौटें", identitySave: "पहचान की पुष्टि करें और सहेजें", identitySaving: "सहेज रहे हैं…"
+});
+Object.assign(messages.en, {
+  recordTitle: "Detailed person record", recordDescription: "Stored identity, case, location and relationship information with source records. Missing details are not inferred.",
+  recordDocuments: "source documents", recordEmbedded: "passages embedded", recordGenerate: "Generate detailed AI record", recordRegenerate: "Regenerate AI record",
+  recordGenerating: "Generating…", recordWorking: "Retrieving evidence and writing the record…", recordAI: "AI-generated record", recordVerify: "Verify this generated record against the cited sources. Reported allegations are not established facts.",
+  recordPartial: "The AI record covers a selection of sources. All stored details remain available below.", record_identity: "Identity and personal details", record_cases: "Case history and recorded offences",
+  record_locations: "Addresses and connected locations", record_connections: "Recorded connections", record_sourceDetails: "Additional source details", recordNoDetails: "No information recorded in this category.",
+  recordSources: "Source records and evidence", recordCharacters: "Source characters"
+});
+Object.assign(messages.hi, {
+  recordTitle: "व्यक्ति का विस्तृत रिकॉर्ड", recordDescription: "पहचान, मामले, स्थान और संबंधों की दर्ज जानकारी तथा मूल स्रोत। अनुपलब्ध जानकारी का अनुमान नहीं लगाया जाता।",
+  recordDocuments: "स्रोत दस्तावेज़", recordEmbedded: "अनुच्छेद एम्बेड किए गए", recordGenerate: "विस्तृत एआई रिकॉर्ड बनाएं", recordRegenerate: "एआई रिकॉर्ड फिर बनाएं",
+  recordGenerating: "बना रहे हैं…", recordWorking: "साक्ष्य खोजकर रिकॉर्ड तैयार कर रहे हैं…", recordAI: "एआई द्वारा तैयार रिकॉर्ड", recordVerify: "इस रिकॉर्ड को दिए गए स्रोतों से सत्यापित करें। दर्ज आरोप सिद्ध तथ्य नहीं हैं।",
+  recordPartial: "एआई रिकॉर्ड में चयनित स्रोत शामिल हैं। सभी दर्ज विवरण नीचे उपलब्ध हैं।", record_identity: "पहचान और व्यक्तिगत विवरण", record_cases: "मामलों का इतिहास और दर्ज अपराध",
+  record_locations: "पते और संबंधित स्थान", record_connections: "दर्ज संबंध", record_sourceDetails: "स्रोतों के अतिरिक्त विवरण", recordNoDetails: "इस श्रेणी में कोई जानकारी दर्ज नहीं है।",
+  recordSources: "स्रोत रिकॉर्ड और साक्ष्य", recordCharacters: "स्रोत अक्षर"
+});
 const LanguageContext = createContext(null);
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {

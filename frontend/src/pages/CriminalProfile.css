@@ -165,3 +165,5 @@
 .network-ai-answer strong, .network-ai-answer b { color: #f4c96d; font-weight: 700; }
 .network-ai p.network-ai-error { color: #ff9999; }
 .network-ai p.network-ai-note { font-size: .75rem; margin-bottom: 0; }
+.network-ai-list { margin: 0 0 9px; padding-left: 20px; color: #f1eadc; font-size: .92rem; }
+.network-ai-list li { margin: 4px 0; }

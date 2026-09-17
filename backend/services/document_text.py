@@ -44,7 +44,8 @@ def ocr_image(image, language):
 
 
 def bounded_text(parts):
-    text = "\n\n".join(parts).strip().replace("\x00", "")
+    # PDFium returns Windows line endings; one newline form keeps line-based rules consistent.
+    text = "\n\n".join(parts).replace("\r\n", "\n").replace("\r", "\n").strip().replace("\x00", "")
     if len(text) > MAX_TEXT:
         raise APIError("Extracted text exceeds 60,000 characters. Split the document.", 413)
     return text

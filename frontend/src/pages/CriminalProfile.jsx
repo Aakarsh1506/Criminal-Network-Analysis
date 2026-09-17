@@ -5,7 +5,7 @@ import {
   fetchWorkspace, pinCriminal, unpinCriminal,
   addToWorkingList, removeFromWorkingList,
 } from "../api/workspace";
-import ActivityTimeline from "../components/ActivityTimeline";
+import DetailedRecord from "../components/DetailedRecord";
 import NetworkGraph from "../components/NetworkGraph";
 import BackButton from "../components/BackButton";
 import "./CriminalProfile.css";
@@ -205,7 +205,7 @@ function CriminalProfile() {
               />
             )}
           </div>
-          <ActivityTimeline key={id} personId={id} cases={criminal.cases} onLocationChange={setConnectedLocation} />
+          <DetailedRecord key={id} personId={id} onLocationChange={setConnectedLocation} />
         </div>
       </div>
     </div>

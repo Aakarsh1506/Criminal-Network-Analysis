@@ -4,6 +4,7 @@ import RelationGraph from "../components/RelationGraph";
 import { fetchAllCriminals, fetchCriminalNetwork } from "../api/criminals";
 import { mergeNetworks, searchPeople } from "../utils/investigatorWorkspace";
 import { useTranslation } from "../i18n";
+import formatInsight from "../utils/formatInsight";
 import "./InvestigatorAnalysis.css";
 
 export default function InvestigatorAnalysis() {
@@ -78,20 +79,24 @@ export default function InvestigatorAnalysis() {
     const text = question.trim();
     if (!text || !selection || request.current) return;
     const target = { ...selection };
+    const contextKey = JSON.stringify([target.personId, target.type, target.id]);
+    const history = messages.filter((message) => message.contextKey === contextKey
+      && ["user", "assistant"].includes(message.role)).slice(-6)
+      .map((message) => ({ role: message.role, content: message.text.slice(0, 4000) }));
     const controller = new AbortController();
     request.current = controller;
     setQuestion(""); setLoading(true); setPhase("analysisThinking");
     const timer = window.setTimeout(() => setPhase("analysisReviewing"), 1600);
-    setMessages((current) => [...current, { role: "user", text, context: target.label }]);
+    setMessages((current) => [...current, { role: "user", text, context: target.label, contextKey }]);
     try {
       const response = await fetch(`/api/criminals/${encodeURIComponent(target.personId)}/explain`, {
         method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selection: { type: target.type, id: target.id }, question: text }),
+        body: JSON.stringify({ selection: { type: target.type, id: target.id }, question: text, history }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || t("analysisFailed"));
       if (typeof data.explanation !== "string" || !data.explanation.trim()) throw new Error(t("analysisFailed"));
-      if (!controller.signal.aborted) setMessages((current) => [...current, { role: "assistant", text: data.explanation }]);
+      if (!controller.signal.aborted) setMessages((current) => [...current, { role: "assistant", text: data.explanation, contextKey }]);
     } catch (error) {
       if (!controller.signal.aborted) setMessages((current) => [...current, { role: "error", text: error.message, retryQuestion: text, target }]);
     } finally {
@@ -146,7 +151,7 @@ export default function InvestigatorAnalysis() {
         <p className="analysis-selected">{selection ? `${t("analysisSelected")}: ${selection.label}` : t("analysisSelect")}</p>
         <div ref={messagesRef} className="analysis-messages" role="log" aria-live="polite" aria-label={t("analysisMessages")} tabIndex={0}>
           {!messages.length && <div className="analysis-empty"><h3>{t("analysisChatWelcome")}</h3><p>{t("analysisChatHint")}</p>{["analysisPrompt1", "analysisPrompt2"].map((key) => <button className="analysis-prompt" key={key} disabled={!selection} onClick={() => { setQuestion(t(key)); inputRef.current?.focus(); }}>{t(key)}</button>)}</div>}
-          {messages.map((message, index) => <article key={index} className={`analysis-message ${message.role}`}><strong>{message.role === "user" ? t("analysisYou") : t("aiInvestigator")}</strong>{message.context && <small>{message.context}</small>}<p>{message.text}</p>{message.retryQuestion && <button disabled={loading} onClick={() => { const present = network.nodes.concat(network.edges).find((item) => item.id === message.target.id); if (present) setSelection({ ...message.target, personId: present.originPersonId }); setQuestion(message.retryQuestion); inputRef.current?.focus(); }}>{t("analysisRetryQuestion")}</button>}</article>)}
+          {messages.map((message, index) => <article key={index} className={`analysis-message ${message.role}`}><strong>{message.role === "user" ? t("analysisYou") : t("aiInvestigator")}</strong>{message.context && <small>{message.context}</small>}{message.role === "assistant" ? <div className="analysis-answer">{formatInsight(message.text)}</div> : <p>{message.text}</p>}{message.retryQuestion && <button disabled={loading} onClick={() => { const present = network.nodes.concat(network.edges).find((item) => item.id === message.target.id); if (present) setSelection({ ...message.target, personId: present.originPersonId }); setQuestion(message.retryQuestion); inputRef.current?.focus(); }}>{t("analysisRetryQuestion")}</button>}</article>)}
           {loading && <p className="analysis-thinking" role="status"><span aria-hidden="true">•••</span> {t(phase)}</p>}
         </div>
         <form className="analysis-form" onSubmit={ask}>

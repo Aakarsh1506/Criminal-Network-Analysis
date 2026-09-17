@@ -11,8 +11,9 @@ from starlette.responses import FileResponse
 
 from ..errors import APIError, api_errors
 from ..security import require_auth
-from ..services.document_text import FORMATS
 from ..services.document_removal import remove_document_records
+from ..services.document_text import FORMATS
+from ..services.entity_resolution import person_suggestions
 from ..services.extraction import SOURCE_TYPES, ExcludedEntity, ExcludedRelationship, Extraction
 
 logger = logging.getLogger(__name__)
@@ -215,8 +216,68 @@ async def cancel_document(document_id: int, request: Request, officer=Depends(re
 
 class ConfirmBody(BaseModel):
     extraction: Extraction
+    person_matches: dict[str, str] = Field(default_factory=dict, max_length=200)
     rejected_relationship_indices: list[StrictInt] = Field(default_factory=list, max_length=400)
     rejected_entity_indices: list[StrictInt] = Field(default_factory=list, max_length=200)
+
+
+def reviewed_extraction(body):
+    rejected = set(body.rejected_relationship_indices)
+    if len(rejected) != len(body.rejected_relationship_indices) or any(
+        index < 0 or index >= len(body.extraction.relationships) for index in rejected
+    ):
+        raise APIError("Rejected relationship selections are invalid. Reload the draft.", 400)
+    reviewed = body.extraction.model_copy(deep=True)
+    rejected_entities = set(body.rejected_entity_indices)
+    if len(rejected_entities) != len(body.rejected_entity_indices) or any(
+        index < 0 or index >= len(body.extraction.entities) for index in rejected_entities
+    ):
+        raise APIError("Rejected entity selections are invalid. Reload the draft.", 400)
+    rejected_refs = {
+        entity.ref for index, entity in enumerate(body.extraction.entities)
+        if index in rejected_entities
+    }
+    reviewed.entities = []
+    for index, entity in enumerate(body.extraction.entities):
+        if index in rejected_entities:
+            reviewed.excluded_entities.append(ExcludedEntity(
+                **entity.model_dump(), reason="Rejected by reviewer during confirmation."
+            ))
+        else:
+            reviewed.entities.append(entity)
+    reviewed.relationships = []
+    for index, relation in enumerate(body.extraction.relationships):
+        endpoint_rejected = relation.subject in rejected_refs or relation.object in rejected_refs
+        if index in rejected or endpoint_rejected:
+            reviewed.excluded_relationships.append(
+                ExcludedRelationship(
+                    **relation.model_dump(),
+                    reason="An endpoint entity was rejected by the reviewer."
+                    if endpoint_rejected else "Rejected by reviewer during confirmation."
+                )
+            )
+        else:
+            reviewed.relationships.append(relation)
+    return reviewed
+
+
+async def require_review_draft(db, document_id, officer_id, extraction):
+    rows = await db.query(
+        """SELECT document_id FROM officer_documents WHERE document_id=%s AND officer_id=%s
+           AND processing_status='awaiting_review' AND confirmed_at IS NULL
+           AND graph_payload IS NULL AND extraction=%s""",
+        (document_id, officer_id, Jsonb(extraction.model_dump())),
+    )
+    if not rows:
+        raise APIError("Draft changed or is unavailable. Reload it before reviewing identities.", 409)
+
+
+@router.post("/{document_id}/identity-suggestions")
+async def identity_suggestions(document_id: int, body: ConfirmBody, request: Request, officer=Depends(require_auth)):
+    with api_errors("Failed to check existing identities"):
+        await require_review_draft(request.app.state.db, document_id, officer["officerId"], body.extraction)
+        reviewed = reviewed_extraction(body)
+        return {"suggestions": await person_suggestions(request.app.state.db, request.app.state.graph, reviewed)}
 
 
 @router.post("/{document_id}/confirm")
@@ -224,54 +285,26 @@ async def confirm_document(
     document_id: int, body: ConfirmBody, request: Request, officer=Depends(require_auth)
 ):
     with api_errors("Failed to confirm extraction"):
-        rejected = set(body.rejected_relationship_indices)
-        if len(rejected) != len(body.rejected_relationship_indices) or any(
-            index < 0 or index >= len(body.extraction.relationships) for index in rejected
-        ):
-            raise APIError("Rejected relationship selections are invalid. Reload the draft.", 400)
-        reviewed = body.extraction.model_copy(deep=True)
-        rejected_entities = set(body.rejected_entity_indices)
-        if len(rejected_entities) != len(body.rejected_entity_indices) or any(
-            index < 0 or index >= len(body.extraction.entities) for index in rejected_entities
-        ):
-            raise APIError("Rejected entity selections are invalid. Reload the draft.", 400)
-        rejected_refs = {
-            entity.ref for index, entity in enumerate(body.extraction.entities)
-            if index in rejected_entities
-        }
-        reviewed.entities = []
-        for index, entity in enumerate(body.extraction.entities):
-            if index in rejected_entities:
-                reviewed.excluded_entities.append(ExcludedEntity(
-                    **entity.model_dump(), reason="Rejected by reviewer during confirmation."
-                ))
-            else:
-                reviewed.entities.append(entity)
-        reviewed.relationships = []
-        for index, relation in enumerate(body.extraction.relationships):
-            endpoint_rejected = relation.subject in rejected_refs or relation.object in rejected_refs
-            if index in rejected or endpoint_rejected:
-                reviewed.excluded_relationships.append(
-                    ExcludedRelationship(
-                        **relation.model_dump(),
-                        reason="An endpoint entity was rejected by the reviewer."
-                        if endpoint_rejected else "Rejected by reviewer during confirmation."
-                    )
-                )
-            else:
-                reviewed.relationships.append(relation)
+        reviewed = reviewed_extraction(body)
+        if body.person_matches:
+            await require_review_draft(request.app.state.db, document_id, officer["officerId"], body.extraction)
+            suggestions = await person_suggestions(request.app.state.db, request.app.state.graph, reviewed)
+            allowed = {(item["ref"], item["personId"]) for item in suggestions}
+            if any((ref, person_id) not in allowed for ref, person_id in body.person_matches.items()):
+                raise APIError("A person match changed or is unsupported. Review the shared connections again.", 409)
         # JSON equality prevents approval of a different or stale draft.
         rows = await request.app.state.db.query(
             """UPDATE officer_documents SET processing_status='queued',
                confirmed_at=now(), confirmed_by=%s, processing_error=NULL, lease_until=NULL,
                processing_progress=NULL,
-               extraction=%s
+               extraction=%s, person_matches=%s
                WHERE document_id=%s AND officer_id=%s AND processing_status='awaiting_review'
                  AND confirmed_at IS NULL AND graph_payload IS NULL AND extraction=%s
                RETURNING *""",
             (
                 officer["officerId"],
                 Jsonb(reviewed.model_dump()),
+                Jsonb(body.person_matches),
                 document_id,
                 officer["officerId"],
                 Jsonb(body.extraction.model_dump()),

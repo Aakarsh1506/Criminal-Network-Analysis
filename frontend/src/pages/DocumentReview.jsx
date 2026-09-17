@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import DocumentActions from "../components/DocumentActions";
+import IdentityReviewDialog from "../components/IdentityReviewDialog";
 import DocumentProgress from "../components/DocumentProgress";
-import { confirmDocument, fetchDocument, documentFileUrl } from "../api/documents";
+import { confirmDocument, fetchDocument, documentFileUrl, fetchIdentitySuggestions } from "../api/documents";
 import "./CriminalProfile.css";
 import "./DocumentReview.css";
 
@@ -22,6 +23,7 @@ export default function DocumentReview() {
   const [document, setDocument] = useState(null);
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [identityReview, setIdentityReview] = useState(null);
   const [reload, setReload] = useState(0);
   const [selection, setSelection] = useState({ key: null, entities: {}, relationships: {} });
   const snapshot = JSON.stringify(document?.extraction || null);
@@ -44,11 +46,19 @@ export default function DocumentReview() {
     return () => { active = false; clearTimeout(timer); };
   }, [id, reload]);
 
-  async function confirm() {
+  async function confirm(personMatches = null) {
     if (!document || confirming || remaining > 0 || document.status !== "awaiting_review") return;
     setConfirming(true); setError(null);
     try {
-      const updated = await confirmDocument(document.id, document.extraction, [...rejected], [...rejectedEntities]);
+      if (personMatches === null) {
+        const result = await fetchIdentitySuggestions(document.id, document.extraction, [...rejected], [...rejectedEntities]);
+        if (result.suggestions.length) {
+          setIdentityReview({ key: selectionKey, suggestions: result.suggestions });
+          return;
+        }
+      }
+      const updated = await confirmDocument(document.id, document.extraction, [...rejected], [...rejectedEntities], personMatches || {});
+      setIdentityReview(null);
       setDocument((current) => ({ ...current, ...updated }));
       setReload((value) => value + 1);
     } catch (err) { setError(err.message); }
@@ -91,6 +101,10 @@ export default function DocumentReview() {
   };
 
   return <main className="dossier-page document-review">
+    {identityReview?.key === selectionKey && reviewing && <IdentityReviewDialog
+      suggestions={identityReview.suggestions} busy={confirming} error={error}
+      onConfirm={confirm} onClose={() => { setIdentityReview(null); setError(null); }} />}
+
     <header className="review-heading">
       <Link to="/upload" className="review-back">← Back to documents</Link>
       <p className="form-number">Document review</p>
@@ -190,7 +204,7 @@ export default function DocumentReview() {
         <p role="status">Yes is selected by default. Choose No for anything that should not be saved.</p>
         <p>Confirmation saves these source assertions; it does not establish guilt or verify allegations.</p></div>
       <div className="review-confirm-actions"><Link to="/upload">Review later</Link>
-        <button className="stamp-btn" disabled={confirming || remaining > 0} onClick={confirm}>{confirming ? "Confirming…" : "Confirm and save"}</button></div>
+        <button className="stamp-btn" disabled={confirming || remaining > 0} onClick={() => confirm()}>{confirming ? "Confirming…" : "Confirm and save"}</button></div>
     </footer>}
   </main>;
 }

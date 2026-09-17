@@ -5,10 +5,12 @@ from ..security import require_auth
 from ..services.criminals import PERSONS_SQL, load_profile, map_person
 from ..services.groq import explain_network
 from ..services.insight import build_insight_context, validate_selection
+from ..services.investigator_chat import validate_history
 from ..services.network import fetch_network
 from ..services.ollama import explain_insight
-from ..services.rag import retrieve_context
 from ..services.profile_activity import load_activity
+from ..services.profile_record import generate_record, load_record
+from ..services.rag import retrieve_context
 
 router = APIRouter(
     prefix="/api/criminals", tags=["Criminals"], dependencies=[Depends(require_auth)]
@@ -76,6 +78,33 @@ async def get_activity(person_id: str, request: Request, officer=Depends(require
                                    request.app.state.graph)
 
 
+@router.get("/{person_id}/record")
+async def get_record(person_id: str, request: Request, officer=Depends(require_auth)):
+    with api_errors("Failed to load detailed record"):
+        state = request.app.state
+        return await load_record(person_id, state.db, state.graph, officer["officerId"], state.settings.rag_embedding_model)
+
+
+@router.post("/{person_id}/record/generate")
+async def generate_person_record(person_id: str, request: Request, officer=Depends(require_auth)):
+    try:
+        body = await request.json()
+    except ValueError:
+        raise APIError("Select a record language.", 400) from None
+    if not isinstance(body, dict) or body.get("language", "en") not in ("en", "hi"):
+        raise APIError("Record language must be en or hi.", 400)
+    state = request.app.state
+    if state.active_explanations >= 3:
+        raise APIError("AI is busy. Please try again shortly.", 429)
+    state.active_explanations += 1
+    try:
+        with api_errors("Unable to generate the detailed record. Stored information remains available."):
+            record = await load_record(person_id, state.db, state.graph, officer["officerId"], state.settings.rag_embedding_model)
+            return await generate_record(record, state.db, state.http_client, state.settings, officer["officerId"], body.get("language", "en"))
+    finally:
+        state.active_explanations -= 1
+
+
 @router.post("/{person_id}/explain")
 async def explain(person_id: str, request: Request, officer=Depends(require_auth)):
     try:
@@ -86,6 +115,7 @@ async def explain(person_id: str, request: Request, officer=Depends(require_auth
     question = body.get("question", "") if isinstance(body, dict) else ""
     if not isinstance(question, str) or len(question) > 2000:
         raise APIError("Question must be 2,000 characters or fewer.", 400)
+    history = validate_history(body.get("history", []) if isinstance(body, dict) else [])
     validate_selection(selection)
     state = request.app.state
     use_ollama = state.settings.extraction_provider == "ollama"
@@ -106,6 +136,7 @@ async def explain(person_id: str, request: Request, officer=Depends(require_auth
             context = build_insight_context(network, selection)
             if question.strip():
                 context["investigator_question"] = question.strip()
+                context["conversation_history"] = history
                 context["retrieved_evidence"] = [
                     {
                         "documentId": row["document_id"],
@@ -114,7 +145,7 @@ async def explain(person_id: str, request: Request, officer=Depends(require_auth
                         "sourceEnd": row["source_end"],
                         "text": row["chunk_text"],
                     }
-                    for row in await retrieve_context(state.db, officer["officerId"], question)
+                    for row in await retrieve_context(state.db, officer["officerId"], question, person_id=person_id, settings=state.settings, client=state.http_client)
                 ]
             if use_ollama:
                 import json

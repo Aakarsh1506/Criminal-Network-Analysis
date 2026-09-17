@@ -87,3 +87,12 @@ WHERE r.predicate IN ('MENTIONED_IN','WITNESS_IN','SUSPECT_IN');
 -- Confirmation applies to the exact staged extraction, before canonical/graph writes.
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ;
 ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS confirmed_by INTEGER REFERENCES officers(officer_id);
+
+-- Officer-approved identity reuse, separate from the immutable AI draft.
+ALTER TABLE officer_documents ADD COLUMN IF NOT EXISTS person_matches JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Local semantic vectors, co-located with source passages; no extension required.
+ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS embedding double precision[];
+ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS embedding_model text;
+ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS index_version integer NOT NULL DEFAULT 1;
+CREATE INDEX IF NOT EXISTS document_chunks_embedding_model_idx ON document_chunks(embedding_model);

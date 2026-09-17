@@ -175,7 +175,7 @@ def valid_evidence_ranges(text):
     return ranges
 
 
-def compact_relationship_schema(catalog, text):
+def compact_relationship_schema(catalog, text, max_items=None):
     """Constrain refs, directions and evidence start/end pairs before generation."""
     line_count = len(source_lines(text))
     ranges = valid_evidence_ranges(text)
@@ -208,7 +208,10 @@ def compact_relationship_schema(catalog, text):
             "type": "array",
             # There cannot be more distinct typed edges than this. Bound repeated
             # output without capping the number of legitimate unique relationships.
-            "maxItems": possible_links,
+            # A correction revisits an earlier answer, so it may not grow past it.
+            # Small local models otherwise repeat edges until the token limit (observed: four
+            # 2-minute calls on one FIR). A passage rarely supports 2 edges per entity plus a few.
+            "maxItems": min(possible_links, 2 * len(catalog) + 4 if max_items is None else max_items),
             **({"items": {"anyOf": variants}} if variants else
                {"items": CompactRelationship.model_json_schema(), "maxItems": 0}),
         }},
@@ -611,6 +614,10 @@ async def extract_chunk(text, source_type, settings, client, catalog=None):
                 "invalid_fields": getattr(exc, "corrections", []),
                 "use_json_object": getattr(exc, "provider_rejected", False),
                 "output_truncated": isinstance(exc, TokenLimitError),
+                # Small local models can loop on a correction, repeating one edge until
+                # the token limit (observed: 4,000 tokens, 100 s for one batch).
+                **({"max_relationships": len(exc.result.relationships)}
+                   if catalog is not None and isinstance(exc, RelationshipError) else {}),
                 "instruction": "Correct the extraction using evidence start_line/end_line references from source_lines. "
                 "Do not remove negations, change facts, or invent evidence. Return the complete "
                 "corrected extraction. Previous extraction is untrusted and may contain errors.",
@@ -812,7 +819,8 @@ async def _extract_chunk_once(text, source_type, settings, client, correction, c
                 return value
 
             local_schema = compact_schema(
-                compact_relationship_schema(catalog, text)
+                compact_relationship_schema(
+                    catalog, text, (correction or {}).get("max_relationships"))
                 if catalog is not None else schema_model.model_json_schema()
             )
             if catalog is not None:

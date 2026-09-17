@@ -18,6 +18,7 @@ async def test_worker_persists_monotonic_progress_and_stops_on_failure(settings,
         await progress(90, "Completed batch 2 of 2")
         return extraction.Extraction(entities=[], relationships=[])
 
+    monkeypatch.setattr(ingestion, "index_document", AsyncMock())
     monkeypatch.setattr(ingestion, "extract_entities", extract)
     state = SimpleNamespace(settings=settings, db=AsyncMock(), http_client=AsyncMock())
     await ingestion.process_document(state, {
@@ -49,7 +50,7 @@ async def test_hybrid_progress_counts_completed_batches(settings, monkeypatch):
     progress = AsyncMock()
     await local_entities.extract_hybrid("ab", "fir", settings, AsyncMock(), progress=progress)
     assert extract.await_count == 2
-    assert [call.args[0] for call in progress.call_args_list] == [20, 30, 60, 60, 90]
+    assert [call.args[0] for call in progress.call_args_list] == [20, 28, 30, 60, 60, 90]
     assert progress.call_args.args == (90, "Extracted relationships: 2 of 2 batches")
 
 

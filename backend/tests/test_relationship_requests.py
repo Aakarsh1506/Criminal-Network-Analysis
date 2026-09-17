@@ -181,3 +181,18 @@ def test_short_output_budget_preserves_long_lines_and_negation():
     assert all(len(p) <= 1400 for p in passages)
     assert any("Alice did not contact Bob." in p for p in passages)
     assert "Alice contacted Bob yesterday." in passages[-1]
+
+
+async def test_local_correction_cannot_repeat_edges_past_the_first_answer(settings):
+    text = "Alice contacted Bob.\nAlice contacted Carol.\nCarol contacted Bob."
+    catalog = [entity("a", "Person", "Alice"), entity("b", "Person", "Bob"),
+               entity("c", "Person", "Carol")]
+    client = AsyncMock()
+    client.post.side_effect = [response([link(), link(object="c")]),
+                               response([link(object="c", start_line=2, end_line=2)])]
+    await extraction.extract_chunk(text, "fir", replace(settings, extraction_provider="ollama"),
+                                   client, catalog=catalog)
+    first, retry = (call.kwargs["json"]["format"]["properties"]["relationships"]["maxItems"]
+                    for call in client.post.call_args_list)
+    assert first == 6  # Every typed, non-self Person -> Person pair (below 2 per entity + 4).
+    assert retry == 2

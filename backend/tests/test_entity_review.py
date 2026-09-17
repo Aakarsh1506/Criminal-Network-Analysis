@@ -80,6 +80,24 @@ async def test_entity_checking_covers_every_batch_without_limiting_total_candida
     assert client.post.await_count == 3
 
 
+async def test_long_entity_context_falls_back_to_single_candidate_checks(settings):
+    entities = [entity("a", "Alice"), entity("b", "Bob")]
+    source = "Alice " + ("was referenced in this very long source sentence " * 50) + " and Bob."
+    client = AsyncMock()
+    # The grouped request fails twice; individual requests succeed.
+    client.post.side_effect = [
+        reply({"checks": []}), reply({"checks": []}),
+        reply({"checks": [{"ref": "a", "kind": "Person", "valid": True}]}),
+        reply({"checks": [{"ref": "b", "kind": "Person", "valid": True}]}),
+    ]
+    result = await entity_review.verify_entities(
+        source, extraction.Extraction(entities=entities, relationships=[]),
+        replace(settings, extraction_provider="ollama", ollama_max_tokens=1024), client,
+    )
+    assert [item.ref for item in result.entities] == ["a", "b"]
+    assert client.post.await_count == 4
+
+
 async def test_entity_checking_retains_groq_rate_limit_backoff(settings, monkeypatch):
     client = AsyncMock()
     client.post.side_effect = [httpx.Response(429, headers={"retry-after": "20"}),
@@ -92,19 +110,18 @@ async def test_entity_checking_retains_groq_rate_limit_backoff(settings, monkeyp
     sleep.assert_awaited_once_with(20)
 
 
-async def test_hybrid_checks_entities_then_sends_full_cue_sentences(settings, monkeypatch):
+async def test_hybrid_skips_ai_entity_check_and_sends_full_cue_sentences(settings, monkeypatch):
     text = "Alice contacted Bob after the meeting. Carol arrived independently."
     local = extraction.Extraction(entities=[entity("a", "Alice"), entity("b", "Bob"), entity("c", "Carol")], relationships=[])
     monkeypatch.setattr(local_entities, "extract_local", lambda *args: local)
     client = AsyncMock()
     client.post.side_effect = [
-        reply({"checks": [{"ref": e.ref, "kind": e.kind, "valid": True} for e in local.entities]}),
-        reply({"relationships": [{"subject": "a", "predicate": "CONTACTED", "object": "b", "start_line": 1, "end_line": 1}]}),
+        reply({"relationships": [{"subject": "a", "predicate": "CONTACTED", "object": "b", "start_line": 1, "end_line": 1}]})
     ]
     result = await local_entities.extract_hybrid(text, "fir", replace(settings, extraction_provider="ollama"), client)
     requests = [json.loads(c.kwargs["json"]["messages"][1]["content"]) for c in client.post.call_args_list]
-    assert "source_lines" not in requests[0]
-    assert requests[1]["source_lines"][0]["text"] == "Alice contacted Bob after the meeting."
+    assert len(requests) == 1
+    assert requests[0]["source_lines"][0]["text"] == "Alice contacted Bob after the meeting."
     assert {e.ref for e in result.entities} == {"a", "b", "c"}
     assert result.relationships[0].evidence == "Alice contacted Bob after the meeting."
 

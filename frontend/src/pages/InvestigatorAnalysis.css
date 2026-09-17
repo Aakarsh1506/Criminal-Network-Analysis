@@ -57,3 +57,10 @@
 @media (prefers-reduced-motion: reduce) { .analysis-thinking span { animation: none; } }
 @media (max-width: 1000px) { .analysis-layout { grid-template-columns: 1fr; } .analysis-chat { height: 620px; } }
 @media (max-width: 520px) { .analysis-page { padding: 20px 12px; } .analysis-panel-heading { flex-wrap: wrap; } .analysis-search-row { flex-wrap: wrap; } .analysis-compose-footer { align-items: flex-start; flex-direction: column; } }
+
+/* Structured AI answers: section headings, paragraphs and suggested-check bullets. */
+.analysis-answer .network-ai-heading { margin: 12px 0 4px; color: var(--accent); font-size: .78rem; text-transform: uppercase; letter-spacing: .8px; font-family: var(--font-type); }
+.analysis-answer .network-ai-heading:first-child { margin-top: 0; }
+.analysis-answer .network-ai-line { margin: 0 0 6px; white-space: normal; }
+.analysis-answer .network-ai-list { margin: 4px 0 0; padding-left: 20px; }
+.analysis-answer .network-ai-list li { margin: 4px 0; }

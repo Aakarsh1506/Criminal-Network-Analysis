@@ -27,7 +27,13 @@ export function documentFileUrl(id) {
   return `${BASE}/${id}/file`;
 }
 
-export const confirmDocument = (id, extraction, rejectedRelationshipIndices = [], rejectedEntityIndices = []) => request(`/${id}/confirm`, {
+export const confirmDocument = (id, extraction, rejectedRelationshipIndices = [], rejectedEntityIndices = [], personMatches = {}) => request(`/${id}/confirm`, {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ extraction, rejected_relationship_indices: rejectedRelationshipIndices,
+    rejected_entity_indices: rejectedEntityIndices, person_matches: personMatches }),
+});
+
+export const fetchIdentitySuggestions = (id, extraction, rejectedRelationshipIndices, rejectedEntityIndices) => request(`/${id}/identity-suggestions`, {
   method: "POST", headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ extraction, rejected_relationship_indices: rejectedRelationshipIndices,
     rejected_entity_indices: rejectedEntityIndices }),

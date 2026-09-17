@@ -65,6 +65,192 @@ Criminal Network Analysis/
 
 ---
 
+##  Set up  (step by step)
+
+These steps run the **FastAPI backend** (`backend/`), the React frontend, and the local AI
+pipeline (spaCy + Ollama). Commands are for macOS; Windows and Linux differences are noted.
+Run every command from the repository root unless a step says otherwise.
+
+### Step 0 — On the current laptop: gather what Git does not carry
+
+1. **Commit and push the code**, or copy the whole project folder. Uncommitted work is not in Git.
+2. **Copy `backend/.env`** privately (USB drive, password manager). It holds passwords and the JWT
+   secret. Never commit it.
+3. **Export the PostgreSQL database.** The app needs the existing `persons`, `cases`, `locations`
+   and `crime_types` tables; the backend does not create them.
+   ```bash
+   pg_dump -Fc -d criminal_network -f criminal_network.dump
+   ```
+4. **Copy the custom spaCy model** if you use it:
+   `spacy_crime_multientity_ner_package/output/model-best` (about 420 MB, ignored by Git). You can
+   also retrain it in Step 7 or use a standard spaCy model instead.
+5. **Copy `backend/uploads/`** if previously uploaded documents should still open.
+6. **Neo4j:** if `NEO4J_URI` starts with `neo4j+s://…databases.neo4j.io` (Neo4j Aura, cloud), the new
+   laptop uses the same credentials and nothing needs copying.
+
+### Step 1 — Install the prerequisites
+
+| Tool | Version | macOS (Homebrew) | Windows / Linux |
+|---|---|---|---|
+| Git | any | `brew install git` | git-scm.com / package manager |
+| Node.js | 22.12 or newer | `brew install node` | nodejs.org installer |
+| Python | 3.11–3.13 (tested on 3.13) | `brew install python@3.13` | python.org (tick “Add to PATH”) |
+| PostgreSQL | 16 or newer | `brew install postgresql@16 && brew services start postgresql@16` | postgresql.org installer / `apt install postgresql` |
+| Tesseract OCR | any | `brew install tesseract` | UB Mannheim build (Windows) / `apt install tesseract-ocr` |
+| Ollama | latest | download from ollama.com | ollama.com |
+
+Check them:
+```bash
+node --version && python3 --version && psql --version && tesseract --version && ollama --version
+```
+
+### Step 2 — Get the code and install JavaScript packages
+
+```bash
+git clone https://github.com/Aakarsh1506/Criminal-Network-Analysis.git
+cd Criminal-Network-Analysis
+npm install
+```
+
+### Step 3 — Create the Python environment
+
+```bash
+python3 -m venv backend/.venv
+source backend/.venv/bin/activate          # Windows: backend\.venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r backend/requirements.txt
+```
+This installs FastAPI, spaCy and the small English model `en_core_web_sm`. Keep this terminal's
+environment activated for the backend steps below.
+
+### Step 4 — Restore the PostgreSQL database
+
+```bash
+createdb criminal_network
+pg_restore --no-owner -d criminal_network criminal_network.dump
+```
+If the restore reports a missing `postgis` extension or `geometry` type, install PostGIS
+(`brew install postgis`) and run `psql -d criminal_network -c "CREATE EXTENSION postgis;"`, then repeat
+the restore into a freshly created database. On first start the backend adds its own tables
+(officers, documents, extraction and workspace tables) from `backend/sql/`.
+
+### Step 5 — Set up Neo4j
+
+- **Aura (cloud):** nothing to do; reuse the URI, user and password from the old `backend/.env`.
+- **New empty Neo4j database:** in Neo4j Browser run, in order, `backend/neo4j/schema.cypher`,
+  `backend/neo4j/import_data.cypher` and, for demo links only,
+  `backend/neo4j/synthetic_relationships.cypher`. The account must be allowed to create constraints.
+
+### Step 6 — Install the local AI models (Ollama)
+
+Start the Ollama app (or run `ollama serve`), then:
+```bash
+ollama pull qwen3:1.7b        # relationship extraction and investigator answers
+ollama pull embeddinggemma    # document search for the AI investigator
+```
+`qwen3:4b` gives better answers but is slower; pull it and set `OLLAMA_MODEL=qwen3:4b` if the laptop
+has 16 GB of RAM or more.
+
+### Step 7 — Choose the spaCy entity model
+
+Pick one:
+- **Copied custom model:** place the folder at
+  `spacy_crime_multientity_ner_package/output/model-best`.
+- **Retrain it** (about 10–30 minutes on CPU; downloads `en_core_web_lg`):
+  `bash spacy_crime_multientity_ner_package/train_model.sh`
+- **Standard model, no training:** `python -m spacy download en_core_web_lg` (more accurate) or keep
+  the bundled `en_core_web_sm`.
+
+### Step 8 — Create `backend/.env`
+
+Copy the old laptop's `backend/.env`, or start from the template:
+```bash
+cp backend/.env.example backend/.env
+```
+Then check these values:
+```dotenv
+# PostgreSQL on this laptop
+PGHOST=localhost
+PGPORT=5432
+PGUSER=your_mac_or_postgres_user
+PGPASSWORD=
+PGDATABASE=criminal_network
+
+# Neo4j (same as before for Aura)
+NEO4J_URI=neo4j+s://your-instance-id.databases.neo4j.io
+NEO4J_USER=your_user
+NEO4J_PASSWORD=your_password
+
+# Local AI pipeline
+EXTRACTION_PROVIDER=ollama
+EXTRACTION_MODE=hybrid
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3:1.7b
+OLLAMA_TIMEOUT=180
+OLLAMA_MAX_TOKENS=4096
+RAG_EMBEDDING_MODEL=embeddinggemma
+
+# spaCy: an ABSOLUTE path on THIS laptop, or en_core_web_lg / en_core_web_sm
+SPACY_MODEL=/Users/you/path/to/Criminal-Network-Analysis/spacy_crime_multientity_ner_package/output/model-best
+
+# Auth: keep the old JWT_SECRET to keep sessions compatible, or generate a new one with
+#   python3 -c "import secrets; print(secrets.token_hex(48))"
+JWT_SECRET=replace_with_a_long_random_string
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=choose_a_strong_password
+PORT=5050
+FRONTEND_ORIGIN=http://localhost:3000
+NODE_ENV=development
+```
+`SPACY_MODEL` is the setting most often wrong after a move: the old laptop's absolute path does not
+exist on the new one.
+
+### Step 9 — Create an officer login
+
+The admin account (`ADMIN_USERNAME` / `ADMIN_PASSWORD`) can create officers from `/admin`. Or, with
+the virtual environment active:
+```bash
+python -m backend.scripts.add_officer --username jdoe --name "Jane Doe" --org "Nandipur Police" --dob 1990-05-14
+```
+It prompts for the password.
+
+### Step 10 — Start everything
+
+Use two terminals, both in the repository root, with Ollama running:
+```bash
+# Terminal 1 — backend (port 5050)
+source backend/.venv/bin/activate          # Windows: backend\.venv\Scripts\activate
+python -m backend.server
+
+# Terminal 2 — frontend (port 3000)
+npm run dev
+```
+Open **http://localhost:3000** and log in. The first document extraction is slower while spaCy and
+the Ollama model load.
+
+### Step 11 — Check that it works
+
+```bash
+curl http://localhost:5050/api/health     # {"ok":true}
+python -m pytest backend/tests -q         # backend tests; no database or AI provider needed
+```
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `Hybrid extraction needs spaCy and its model` | `SPACY_MODEL` path is wrong or the model is not installed (Step 7–8). Restart the backend. |
+| `Ollama model not found` | Run `ollama pull` for the model named in `OLLAMA_MODEL`. |
+| `Unable to reach Ollama` | Open the Ollama app or run `ollama serve`. |
+| `Install Tesseract on the server` | Install Tesseract (Step 1) and restart the backend. |
+| `Document embeddings are unavailable` | `ollama pull embeddinggemma`, or leave `RAG_EMBEDDING_MODEL` empty to use keyword search only. |
+| Login fails for everyone | Wrong database or `JWT_SECRET`; check `backend/.env` and restart. |
+| Port 5050 or 3000 already in use | Stop the other process (`lsof -i :5050`) or change `PORT` in `backend/.env` and the proxy target in `frontend/vite.config.js`. |
+| Graph pages show connection errors | Check `NEO4J_URI`, user and password; Aura instances pause when idle and must be resumed in the Aura console. |
+| `.env` changes have no effect | The backend reads `.env` only at start; stop and restart it. |
+
+---
+
 ## 🚀 Run locally
 
 Use **Node.js 22.12 or newer**. Install dependencies with:

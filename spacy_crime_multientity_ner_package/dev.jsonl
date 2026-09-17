@@ -1,0 +1,400 @@
+{"text": "KS Electronics submitted invoices from its Kochi office.", "entities": [[0, 14, "ORG"], [43, 48, "GPE"]], "type": "multi_entity"}
+{"text": "The incident report was linked to an incident in Navi Mumbai.", "entities": [[49, 60, "GPE"]], "type": "hard_negative"}
+{"text": "Funds moved from an account linked to Neeraj Shah into Metro Logistics Pvt Ltd.", "entities": [[38, 49, "PERSON"], [55, 78, "ORG"]], "type": "multi_entity"}
+{"text": "Suresh Iyer and Ananya Sharma met representatives of Maharashtra State Bank in Nagpur.", "entities": [[0, 11, "PERSON"], [16, 29, "PERSON"], [53, 75, "ORG"], [79, 85, "GPE"]], "type": "complex"}
+{"text": "A payment was made to KS Electronics.", "entities": [[22, 36, "ORG"]], "type": "org_context"}
+{"text": "The seizure memo showed that S. Iyer had contacted City Cargo Services.", "entities": [[29, 36, "PERSON"], [51, 70, "ORG"]], "type": "contrastive_negative"}
+{"text": "Nova Components rented space at Bhiwandi Distribution Hub.", "entities": [[0, 15, "ORG"], [32, 57, "FAC"]], "type": "facility_context"}
+{"text": "The Location Surveillance Records mentioned R K Sharma.", "entities": [[44, 54, "PERSON"]], "type": "hard_negative"}
+{"text": "Investigators collected the surveillance record for further examination.", "entities": [], "type": "hard_negative"}
+{"text": "Imran Sheikh transferred money to Nova Components from Indore.", "entities": [[0, 12, "PERSON"], [34, 49, "ORG"], [55, 61, "GPE"]], "type": "multi_entity"}
+{"text": "The FIR was reviewed by the investigating officer.", "entities": [], "type": "hard_negative"}
+{"text": "The team reviewed the arrest memo before questioning S. Iyer.", "entities": [[53, 60, "PERSON"]], "type": "hard_negative"}
+{"text": "Police located Ayesha Khan near Vashi Sector 17.", "entities": [[15, 26, "PERSON"], [32, 47, "LOC"]], "type": "multi_entity"}
+{"text": "Mohammed Arif Khan transferred funds to KS Electronics, while Dev Malhotra contacted Metro Logistics Pvt Ltd.", "entities": [[0, 18, "PERSON"], [40, 54, "ORG"], [62, 74, "PERSON"], [85, 108, "ORG"]], "type": "complex"}
+{"text": "The vehicle associated with Rajiv Bansal was found near Turbhe Industrial Area.", "entities": [[28, 40, "PERSON"], [56, 78, "LOC"]], "type": "multi_entity"}
+{"text": "Karan Sethi travelled from Kochi to Indore with S. Iyer.", "entities": [[0, 11, "PERSON"], [27, 32, "GPE"], [36, 42, "GPE"], [48, 55, "PERSON"]], "type": "complex"}
+{"text": "The surveillance record contained references to Mohit Chawla and City Cargo Services.", "entities": [[48, 60, "PERSON"], [65, 84, "ORG"]], "type": "contrastive_negative"}
+{"text": "The directors of Prime Warehousing were questioned.", "entities": [[17, 34, "ORG"]], "type": "org_context"}
+{"text": "Ayesha Khan worked with Metro Logistics Pvt Ltd in Hyderabad.", "entities": [[0, 11, "PERSON"], [24, 47, "ORG"], [51, 60, "GPE"]], "type": "multi_entity"}
+{"text": "The consignment was moved through Mumbai.", "entities": [[34, 40, "GPE"]], "type": "location_context"}
+{"text": "The consignment was moved through Lucknow.", "entities": [[34, 41, "GPE"]], "type": "location_context"}
+{"text": "Mohit Chawla and Imran Sheikh met representatives of City Cargo Services in Thane.", "entities": [[0, 12, "PERSON"], [17, 29, "PERSON"], [53, 72, "ORG"], [76, 81, "GPE"]], "type": "complex"}
+{"text": "Suresh Iyer transferred money to Metro Logistics Pvt Ltd from Chennai.", "entities": [[0, 11, "PERSON"], [33, 56, "ORG"], [62, 69, "GPE"]], "type": "multi_entity"}
+{"text": "The CCTV footage contained references to Md. Arif Khan and City Cargo Services.", "entities": [[41, 54, "PERSON"], [59, 78, "ORG"]], "type": "contrastive_negative"}
+{"text": "Priya Nair worked with Maharashtra State Bank in Lucknow.", "entities": [[0, 10, "PERSON"], [23, 45, "ORG"], [49, 56, "GPE"]], "type": "multi_entity"}
+{"text": "The CCTV record contained references to R K Sharma and Prime Warehousing.", "entities": [[40, 50, "PERSON"], [55, 72, "ORG"]], "type": "contrastive_negative"}
+{"text": "Shakti Traders submitted invoices from its Nagpur office.", "entities": [[0, 14, "ORG"], [43, 49, "GPE"]], "type": "multi_entity"}
+{"text": "The suspect travelled from Mumbai to Ahmedabad.", "entities": [[27, 33, "GPE"], [37, 46, "GPE"]], "type": "location_context"}
+{"text": "According to the evidence log, Mohammed Arif Khan visited BlueLine Transport in Surat.", "entities": [[31, 49, "PERSON"], [58, 76, "ORG"], [80, 85, "GPE"]], "type": "contrastive_negative"}
+{"text": "M. A. Khan met an employee of KS Electronics near Bandra Kurla Complex.", "entities": [[0, 10, "PERSON"], [30, 44, "ORG"], [50, 70, "LOC"]], "type": "multi_entity"}
+{"text": "The mobile extraction report mentioned Neeraj Shah.", "entities": [[39, 50, "PERSON"]], "type": "hard_negative"}
+{"text": "The case file showed that Priya Nair had contacted Apex Distributors.", "entities": [[26, 36, "PERSON"], [51, 68, "ORG"]], "type": "contrastive_negative"}
+{"text": "The forensic report contained references to Ananya Sharma and Shakti Traders.", "entities": [[44, 57, "PERSON"], [62, 76, "ORG"]], "type": "contrastive_negative"}
+{"text": "Funds moved from an account linked to Neeraj Shah into City Cargo Services.", "entities": [[38, 49, "PERSON"], [55, 74, "ORG"]], "type": "multi_entity"}
+{"text": "Metro Logistics Pvt Ltd rented space at Vashi Logistics Yard.", "entities": [[0, 23, "ORG"], [40, 60, "FAC"]], "type": "facility_context"}
+{"text": "Western Freight Solutions operates a warehouse in Mumbai.", "entities": [[0, 25, "ORG"], [50, 56, "GPE"]], "type": "multi_entity"}
+{"text": "The consignment was moved through Navi Mumbai.", "entities": [[34, 45, "GPE"]], "type": "location_context"}
+{"text": "The suspect travelled from Chennai to Nagpur.", "entities": [[27, 34, "GPE"], [38, 44, "GPE"]], "type": "location_context"}
+{"text": "The team reviewed the police report before questioning Rajiv Bansal.", "entities": [[55, 67, "PERSON"]], "type": "hard_negative"}
+{"text": "Investigators traced the shipment from Jaipur to Vashi Sector 17.", "entities": [[39, 45, "GPE"], [49, 64, "LOC"]], "type": "multi_entity"}
+{"text": "Officers searched the area around Nhava Sheva Port Area.", "entities": [[34, 55, "LOC"]], "type": "location_context"}
+{"text": "Dev Malhotra met an employee of Western Freight Solutions near Dharavi.", "entities": [[0, 12, "PERSON"], [32, 57, "ORG"], [63, 70, "LOC"]], "type": "multi_entity"}
+{"text": "The vehicle was located near Bandra Kurla Complex.", "entities": [[29, 49, "LOC"]], "type": "location_context"}
+{"text": "National Freight Corporation submitted invoices from its Chennai office.", "entities": [[0, 28, "ORG"], [57, 64, "GPE"]], "type": "multi_entity"}
+{"text": "The surveillance records mentioned Sameer Khan, Rajiv Bansal, and City Cargo Services.", "entities": [[35, 46, "PERSON"], [48, 60, "PERSON"], [66, 85, "ORG"]], "type": "complex"}
+{"text": "The directors of Western Freight Solutions were questioned.", "entities": [[17, 42, "ORG"]], "type": "org_context"}
+{"text": "The police report contained references to Suresh Iyer and Metro Logistics Pvt Ltd.", "entities": [[42, 53, "PERSON"], [58, 81, "ORG"]], "type": "contrastive_negative"}
+{"text": "Suresh Iyer and Sameer Khan met representatives of City Cargo Services in Chennai.", "entities": [[0, 11, "PERSON"], [16, 27, "PERSON"], [51, 70, "ORG"], [74, 81, "GPE"]], "type": "complex"}
+{"text": "The vehicle associated with Karan Sethi was found near Eastern Express Highway.", "entities": [[28, 39, "PERSON"], [55, 78, "LOC"]], "type": "multi_entity"}
+{"text": "Rajiv Bansal travelled from Indore to Pune with Imran Sheikh.", "entities": [[0, 12, "PERSON"], [28, 34, "GPE"], [38, 42, "GPE"], [48, 60, "PERSON"]], "type": "complex"}
+{"text": "DM Trading Services operates a warehouse in Jaipur.", "entities": [[0, 19, "ORG"], [44, 50, "GPE"]], "type": "multi_entity"}
+{"text": "The team reviewed the CCTV footage before questioning S. Iyer.", "entities": [[54, 61, "PERSON"]], "type": "hard_negative"}
+{"text": "Investigators traced the shipment from Jaipur to Powai Lake Road.", "entities": [[39, 45, "GPE"], [49, 64, "LOC"]], "type": "multi_entity"}
+{"text": "Ayesha Khan worked with National Freight Corporation in Pune.", "entities": [[0, 11, "PERSON"], [24, 52, "ORG"], [56, 60, "GPE"]], "type": "multi_entity"}
+{"text": "Investigators compared the incident report with records from Prime Warehousing.", "entities": [[61, 78, "ORG"]], "type": "contrastive_negative"}
+{"text": "Arjun Patel transferred money to Maharashtra State Bank from Mumbai.", "entities": [[0, 11, "PERSON"], [33, 55, "ORG"], [61, 67, "GPE"]], "type": "multi_entity"}
+{"text": "Karan Sethi transferred money to BlueLine Transport from Pune.", "entities": [[0, 11, "PERSON"], [33, 51, "ORG"], [57, 61, "GPE"]], "type": "multi_entity"}
+{"text": "National Freight Corporation supplied invoices to investigators.", "entities": [[0, 28, "ORG"]], "type": "org_context"}
+{"text": "The crime scene report contained references to M. A. Khan and KS Electronics.", "entities": [[47, 57, "PERSON"], [62, 76, "ORG"]], "type": "contrastive_negative"}
+{"text": "The CCTV records showed that Ayesha Khan had contacted Maharashtra State Bank.", "entities": [[29, 40, "PERSON"], [55, 77, "ORG"]], "type": "contrastive_negative"}
+{"text": "The directors of Nova Components were questioned.", "entities": [[17, 32, "ORG"]], "type": "org_context"}
+{"text": "Karan Sethi was seen entering Vashi Logistics Yard.", "entities": [[0, 11, "PERSON"], [30, 50, "FAC"]], "type": "facility_context"}
+{"text": "R K Sharma travelled from Bengaluru to Thane with Ananya Sharma.", "entities": [[0, 10, "PERSON"], [26, 35, "GPE"], [39, 44, "GPE"], [50, 63, "PERSON"]], "type": "complex"}
+{"text": "The arrest memo showed that Suresh Iyer had contacted National Freight Corporation.", "entities": [[28, 39, "PERSON"], [54, 82, "ORG"]], "type": "contrastive_negative"}
+{"text": "The case file was linked to an incident in Surat.", "entities": [[43, 48, "GPE"]], "type": "hard_negative"}
+{"text": "Nova Components was named in the CCTV records reviewed by investigators.", "entities": [[0, 15, "ORG"]], "type": "contrastive_negative"}
+{"text": "Mohit Chawla transferred funds to BlueLine Transport, while Suresh Iyer contacted DM Trading Services.", "entities": [[0, 12, "PERSON"], [34, 52, "ORG"], [60, 71, "PERSON"], [82, 101, "ORG"]], "type": "complex"}
+{"text": "Investigators collected the forensic report for further examination.", "entities": [], "type": "hard_negative"}
+{"text": "Investigators traced the shipment from Thane to Bandra Kurla Complex.", "entities": [[39, 44, "GPE"], [48, 68, "LOC"]], "type": "multi_entity"}
+{"text": "Sameer Khan met an employee of Prime Warehousing near Bandra Kurla Complex.", "entities": [[0, 11, "PERSON"], [31, 48, "ORG"], [54, 74, "LOC"]], "type": "multi_entity"}
+{"text": "The incident report was linked to an incident in Delhi.", "entities": [[49, 54, "GPE"]], "type": "hard_negative"}
+{"text": "Police located Vikram Joshi near Eastern Express Highway.", "entities": [[15, 27, "PERSON"], [33, 56, "LOC"]], "type": "multi_entity"}
+{"text": "The vehicle associated with Ravi Deshmukh was found near Eastern Express Highway.", "entities": [[28, 41, "PERSON"], [57, 80, "LOC"]], "type": "multi_entity"}
+{"text": "Prime Warehousing submitted invoices from its Mumbai office.", "entities": [[0, 17, "ORG"], [46, 52, "GPE"]], "type": "multi_entity"}
+{"text": "Suresh Iyer was observed outside Prime Warehousing in Pune.", "entities": [[0, 11, "PERSON"], [33, 50, "ORG"], [54, 58, "GPE"]], "type": "multi_entity"}
+{"text": "According to the CDR records, R K Sharma visited National Freight Corporation in Ahmedabad.", "entities": [[30, 40, "PERSON"], [49, 77, "ORG"], [81, 90, "GPE"]], "type": "contrastive_negative"}
+{"text": "M. A. Khan worked with National Freight Corporation in Lucknow.", "entities": [[0, 10, "PERSON"], [23, 51, "ORG"], [55, 62, "GPE"]], "type": "multi_entity"}
+{"text": "According to the arrest memo, Priya Nair visited Shakti Traders in Kochi.", "entities": [[30, 40, "PERSON"], [49, 63, "ORG"], [67, 72, "GPE"]], "type": "contrastive_negative"}
+{"text": "Ravi Deshmukh worked with Apex Distributors in Hyderabad.", "entities": [[0, 13, "PERSON"], [26, 43, "ORG"], [47, 56, "GPE"]], "type": "multi_entity"}
+{"text": "Investigators collected the CDR records for further examination.", "entities": [], "type": "hard_negative"}
+{"text": "The Call Detail Records contained references to Neeraj Shah and KS Electronics.", "entities": [[48, 59, "PERSON"], [64, 78, "ORG"]], "type": "contrastive_negative"}
+{"text": "DM Trading Services was named in the Case File reviewed by investigators.", "entities": [[0, 19, "ORG"]], "type": "contrastive_negative"}
+{"text": "Mohit Chawla met an employee of KS Electronics near Mumbai-Pune Expressway.", "entities": [[0, 12, "PERSON"], [32, 46, "ORG"], [52, 74, "LOC"]], "type": "multi_entity"}
+{"text": "The police report contained references to Ayesha Khan and Maharashtra State Bank.", "entities": [[42, 53, "PERSON"], [58, 80, "ORG"]], "type": "contrastive_negative"}
+{"text": "Investigators traced the shipment from Lucknow to Dharavi.", "entities": [[39, 46, "GPE"], [50, 57, "LOC"]], "type": "multi_entity"}
+{"text": "The financial records was linked to an incident in Jaipur.", "entities": [[51, 57, "GPE"]], "type": "hard_negative"}
+{"text": "According to the FIR record, Ananya Sharma visited Metro Logistics Pvt Ltd in Surat.", "entities": [[29, 42, "PERSON"], [51, 74, "ORG"], [78, 83, "GPE"]], "type": "contrastive_negative"}
+{"text": "Mohit Chawla travelled from Indore to Ahmedabad with R K Sharma.", "entities": [[0, 12, "PERSON"], [28, 34, "GPE"], [38, 47, "GPE"], [53, 63, "PERSON"]], "type": "complex"}
+{"text": "Mohit Chawla appeared in the FIR record.", "entities": [[0, 12, "PERSON"]], "type": "hard_negative"}
+{"text": "Karan Sethi travelled from Navi Mumbai to Mumbai with S. Iyer.", "entities": [[0, 11, "PERSON"], [27, 38, "GPE"], [42, 48, "GPE"], [54, 61, "PERSON"]], "type": "complex"}
+{"text": "The FIR showed that Suresh Iyer had contacted KS Electronics.", "entities": [[20, 31, "PERSON"], [46, 60, "ORG"]], "type": "contrastive_negative"}
+{"text": "The Location Surveillance Records showed that Arjun Patel had contacted DM Trading Services.", "entities": [[46, 57, "PERSON"], [72, 91, "ORG"]], "type": "contrastive_negative"}
+{"text": "Mohammed Arif Khan met an employee of Apex Distributors near Vashi Sector 17.", "entities": [[0, 18, "PERSON"], [38, 55, "ORG"], [61, 76, "LOC"]], "type": "multi_entity"}
+{"text": "Investigators traced the shipment from Kochi to Eastern Express Highway.", "entities": [[39, 44, "GPE"], [48, 71, "LOC"]], "type": "multi_entity"}
+{"text": "The seizure memo mentioned Karan Sethi.", "entities": [[27, 38, "PERSON"]], "type": "hard_negative"}
+{"text": "Ravi Deshmukh appeared in the incident report.", "entities": [[0, 13, "PERSON"]], "type": "hard_negative"}
+{"text": "The Location Surveillance Record was reviewed by the investigating officer.", "entities": [], "type": "hard_negative"}
+{"text": "The consignment was moved through Chennai.", "entities": [[34, 41, "GPE"]], "type": "location_context"}
+{"text": "Mohammed Arif Khan was observed outside City Cargo Services in Nagpur.", "entities": [[0, 18, "PERSON"], [40, 59, "ORG"], [63, 69, "GPE"]], "type": "multi_entity"}
+{"text": "Police located Md. Arif Khan near Bandra Kurla Complex.", "entities": [[15, 28, "PERSON"], [34, 54, "LOC"]], "type": "multi_entity"}
+{"text": "Dev Malhotra transferred money to Maharashtra State Bank from Pune.", "entities": [[0, 12, "PERSON"], [34, 56, "ORG"], [62, 66, "GPE"]], "type": "multi_entity"}
+{"text": "Funds moved from an account linked to Mohammed Arif Khan into DM Trading Services.", "entities": [[38, 56, "PERSON"], [62, 81, "ORG"]], "type": "multi_entity"}
+{"text": "Western Freight Solutions was named in the forensic report reviewed by investigators.", "entities": [[0, 25, "ORG"]], "type": "contrastive_negative"}
+{"text": "Rajiv Bansal appeared in the bank records.", "entities": [[0, 12, "PERSON"]], "type": "hard_negative"}
+{"text": "The CCTV record mentioned Karan Sethi, Md. Arif Khan, and Metro Logistics Pvt Ltd.", "entities": [[26, 37, "PERSON"], [39, 52, "PERSON"], [58, 81, "ORG"]], "type": "complex"}
+{"text": "Police located Vikram Joshi near Thane Creek.", "entities": [[15, 27, "PERSON"], [33, 44, "LOC"]], "type": "multi_entity"}
+{"text": "Ananya Sharma transferred money to National Freight Corporation from Thane.", "entities": [[0, 13, "PERSON"], [35, 63, "ORG"], [69, 74, "GPE"]], "type": "multi_entity"}
+{"text": "Suresh Iyer transferred money to KS Electronics from Bengaluru.", "entities": [[0, 11, "PERSON"], [33, 47, "ORG"], [53, 62, "GPE"]], "type": "multi_entity"}
+{"text": "The mobile extraction report mentioned S. Iyer, Ayesha Khan, and BlueLine Transport.", "entities": [[39, 46, "PERSON"], [48, 59, "PERSON"], [65, 83, "ORG"]], "type": "complex"}
+{"text": "Investigators compared the FIR with records from Prime Warehousing.", "entities": [[49, 66, "ORG"]], "type": "contrastive_negative"}
+{"text": "Imran Sheikh was observed outside Maharashtra State Bank in Chennai.", "entities": [[0, 12, "PERSON"], [34, 56, "ORG"], [60, 67, "GPE"]], "type": "multi_entity"}
+{"text": "The mobile extraction report mentioned M. A. Khan, Imran Sheikh, and Western Freight Solutions.", "entities": [[39, 49, "PERSON"], [51, 63, "PERSON"], [69, 94, "ORG"]], "type": "complex"}
+{"text": "The forensic report showed that Suresh Iyer had contacted Western Freight Solutions.", "entities": [[32, 43, "PERSON"], [58, 83, "ORG"]], "type": "contrastive_negative"}
+{"text": "Mohit Chawla transferred funds to KS Electronics, while Suresh Iyer contacted Shakti Traders.", "entities": [[0, 12, "PERSON"], [34, 48, "ORG"], [56, 67, "PERSON"], [78, 92, "ORG"]], "type": "complex"}
+{"text": "The mobile extraction report was reviewed by the investigating officer.", "entities": [], "type": "hard_negative"}
+{"text": "Mohammed Arif Khan transferred funds to Apex Distributors, while M. A. Khan contacted Metro Logistics Pvt Ltd.", "entities": [[0, 18, "PERSON"], [40, 57, "ORG"], [65, 75, "PERSON"], [86, 109, "ORG"]], "type": "complex"}
+{"text": "Rajiv Bansal worked with BlueLine Transport in Ahmedabad.", "entities": [[0, 12, "PERSON"], [25, 43, "ORG"], [47, 56, "GPE"]], "type": "multi_entity"}
+{"text": "Apex Distributors operates a warehouse in Thane.", "entities": [[0, 17, "ORG"], [42, 47, "GPE"]], "type": "multi_entity"}
+{"text": "M. A. Khan worked with National Freight Corporation in Kochi.", "entities": [[0, 10, "PERSON"], [23, 51, "ORG"], [55, 60, "GPE"]], "type": "multi_entity"}
+{"text": "The witness statement mentioned Md. Arif Khan.", "entities": [[32, 45, "PERSON"]], "type": "hard_negative"}
+{"text": "Ravi Deshmukh transferred funds to Western Freight Solutions, while Ananya Sharma contacted Apex Distributors.", "entities": [[0, 13, "PERSON"], [35, 60, "ORG"], [68, 81, "PERSON"], [92, 109, "ORG"]], "type": "complex"}
+{"text": "Neeraj Shah transferred money to Prime Warehousing from Nagpur.", "entities": [[0, 11, "PERSON"], [33, 50, "ORG"], [56, 62, "GPE"]], "type": "multi_entity"}
+{"text": "Mohit Chawla appeared in the CCTV footage.", "entities": [[0, 12, "PERSON"]], "type": "hard_negative"}
+{"text": "No useful information was found in the surveillance records.", "entities": [], "type": "hard_negative"}
+{"text": "Sameer Khan was observed outside Maharashtra State Bank in Indore.", "entities": [[0, 11, "PERSON"], [33, 55, "ORG"], [59, 65, "GPE"]], "type": "multi_entity"}
+{"text": "Priya Nair was seen entering Sector 19 Storage Depot.", "entities": [[0, 10, "PERSON"], [29, 52, "FAC"]], "type": "facility_context"}
+{"text": "Sameer Khan transferred funds to Shakti Traders, while Suresh Iyer contacted Prime Warehousing.", "entities": [[0, 11, "PERSON"], [33, 47, "ORG"], [55, 66, "PERSON"], [77, 94, "ORG"]], "type": "complex"}
+{"text": "The forensic report was linked to an incident in Navi Mumbai.", "entities": [[49, 60, "GPE"]], "type": "hard_negative"}
+{"text": "Prime Warehousing rented space at Andheri Commercial Complex.", "entities": [[0, 17, "ORG"], [34, 60, "FAC"]], "type": "facility_context"}
+{"text": "Mohammed Arif Khan was observed outside City Cargo Services in Navi Mumbai.", "entities": [[0, 18, "PERSON"], [40, 59, "ORG"], [63, 74, "GPE"]], "type": "multi_entity"}
+{"text": "The seizure memo contained references to Arjun Patel and Apex Distributors.", "entities": [[41, 52, "PERSON"], [57, 74, "ORG"]], "type": "contrastive_negative"}
+{"text": "Entries in the crime scene report were compared with bank transactions.", "entities": [], "type": "hard_negative"}
+{"text": "Rohan Mehta met an employee of Apex Distributors near Mumbai-Pune Expressway.", "entities": [[0, 11, "PERSON"], [31, 48, "ORG"], [54, 76, "LOC"]], "type": "multi_entity"}
+{"text": "S. Iyer travelled from Kochi to Navi Mumbai with Priya Nair.", "entities": [[0, 7, "PERSON"], [23, 28, "GPE"], [32, 43, "GPE"], [49, 59, "PERSON"]], "type": "complex"}
+{"text": "Metro Logistics Pvt Ltd rented space at Sector 19 Storage Depot.", "entities": [[0, 23, "ORG"], [40, 63, "FAC"]], "type": "facility_context"}
+{"text": "Priya Nair and Imran Sheikh met representatives of Western Freight Solutions in Jaipur.", "entities": [[0, 10, "PERSON"], [15, 27, "PERSON"], [51, 76, "ORG"], [80, 86, "GPE"]], "type": "complex"}
+{"text": "S. Iyer appeared in the FIR record.", "entities": [[0, 7, "PERSON"]], "type": "hard_negative"}
+{"text": "Vikram Joshi appeared in the bank records.", "entities": [[0, 12, "PERSON"]], "type": "hard_negative"}
+{"text": "R K Sharma travelled from Lucknow to Delhi with Md. Arif Khan.", "entities": [[0, 10, "PERSON"], [26, 33, "GPE"], [37, 42, "GPE"], [48, 61, "PERSON"]], "type": "complex"}
+{"text": "Maharashtra State Bank submitted invoices from its Thane office.", "entities": [[0, 22, "ORG"], [51, 56, "GPE"]], "type": "multi_entity"}
+{"text": "The CCTV footage contained references to Rajiv Bansal and City Cargo Services.", "entities": [[41, 53, "PERSON"], [58, 77, "ORG"]], "type": "contrastive_negative"}
+{"text": "The Location Surveillance Records was linked to an incident in Chennai.", "entities": [[63, 70, "GPE"]], "type": "hard_negative"}
+{"text": "Investigators compared the bank records with records from Prime Warehousing.", "entities": [[58, 75, "ORG"]], "type": "contrastive_negative"}
+{"text": "Mohit Chawla met an employee of City Cargo Services near Eastern Express Highway.", "entities": [[0, 12, "PERSON"], [32, 51, "ORG"], [57, 80, "LOC"]], "type": "multi_entity"}
+{"text": "R K Sharma transferred funds to Maharashtra State Bank, while Mohit Chawla contacted Prime Warehousing.", "entities": [[0, 10, "PERSON"], [32, 54, "ORG"], [62, 74, "PERSON"], [85, 102, "ORG"]], "type": "complex"}
+{"text": "Shakti Traders operates a warehouse in Jaipur.", "entities": [[0, 14, "ORG"], [39, 45, "GPE"]], "type": "multi_entity"}
+{"text": "The investigation report was linked to an incident in Mumbai.", "entities": [[54, 60, "GPE"]], "type": "hard_negative"}
+{"text": "KS Electronics maintained an office in Hyderabad.", "entities": [[0, 14, "ORG"], [39, 48, "GPE"]], "type": "org_context"}
+{"text": "Entries in the Call Detail Records were compared with bank transactions.", "entities": [], "type": "hard_negative"}
+{"text": "Ayesha Khan appeared in the case file.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "Suresh Iyer travelled from Navi Mumbai to Chennai with Karan Sethi.", "entities": [[0, 11, "PERSON"], [27, 38, "GPE"], [42, 49, "GPE"], [55, 66, "PERSON"]], "type": "complex"}
+{"text": "Entries in the forensic report were compared with bank transactions.", "entities": [], "type": "hard_negative"}
+{"text": "DM Trading Services rented space at Bhiwandi Distribution Hub.", "entities": [[0, 19, "ORG"], [36, 61, "FAC"]], "type": "facility_context"}
+{"text": "The team reviewed the case file before questioning Rohan Mehta.", "entities": [[51, 62, "PERSON"]], "type": "hard_negative"}
+{"text": "R K Sharma worked with Apex Distributors in Bengaluru.", "entities": [[0, 10, "PERSON"], [23, 40, "ORG"], [44, 53, "GPE"]], "type": "multi_entity"}
+{"text": "Investigators compared the station diary entry with records from Nova Components.", "entities": [[65, 80, "ORG"]], "type": "contrastive_negative"}
+{"text": "The team reviewed the seizure memo before questioning Rohan Mehta.", "entities": [[54, 65, "PERSON"]], "type": "hard_negative"}
+{"text": "The financial records contained references to Suresh Iyer and National Freight Corporation.", "entities": [[46, 57, "PERSON"], [62, 90, "ORG"]], "type": "contrastive_negative"}
+{"text": "Maharashtra State Bank rented space at Sector 19 Storage Depot.", "entities": [[0, 22, "ORG"], [39, 62, "FAC"]], "type": "facility_context"}
+{"text": "Arjun Patel and R K Sharma met representatives of Western Freight Solutions in Thane.", "entities": [[0, 11, "PERSON"], [16, 26, "PERSON"], [50, 75, "ORG"], [79, 84, "GPE"]], "type": "complex"}
+{"text": "The control room log showed that Ayesha Khan had contacted Prime Warehousing.", "entities": [[33, 44, "PERSON"], [59, 76, "ORG"]], "type": "contrastive_negative"}
+{"text": "Entries in the investigation report were compared with bank transactions.", "entities": [], "type": "hard_negative"}
+{"text": "The surveillance record contained references to Rajiv Bansal and Western Freight Solutions.", "entities": [[48, 60, "PERSON"], [65, 90, "ORG"]], "type": "contrastive_negative"}
+{"text": "Ananya Sharma appeared in the CCTV footage.", "entities": [[0, 13, "PERSON"]], "type": "hard_negative"}
+{"text": "Arjun Patel transferred money to Metro Logistics Pvt Ltd from Indore.", "entities": [[0, 11, "PERSON"], [33, 56, "ORG"], [62, 68, "GPE"]], "type": "multi_entity"}
+{"text": "The CDR records mentioned Md. Arif Khan.", "entities": [[26, 39, "PERSON"]], "type": "hard_negative"}
+{"text": "The CCTV footage was linked to an incident in Indore.", "entities": [[46, 52, "GPE"]], "type": "hard_negative"}
+{"text": "Mohit Chawla was seen entering Andheri Commercial Complex.", "entities": [[0, 12, "PERSON"], [31, 57, "FAC"]], "type": "facility_context"}
+{"text": "Arjun Patel appeared in the case file.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "Metro Logistics Pvt Ltd submitted invoices from its Jaipur office.", "entities": [[0, 23, "ORG"], [52, 58, "GPE"]], "type": "multi_entity"}
+{"text": "Neeraj Shah appeared in the surveillance record.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "Imran Sheikh worked with Maharashtra State Bank in Bengaluru.", "entities": [[0, 12, "PERSON"], [25, 47, "ORG"], [51, 60, "GPE"]], "type": "multi_entity"}
+{"text": "Police located Ayesha Khan near Turbhe Industrial Area.", "entities": [[15, 26, "PERSON"], [32, 54, "LOC"]], "type": "multi_entity"}
+{"text": "According to the CCTV record, Ananya Sharma visited Shakti Traders in Indore.", "entities": [[30, 43, "PERSON"], [52, 66, "ORG"], [70, 76, "GPE"]], "type": "contrastive_negative"}
+{"text": "The suspect travelled from Lucknow to Navi Mumbai.", "entities": [[27, 34, "GPE"], [38, 49, "GPE"]], "type": "location_context"}
+{"text": "Investigators collected the police report for further examination.", "entities": [], "type": "hard_negative"}
+{"text": "According to the Call Detail Records, Ravi Deshmukh visited BlueLine Transport in Navi Mumbai.", "entities": [[38, 51, "PERSON"], [60, 78, "ORG"], [82, 93, "GPE"]], "type": "contrastive_negative"}
+{"text": "The police report contained references to Karan Sethi and Shakti Traders.", "entities": [[42, 53, "PERSON"], [58, 72, "ORG"]], "type": "contrastive_negative"}
+{"text": "Ananya Sharma transferred funds to Western Freight Solutions, while Arjun Patel contacted Apex Distributors.", "entities": [[0, 13, "PERSON"], [35, 60, "ORG"], [68, 79, "PERSON"], [90, 107, "ORG"]], "type": "complex"}
+{"text": "Investigators compared the seizure memo with records from Nova Components.", "entities": [[58, 73, "ORG"]], "type": "contrastive_negative"}
+{"text": "Police searched Vashi Logistics Yard after receiving information.", "entities": [[16, 36, "FAC"]], "type": "facility_context"}
+{"text": "The evidence log was linked to an incident in Chennai.", "entities": [[46, 53, "GPE"]], "type": "hard_negative"}
+{"text": "Prime Warehousing submitted invoices from its Chennai office.", "entities": [[0, 17, "ORG"], [46, 53, "GPE"]], "type": "multi_entity"}
+{"text": "The police report showed that Arjun Patel had contacted Western Freight Solutions.", "entities": [[30, 41, "PERSON"], [56, 81, "ORG"]], "type": "contrastive_negative"}
+{"text": "The vehicle associated with Imran Sheikh was found near Bandra Kurla Complex.", "entities": [[28, 40, "PERSON"], [56, 76, "LOC"]], "type": "multi_entity"}
+{"text": "The suspect travelled from Bengaluru to Navi Mumbai.", "entities": [[27, 36, "GPE"], [40, 51, "GPE"]], "type": "location_context"}
+{"text": "The seizure memo was linked to an incident in Chennai.", "entities": [[46, 53, "GPE"]], "type": "hard_negative"}
+{"text": "The CCTV footage contained references to Md. Arif Khan and Apex Distributors.", "entities": [[41, 54, "PERSON"], [59, 76, "ORG"]], "type": "contrastive_negative"}
+{"text": "DM Trading Services submitted invoices from its Nagpur office.", "entities": [[0, 19, "ORG"], [48, 54, "GPE"]], "type": "multi_entity"}
+{"text": "Shakti Traders submitted invoices from its Kochi office.", "entities": [[0, 14, "ORG"], [43, 48, "GPE"]], "type": "multi_entity"}
+{"text": "Funds moved from an account linked to Ravi Deshmukh into KS Electronics.", "entities": [[38, 51, "PERSON"], [57, 71, "ORG"]], "type": "multi_entity"}
+{"text": "According to the surveillance records, Ravi Deshmukh visited Apex Distributors in Ahmedabad.", "entities": [[39, 52, "PERSON"], [61, 78, "ORG"], [82, 91, "GPE"]], "type": "contrastive_negative"}
+{"text": "Investigators traced the shipment from Kochi to Powai Lake Road.", "entities": [[39, 44, "GPE"], [48, 63, "LOC"]], "type": "multi_entity"}
+{"text": "The financial records was reviewed by the investigating officer.", "entities": [], "type": "hard_negative"}
+{"text": "The control room log mentioned Vikram Joshi, Imran Sheikh, and BlueLine Transport.", "entities": [[31, 43, "PERSON"], [45, 57, "PERSON"], [63, 81, "ORG"]], "type": "complex"}
+{"text": "Funds moved from an account linked to Rohan Mehta into National Freight Corporation.", "entities": [[38, 49, "PERSON"], [55, 83, "ORG"]], "type": "multi_entity"}
+{"text": "The CCTV footage mentioned Mohammed Arif Khan.", "entities": [[27, 45, "PERSON"]], "type": "hard_negative"}
+{"text": "Dev Malhotra met an employee of Shakti Traders near Bandra Kurla Complex.", "entities": [[0, 12, "PERSON"], [32, 46, "ORG"], [52, 72, "LOC"]], "type": "multi_entity"}
+{"text": "Mohammed Arif Khan met an employee of National Freight Corporation near Powai Lake Road.", "entities": [[0, 18, "PERSON"], [38, 66, "ORG"], [72, 87, "LOC"]], "type": "multi_entity"}
+{"text": "The witness statement contained references to Mohit Chawla and BlueLine Transport.", "entities": [[46, 58, "PERSON"], [63, 81, "ORG"]], "type": "contrastive_negative"}
+{"text": "The witness statement was linked to an incident in Bengaluru.", "entities": [[51, 60, "GPE"]], "type": "hard_negative"}
+{"text": "Investigators traced the shipment from Navi Mumbai to Turbhe Industrial Area.", "entities": [[39, 50, "GPE"], [54, 76, "LOC"]], "type": "multi_entity"}
+{"text": "The crime scene report mentioned Md. Arif Khan, S. Iyer, and Prime Warehousing.", "entities": [[33, 46, "PERSON"], [48, 55, "PERSON"], [61, 78, "ORG"]], "type": "complex"}
+{"text": "The investigation report showed that Mohammed Arif Khan had contacted Metro Logistics Pvt Ltd.", "entities": [[37, 55, "PERSON"], [70, 93, "ORG"]], "type": "contrastive_negative"}
+{"text": "KS Electronics was named in the Location Surveillance Record reviewed by investigators.", "entities": [[0, 14, "ORG"]], "type": "contrastive_negative"}
+{"text": "Arjun Patel appeared in the surveillance records.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "Vikram Joshi travelled from Hyderabad to Indore with Md. Arif Khan.", "entities": [[0, 12, "PERSON"], [28, 37, "GPE"], [41, 47, "GPE"], [53, 66, "PERSON"]], "type": "complex"}
+{"text": "Investigators compared the Case File with records from Shakti Traders.", "entities": [[55, 69, "ORG"]], "type": "contrastive_negative"}
+{"text": "According to the surveillance records, Priya Nair visited Prime Warehousing in Thane.", "entities": [[39, 49, "PERSON"], [58, 75, "ORG"], [79, 84, "GPE"]], "type": "contrastive_negative"}
+{"text": "The Location Surveillance Records mentioned Rohan Mehta, Karan Sethi, and Shakti Traders.", "entities": [[44, 55, "PERSON"], [57, 68, "PERSON"], [74, 88, "ORG"]], "type": "complex"}
+{"text": "The control room log was reviewed by the investigating officer.", "entities": [], "type": "hard_negative"}
+{"text": "Investigators compared the witness statement with records from Western Freight Solutions.", "entities": [[63, 88, "ORG"]], "type": "contrastive_negative"}
+{"text": "Prime Warehousing was named in the police report reviewed by investigators.", "entities": [[0, 17, "ORG"]], "type": "contrastive_negative"}
+{"text": "According to the CDR records, Sameer Khan visited Prime Warehousing in Ahmedabad.", "entities": [[30, 41, "PERSON"], [50, 67, "ORG"], [71, 80, "GPE"]], "type": "contrastive_negative"}
+{"text": "Nova Components operates a warehouse in Indore.", "entities": [[0, 15, "ORG"], [40, 46, "GPE"]], "type": "multi_entity"}
+{"text": "City Cargo Services operates a warehouse in Chennai.", "entities": [[0, 19, "ORG"], [44, 51, "GPE"]], "type": "multi_entity"}
+{"text": "Investigators traced the shipment from Mumbai to Thane Creek.", "entities": [[39, 45, "GPE"], [49, 60, "LOC"]], "type": "multi_entity"}
+{"text": "According to the FIR, R K Sharma visited Maharashtra State Bank in Indore.", "entities": [[22, 32, "PERSON"], [41, 63, "ORG"], [67, 73, "GPE"]], "type": "contrastive_negative"}
+{"text": "Ayesha Khan appeared in the financial records.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "The case file showed that Priya Nair had contacted KS Electronics.", "entities": [[26, 36, "PERSON"], [51, 65, "ORG"]], "type": "contrastive_negative"}
+{"text": "Prime Warehousing operates a warehouse in Kochi.", "entities": [[0, 17, "ORG"], [42, 47, "GPE"]], "type": "multi_entity"}
+{"text": "Rajiv Bansal appeared in the arrest memo.", "entities": [[0, 12, "PERSON"]], "type": "hard_negative"}
+{"text": "The Location Surveillance Record was linked to an incident in Mumbai.", "entities": [[62, 68, "GPE"]], "type": "hard_negative"}
+{"text": "Funds moved from an account linked to Suresh Iyer into Nova Components.", "entities": [[38, 49, "PERSON"], [55, 70, "ORG"]], "type": "multi_entity"}
+{"text": "S. Iyer met an employee of National Freight Corporation near Andheri East.", "entities": [[0, 7, "PERSON"], [27, 55, "ORG"], [61, 73, "LOC"]], "type": "multi_entity"}
+{"text": "The team reviewed the Location Surveillance Records before questioning R K Sharma.", "entities": [[71, 81, "PERSON"]], "type": "hard_negative"}
+{"text": "No useful information was found in the forensic report.", "entities": [], "type": "hard_negative"}
+{"text": "Investigators compared the mobile extraction report with records from BlueLine Transport.", "entities": [[70, 88, "ORG"]], "type": "contrastive_negative"}
+{"text": "Shakti Traders operates a warehouse in Ahmedabad.", "entities": [[0, 14, "ORG"], [39, 48, "GPE"]], "type": "multi_entity"}
+{"text": "Police located Mohit Chawla near Thane Creek.", "entities": [[15, 27, "PERSON"], [33, 44, "LOC"]], "type": "multi_entity"}
+{"text": "KS Electronics operates a warehouse in Nagpur.", "entities": [[0, 14, "ORG"], [39, 45, "GPE"]], "type": "multi_entity"}
+{"text": "Ravi Deshmukh transferred money to Prime Warehousing from Navi Mumbai.", "entities": [[0, 13, "PERSON"], [35, 52, "ORG"], [58, 69, "GPE"]], "type": "multi_entity"}
+{"text": "The witness statement was reviewed by the investigating officer.", "entities": [], "type": "hard_negative"}
+{"text": "Rajiv Bansal travelled from Mumbai to Jaipur with Mohammed Arif Khan.", "entities": [[0, 12, "PERSON"], [28, 34, "GPE"], [38, 44, "GPE"], [50, 68, "PERSON"]], "type": "complex"}
+{"text": "Officers searched the area around Thane Creek.", "entities": [[34, 45, "LOC"]], "type": "location_context"}
+{"text": "No useful information was found in the arrest memo.", "entities": [], "type": "hard_negative"}
+{"text": "M. A. Khan appeared in the FIR.", "entities": [[0, 10, "PERSON"]], "type": "hard_negative"}
+{"text": "According to the evidence log, Mohammed Arif Khan visited KS Electronics in Indore.", "entities": [[31, 49, "PERSON"], [58, 72, "ORG"], [76, 82, "GPE"]], "type": "contrastive_negative"}
+{"text": "The team reviewed the vehicle movement record before questioning Suresh Iyer.", "entities": [[65, 76, "PERSON"]], "type": "hard_negative"}
+{"text": "Mohammed Arif Khan travelled from Pune to Ahmedabad with Rajiv Bansal.", "entities": [[0, 18, "PERSON"], [34, 38, "GPE"], [42, 51, "GPE"], [57, 69, "PERSON"]], "type": "complex"}
+{"text": "The CCTV footage mentioned Ayesha Khan, Dev Malhotra, and Metro Logistics Pvt Ltd.", "entities": [[27, 38, "PERSON"], [40, 52, "PERSON"], [58, 81, "ORG"]], "type": "complex"}
+{"text": "Prime Warehousing was named in the bank records reviewed by investigators.", "entities": [[0, 17, "ORG"]], "type": "contrastive_negative"}
+{"text": "Records from KS Electronics were collected by police.", "entities": [[13, 27, "ORG"]], "type": "org_context"}
+{"text": "Shakti Traders submitted invoices from its Bengaluru office.", "entities": [[0, 14, "ORG"], [43, 52, "GPE"]], "type": "multi_entity"}
+{"text": "The incident report showed that Vikram Joshi had contacted Metro Logistics Pvt Ltd.", "entities": [[32, 44, "PERSON"], [59, 82, "ORG"]], "type": "contrastive_negative"}
+{"text": "National Freight Corporation submitted invoices from its Hyderabad office.", "entities": [[0, 28, "ORG"], [57, 66, "GPE"]], "type": "multi_entity"}
+{"text": "The vehicle was located near Turbhe Industrial Area.", "entities": [[29, 51, "LOC"]], "type": "location_context"}
+{"text": "Md. Arif Khan transferred money to DM Trading Services from Jaipur.", "entities": [[0, 13, "PERSON"], [35, 54, "ORG"], [60, 66, "GPE"]], "type": "multi_entity"}
+{"text": "According to the seizure memo, Karan Sethi visited KS Electronics in Bengaluru.", "entities": [[31, 42, "PERSON"], [51, 65, "ORG"], [69, 78, "GPE"]], "type": "contrastive_negative"}
+{"text": "The vehicle associated with S. Iyer was found near Powai Lake Road.", "entities": [[28, 35, "PERSON"], [51, 66, "LOC"]], "type": "multi_entity"}
+{"text": "Records from BlueLine Transport were collected by police.", "entities": [[13, 31, "ORG"]], "type": "org_context"}
+{"text": "Dev Malhotra appeared in the witness statement.", "entities": [[0, 12, "PERSON"]], "type": "hard_negative"}
+{"text": "The CCTV record contained references to Neeraj Shah and Shakti Traders.", "entities": [[40, 51, "PERSON"], [56, 70, "ORG"]], "type": "contrastive_negative"}
+{"text": "According to the CCTV footage, Arjun Patel visited Apex Distributors in Pune.", "entities": [[31, 42, "PERSON"], [51, 68, "ORG"], [72, 76, "GPE"]], "type": "contrastive_negative"}
+{"text": "The team reviewed the police report before questioning Ananya Sharma.", "entities": [[55, 68, "PERSON"]], "type": "hard_negative"}
+{"text": "R K Sharma was observed outside Western Freight Solutions in Thane.", "entities": [[0, 10, "PERSON"], [32, 57, "ORG"], [61, 66, "GPE"]], "type": "multi_entity"}
+{"text": "The vehicle associated with Rajiv Bansal was found near Bandra Kurla Complex.", "entities": [[28, 40, "PERSON"], [56, 76, "LOC"]], "type": "multi_entity"}
+{"text": "The Call Detail Records contained references to Ananya Sharma and National Freight Corporation.", "entities": [[48, 61, "PERSON"], [66, 94, "ORG"]], "type": "contrastive_negative"}
+{"text": "The CCTV record showed that R K Sharma had contacted National Freight Corporation.", "entities": [[28, 38, "PERSON"], [53, 81, "ORG"]], "type": "contrastive_negative"}
+{"text": "The Case File was linked to an incident in Mumbai.", "entities": [[43, 49, "GPE"]], "type": "hard_negative"}
+{"text": "Apex Distributors was named in the police report reviewed by investigators.", "entities": [[0, 17, "ORG"]], "type": "contrastive_negative"}
+{"text": "The FIR record contained references to Vikram Joshi and Prime Warehousing.", "entities": [[39, 51, "PERSON"], [56, 73, "ORG"]], "type": "contrastive_negative"}
+{"text": "Ananya Sharma travelled from Pune to Indore with S. Iyer.", "entities": [[0, 13, "PERSON"], [29, 33, "GPE"], [37, 43, "GPE"], [49, 56, "PERSON"]], "type": "complex"}
+{"text": "Ravi Deshmukh transferred funds to BlueLine Transport, while Imran Sheikh contacted Nova Components.", "entities": [[0, 13, "PERSON"], [35, 53, "ORG"], [61, 73, "PERSON"], [84, 99, "ORG"]], "type": "complex"}
+{"text": "Funds moved from an account linked to Mohit Chawla into City Cargo Services.", "entities": [[38, 50, "PERSON"], [56, 75, "ORG"]], "type": "multi_entity"}
+{"text": "The incident occurred in Jaipur.", "entities": [[25, 31, "GPE"]], "type": "location_context"}
+{"text": "Investigators compared the witness statement with records from DM Trading Services.", "entities": [[63, 82, "ORG"]], "type": "contrastive_negative"}
+{"text": "Mohit Chawla was observed outside Apex Distributors in Chennai.", "entities": [[0, 12, "PERSON"], [34, 51, "ORG"], [55, 62, "GPE"]], "type": "multi_entity"}
+{"text": "Investigators collected the arrest memo for further examination.", "entities": [], "type": "hard_negative"}
+{"text": "Dev Malhotra was observed outside Apex Distributors in Delhi.", "entities": [[0, 12, "PERSON"], [34, 51, "ORG"], [55, 60, "GPE"]], "type": "multi_entity"}
+{"text": "Arjun Patel travelled from Thane to Pune with Rohan Mehta.", "entities": [[0, 11, "PERSON"], [27, 32, "GPE"], [36, 40, "GPE"], [46, 57, "PERSON"]], "type": "complex"}
+{"text": "Rajiv Bansal and Karan Sethi met representatives of KS Electronics in Indore.", "entities": [[0, 12, "PERSON"], [17, 28, "PERSON"], [52, 66, "ORG"], [70, 76, "GPE"]], "type": "complex"}
+{"text": "Apex Distributors submitted invoices from its Ahmedabad office.", "entities": [[0, 17, "ORG"], [46, 55, "GPE"]], "type": "multi_entity"}
+{"text": "The Location Surveillance Record showed that Arjun Patel had contacted Prime Warehousing.", "entities": [[45, 56, "PERSON"], [71, 88, "ORG"]], "type": "contrastive_negative"}
+{"text": "Funds moved from an account linked to Suresh Iyer into City Cargo Services.", "entities": [[38, 49, "PERSON"], [55, 74, "ORG"]], "type": "multi_entity"}
+{"text": "According to the crime scene report, Priya Nair visited Shakti Traders in Thane.", "entities": [[37, 47, "PERSON"], [56, 70, "ORG"], [74, 79, "GPE"]], "type": "contrastive_negative"}
+{"text": "The Call Detail Records showed that Ravi Deshmukh had contacted Maharashtra State Bank.", "entities": [[36, 49, "PERSON"], [64, 86, "ORG"]], "type": "contrastive_negative"}
+{"text": "Police located Suresh Iyer near Bandra Kurla Complex.", "entities": [[15, 26, "PERSON"], [32, 52, "LOC"]], "type": "multi_entity"}
+{"text": "The suspect travelled from Navi Mumbai to Hyderabad.", "entities": [[27, 38, "GPE"], [42, 51, "GPE"]], "type": "location_context"}
+{"text": "The Case File mentioned Mohammed Arif Khan, S. Iyer, and City Cargo Services.", "entities": [[24, 42, "PERSON"], [44, 51, "PERSON"], [57, 76, "ORG"]], "type": "complex"}
+{"text": "The case file mentioned Arjun Patel.", "entities": [[24, 35, "PERSON"]], "type": "hard_negative"}
+{"text": "The directors of Shakti Traders were questioned.", "entities": [[17, 31, "ORG"]], "type": "org_context"}
+{"text": "Sameer Khan was observed outside Apex Distributors in Chennai.", "entities": [[0, 11, "PERSON"], [33, 50, "ORG"], [54, 61, "GPE"]], "type": "multi_entity"}
+{"text": "The surveillance records contained references to Rohan Mehta and BlueLine Transport.", "entities": [[49, 60, "PERSON"], [65, 83, "ORG"]], "type": "contrastive_negative"}
+{"text": "Police located Ayesha Khan near Mumbai-Pune Expressway.", "entities": [[15, 26, "PERSON"], [32, 54, "LOC"]], "type": "multi_entity"}
+{"text": "Priya Nair transferred money to Maharashtra State Bank from Lucknow.", "entities": [[0, 10, "PERSON"], [32, 54, "ORG"], [60, 67, "GPE"]], "type": "multi_entity"}
+{"text": "The vehicle associated with Rajiv Bansal was found near Vashi Sector 17.", "entities": [[28, 40, "PERSON"], [56, 71, "LOC"]], "type": "multi_entity"}
+{"text": "According to the surveillance record, Vikram Joshi visited Maharashtra State Bank in Mumbai.", "entities": [[38, 50, "PERSON"], [59, 81, "ORG"], [85, 91, "GPE"]], "type": "contrastive_negative"}
+{"text": "The vehicle movement record mentioned Rajiv Bansal, Vikram Joshi, and Shakti Traders.", "entities": [[38, 50, "PERSON"], [52, 64, "PERSON"], [70, 84, "ORG"]], "type": "complex"}
+{"text": "Investigators compared the arrest memo with records from Western Freight Solutions.", "entities": [[57, 82, "ORG"]], "type": "contrastive_negative"}
+{"text": "The team reviewed the crime scene report before questioning Priya Nair.", "entities": [[60, 70, "PERSON"]], "type": "hard_negative"}
+{"text": "Records from National Freight Corporation were collected by police.", "entities": [[13, 41, "ORG"]], "type": "org_context"}
+{"text": "R K Sharma transferred funds to Prime Warehousing, while Ayesha Khan contacted Maharashtra State Bank.", "entities": [[0, 10, "PERSON"], [32, 49, "ORG"], [57, 68, "PERSON"], [79, 101, "ORG"]], "type": "complex"}
+{"text": "The witness statement contained references to Imran Sheikh and National Freight Corporation.", "entities": [[46, 58, "PERSON"], [63, 91, "ORG"]], "type": "contrastive_negative"}
+{"text": "Police located Ananya Sharma near Eastern Express Highway.", "entities": [[15, 28, "PERSON"], [34, 57, "LOC"]], "type": "multi_entity"}
+{"text": "The directors of Apex Distributors were questioned.", "entities": [[17, 34, "ORG"]], "type": "org_context"}
+{"text": "The vehicle associated with Rohan Mehta was found near Andheri East.", "entities": [[28, 39, "PERSON"], [55, 67, "LOC"]], "type": "multi_entity"}
+{"text": "The Location Surveillance Record contained references to M. A. Khan and City Cargo Services.", "entities": [[57, 67, "PERSON"], [72, 91, "ORG"]], "type": "contrastive_negative"}
+{"text": "Prime Warehousing submitted invoices from its Kochi office.", "entities": [[0, 17, "ORG"], [46, 51, "GPE"]], "type": "multi_entity"}
+{"text": "The suspect travelled from Surat to Navi Mumbai.", "entities": [[27, 32, "GPE"], [36, 47, "GPE"]], "type": "location_context"}
+{"text": "Imran Sheikh transferred money to Maharashtra State Bank from Indore.", "entities": [[0, 12, "PERSON"], [34, 56, "ORG"], [62, 68, "GPE"]], "type": "multi_entity"}
+{"text": "The CCTV footage was linked to an incident in Chennai.", "entities": [[46, 53, "GPE"]], "type": "hard_negative"}
+{"text": "Mohit Chawla appeared in the FIR.", "entities": [[0, 12, "PERSON"]], "type": "hard_negative"}
+{"text": "M. A. Khan transferred money to KS Electronics from Lucknow.", "entities": [[0, 10, "PERSON"], [32, 46, "ORG"], [52, 59, "GPE"]], "type": "multi_entity"}
+{"text": "The bank records contained references to R K Sharma and Prime Warehousing.", "entities": [[41, 51, "PERSON"], [56, 73, "ORG"]], "type": "contrastive_negative"}
+{"text": "KS Electronics operates a warehouse in Hyderabad.", "entities": [[0, 14, "ORG"], [39, 48, "GPE"]], "type": "multi_entity"}
+{"text": "The team reviewed the investigation report before questioning Ananya Sharma.", "entities": [[62, 75, "PERSON"]], "type": "hard_negative"}
+{"text": "Funds moved from an account linked to Ananya Sharma into Shakti Traders.", "entities": [[38, 51, "PERSON"], [57, 71, "ORG"]], "type": "multi_entity"}
+{"text": "R K Sharma met an employee of Prime Warehousing near Mumbai-Pune Expressway.", "entities": [[0, 10, "PERSON"], [30, 47, "ORG"], [53, 75, "LOC"]], "type": "multi_entity"}
+{"text": "The FIR record showed that Vikram Joshi had contacted Metro Logistics Pvt Ltd.", "entities": [[27, 39, "PERSON"], [54, 77, "ORG"]], "type": "contrastive_negative"}
+{"text": "According to the forensic report, S. Iyer visited Western Freight Solutions in Jaipur.", "entities": [[34, 41, "PERSON"], [50, 75, "ORG"], [79, 85, "GPE"]], "type": "contrastive_negative"}
+{"text": "DM Trading Services submitted invoices from its Indore office.", "entities": [[0, 19, "ORG"], [48, 54, "GPE"]], "type": "multi_entity"}
+{"text": "BlueLine Transport was named in the CCTV records reviewed by investigators.", "entities": [[0, 18, "ORG"]], "type": "contrastive_negative"}
+{"text": "Investigators compared the police report with records from DM Trading Services.", "entities": [[59, 78, "ORG"]], "type": "contrastive_negative"}
+{"text": "Funds moved from an account linked to Vikram Joshi into KS Electronics.", "entities": [[38, 50, "PERSON"], [56, 70, "ORG"]], "type": "multi_entity"}
+{"text": "Funds moved from an account linked to Sameer Khan into Nova Components.", "entities": [[38, 49, "PERSON"], [55, 70, "ORG"]], "type": "multi_entity"}
+{"text": "Maharashtra State Bank was named in the FIR record reviewed by investigators.", "entities": [[0, 22, "ORG"]], "type": "contrastive_negative"}
+{"text": "Investigators compared the incident report with records from Apex Distributors.", "entities": [[61, 78, "ORG"]], "type": "contrastive_negative"}
+{"text": "The suspect travelled from Nagpur to Indore.", "entities": [[27, 33, "GPE"], [37, 43, "GPE"]], "type": "location_context"}
+{"text": "Ananya Sharma was observed outside National Freight Corporation in Bengaluru.", "entities": [[0, 13, "PERSON"], [35, 63, "ORG"], [67, 76, "GPE"]], "type": "multi_entity"}
+{"text": "Ravi Deshmukh appeared in the surveillance records.", "entities": [[0, 13, "PERSON"]], "type": "hard_negative"}
+{"text": "The surveillance record showed that Ravi Deshmukh had contacted City Cargo Services.", "entities": [[36, 49, "PERSON"], [64, 83, "ORG"]], "type": "contrastive_negative"}
+{"text": "The suspect travelled from Jaipur to Nagpur.", "entities": [[27, 33, "GPE"], [37, 43, "GPE"]], "type": "location_context"}
+{"text": "The vehicle associated with Neeraj Shah was found near Dharavi.", "entities": [[28, 39, "PERSON"], [55, 62, "LOC"]], "type": "multi_entity"}
+{"text": "The control room log was linked to an incident in Kochi.", "entities": [[50, 55, "GPE"]], "type": "hard_negative"}
+{"text": "Investigators traced the shipment from Ahmedabad to Andheri East.", "entities": [[39, 48, "GPE"], [52, 64, "LOC"]], "type": "multi_entity"}
+{"text": "The suspect travelled from Bengaluru to Nagpur.", "entities": [[27, 36, "GPE"], [40, 46, "GPE"]], "type": "location_context"}
+{"text": "The mobile extraction report showed that Sameer Khan had contacted KS Electronics.", "entities": [[41, 52, "PERSON"], [67, 81, "ORG"]], "type": "contrastive_negative"}
+{"text": "Neeraj Shah travelled from Lucknow to Navi Mumbai with R K Sharma.", "entities": [[0, 11, "PERSON"], [27, 34, "GPE"], [38, 49, "GPE"], [55, 65, "PERSON"]], "type": "complex"}
+{"text": "Officers searched the area around Andheri East.", "entities": [[34, 46, "LOC"]], "type": "location_context"}
+{"text": "Entries in the station diary entry were compared with bank transactions.", "entities": [], "type": "hard_negative"}
+{"text": "M. A. Khan transferred money to Western Freight Solutions from Delhi.", "entities": [[0, 10, "PERSON"], [32, 57, "ORG"], [63, 68, "GPE"]], "type": "multi_entity"}
+{"text": "Karan Sethi transferred money to Maharashtra State Bank from Navi Mumbai.", "entities": [[0, 11, "PERSON"], [33, 55, "ORG"], [61, 72, "GPE"]], "type": "multi_entity"}
+{"text": "KS Electronics maintained an office in Delhi.", "entities": [[0, 14, "ORG"], [39, 44, "GPE"]], "type": "org_context"}
+{"text": "Imran Sheikh met an employee of Prime Warehousing near Eastern Express Highway.", "entities": [[0, 12, "PERSON"], [32, 49, "ORG"], [55, 78, "LOC"]], "type": "multi_entity"}
+{"text": "National Freight Corporation rented space at Andheri Commercial Complex.", "entities": [[0, 28, "ORG"], [45, 71, "FAC"]], "type": "facility_context"}
+{"text": "Imran Sheikh worked with Nova Components in Mumbai.", "entities": [[0, 12, "PERSON"], [25, 40, "ORG"], [44, 50, "GPE"]], "type": "multi_entity"}
+{"text": "Investigators compared the CCTV footage with records from Western Freight Solutions.", "entities": [[58, 83, "ORG"]], "type": "contrastive_negative"}
+{"text": "Imran Sheikh transferred funds to Metro Logistics Pvt Ltd, while Md. Arif Khan contacted Shakti Traders.", "entities": [[0, 12, "PERSON"], [34, 57, "ORG"], [65, 78, "PERSON"], [89, 103, "ORG"]], "type": "complex"}
+{"text": "The station diary entry mentioned M. A. Khan, Neeraj Shah, and Metro Logistics Pvt Ltd.", "entities": [[34, 44, "PERSON"], [46, 57, "PERSON"], [63, 86, "ORG"]], "type": "complex"}
+{"text": "Prime Warehousing maintained an office in Jaipur.", "entities": [[0, 17, "ORG"], [42, 48, "GPE"]], "type": "org_context"}
+{"text": "Maharashtra State Bank submitted invoices from its Navi Mumbai office.", "entities": [[0, 22, "ORG"], [51, 62, "GPE"]], "type": "multi_entity"}
+{"text": "Police located Mohit Chawla near Vashi Sector 17.", "entities": [[15, 27, "PERSON"], [33, 48, "LOC"]], "type": "multi_entity"}
+{"text": "Funds moved from an account linked to Ayesha Khan into Apex Distributors.", "entities": [[38, 49, "PERSON"], [55, 72, "ORG"]], "type": "multi_entity"}
+{"text": "Western Freight Solutions submitted invoices from its Hyderabad office.", "entities": [[0, 25, "ORG"], [54, 63, "GPE"]], "type": "multi_entity"}
+{"text": "Suresh Iyer appeared in the bank records.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "The crime scene report showed that Arjun Patel had contacted Nova Components.", "entities": [[35, 46, "PERSON"], [61, 76, "ORG"]], "type": "contrastive_negative"}
+{"text": "Funds moved from an account linked to Mohit Chawla into Western Freight Solutions.", "entities": [[38, 50, "PERSON"], [56, 81, "ORG"]], "type": "multi_entity"}
+{"text": "Neeraj Shah and Rajiv Bansal met representatives of Nova Components in Surat.", "entities": [[0, 11, "PERSON"], [16, 28, "PERSON"], [52, 67, "ORG"], [71, 76, "GPE"]], "type": "complex"}
+{"text": "Vikram Joshi met an employee of City Cargo Services near Bandra Kurla Complex.", "entities": [[0, 12, "PERSON"], [32, 51, "ORG"], [57, 77, "LOC"]], "type": "multi_entity"}
+{"text": "Ravi Deshmukh travelled from Jaipur to Lucknow with Priya Nair.", "entities": [[0, 13, "PERSON"], [29, 35, "GPE"], [39, 46, "GPE"], [52, 62, "PERSON"]], "type": "complex"}
+{"text": "The CDR records mentioned S. Iyer.", "entities": [[26, 33, "PERSON"]], "type": "hard_negative"}
+{"text": "Suresh Iyer transferred funds to Apex Distributors, while Ananya Sharma contacted BlueLine Transport.", "entities": [[0, 11, "PERSON"], [33, 50, "ORG"], [58, 71, "PERSON"], [82, 100, "ORG"]], "type": "complex"}
+{"text": "Investigators traced the shipment from Chennai to Eastern Express Highway.", "entities": [[39, 46, "GPE"], [50, 73, "LOC"]], "type": "multi_entity"}
+{"text": "Vikram Joshi worked with Apex Distributors in Kochi.", "entities": [[0, 12, "PERSON"], [25, 42, "ORG"], [46, 51, "GPE"]], "type": "multi_entity"}
+{"text": "M. A. Khan was seen entering Andheri Commercial Complex.", "entities": [[0, 10, "PERSON"], [29, 55, "FAC"]], "type": "facility_context"}
+{"text": "Sameer Khan met an employee of Maharashtra State Bank near Turbhe Industrial Area.", "entities": [[0, 11, "PERSON"], [31, 53, "ORG"], [59, 81, "LOC"]], "type": "multi_entity"}
+{"text": "Karan Sethi was seen entering Turbhe Warehouse No. 4.", "entities": [[0, 11, "PERSON"], [30, 52, "FAC"]], "type": "facility_context"}
+{"text": "The police report mentioned Rajiv Bansal, Ayesha Khan, and DM Trading Services.", "entities": [[28, 40, "PERSON"], [42, 53, "PERSON"], [59, 78, "ORG"]], "type": "complex"}
+{"text": "City Cargo Services maintained an office in Navi Mumbai.", "entities": [[0, 19, "ORG"], [44, 55, "GPE"]], "type": "org_context"}
+{"text": "The seizure memo contained references to Md. Arif Khan and Prime Warehousing.", "entities": [[41, 54, "PERSON"], [59, 76, "ORG"]], "type": "contrastive_negative"}
+{"text": "The CDR records showed that Sameer Khan had contacted Shakti Traders.", "entities": [[28, 39, "PERSON"], [54, 68, "ORG"]], "type": "contrastive_negative"}
+{"text": "Md. Arif Khan travelled from Lucknow to Hyderabad with Imran Sheikh.", "entities": [[0, 13, "PERSON"], [29, 36, "GPE"], [40, 49, "GPE"], [55, 67, "PERSON"]], "type": "complex"}
+{"text": "Entries in the surveillance record were compared with bank transactions.", "entities": [], "type": "hard_negative"}
+{"text": "The police report was linked to an incident in Thane.", "entities": [[47, 52, "GPE"]], "type": "hard_negative"}
+{"text": "The station diary entry mentioned Ravi Deshmukh.", "entities": [[34, 47, "PERSON"]], "type": "hard_negative"}
+{"text": "Shakti Traders submitted invoices from its Mumbai office.", "entities": [[0, 14, "ORG"], [43, 49, "GPE"]], "type": "multi_entity"}
+{"text": "Mohammed Arif Khan was observed outside BlueLine Transport in Thane.", "entities": [[0, 18, "PERSON"], [40, 58, "ORG"], [62, 67, "GPE"]], "type": "multi_entity"}
+{"text": "Entries in the witness statement were compared with bank transactions.", "entities": [], "type": "hard_negative"}
+{"text": "Investigators collected the investigation report for further examination.", "entities": [], "type": "hard_negative"}
+{"text": "According to the financial records, Ayesha Khan visited BlueLine Transport in Bengaluru.", "entities": [[36, 47, "PERSON"], [56, 74, "ORG"], [78, 87, "GPE"]], "type": "contrastive_negative"}
+{"text": "Vikram Joshi was observed outside Western Freight Solutions in Pune.", "entities": [[0, 12, "PERSON"], [34, 59, "ORG"], [63, 67, "GPE"]], "type": "multi_entity"}
+{"text": "Investigators compared the seizure memo with records from National Freight Corporation.", "entities": [[58, 86, "ORG"]], "type": "contrastive_negative"}
+{"text": "The CCTV records showed that Sameer Khan had contacted Prime Warehousing.", "entities": [[29, 40, "PERSON"], [55, 72, "ORG"]], "type": "contrastive_negative"}
+{"text": "The witness statement showed that Ayesha Khan had contacted Prime Warehousing.", "entities": [[34, 45, "PERSON"], [60, 77, "ORG"]], "type": "contrastive_negative"}
+{"text": "Police located R K Sharma near Nhava Sheva Port Area.", "entities": [[15, 25, "PERSON"], [31, 52, "LOC"]], "type": "multi_entity"}
+{"text": "Investigators compared the CCTV records with records from City Cargo Services.", "entities": [[58, 77, "ORG"]], "type": "contrastive_negative"}
+{"text": "City Cargo Services was named in the Location Surveillance Records reviewed by investigators.", "entities": [[0, 19, "ORG"]], "type": "contrastive_negative"}
+{"text": "Rohan Mehta transferred funds to BlueLine Transport, while Mohammed Arif Khan contacted Metro Logistics Pvt Ltd.", "entities": [[0, 11, "PERSON"], [33, 51, "ORG"], [59, 77, "PERSON"], [88, 111, "ORG"]], "type": "complex"}
+{"text": "The investigation report was reviewed by the investigating officer.", "entities": [], "type": "hard_negative"}
+{"text": "Neeraj Shah appeared in the CDR records.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "The CCTV footage mentioned Priya Nair, R K Sharma, and BlueLine Transport.", "entities": [[27, 37, "PERSON"], [39, 49, "PERSON"], [55, 73, "ORG"]], "type": "complex"}
+{"text": "Rohan Mehta appeared in the crime scene report.", "entities": [[0, 11, "PERSON"]], "type": "hard_negative"}
+{"text": "Ayesha Khan was observed outside Shakti Traders in Jaipur.", "entities": [[0, 11, "PERSON"], [33, 47, "ORG"], [51, 57, "GPE"]], "type": "multi_entity"}
+{"text": "Neeraj Shah was seen entering Vashi Logistics Yard.", "entities": [[0, 11, "PERSON"], [30, 50, "FAC"]], "type": "facility_context"}
+{"text": "Suresh Iyer worked with Metro Logistics Pvt Ltd in Chennai.", "entities": [[0, 11, "PERSON"], [24, 47, "ORG"], [51, 58, "GPE"]], "type": "multi_entity"}
+{"text": "Ravi Deshmukh worked with DM Trading Services in Kochi.", "entities": [[0, 13, "PERSON"], [26, 45, "ORG"], [49, 54, "GPE"]], "type": "multi_entity"}
+{"text": "The control room log contained references to Ananya Sharma and KS Electronics.", "entities": [[45, 58, "PERSON"], [63, 77, "ORG"]], "type": "contrastive_negative"}
+{"text": "Investigators compared the evidence log with records from Apex Distributors.", "entities": [[58, 75, "ORG"]], "type": "contrastive_negative"}
+{"text": "Investigators traced the shipment from Nagpur to Mumbai-Pune Expressway.", "entities": [[39, 45, "GPE"], [49, 71, "LOC"]], "type": "multi_entity"}
+{"text": "The vehicle associated with Ayesha Khan was found near Powai Lake Road.", "entities": [[28, 39, "PERSON"], [55, 70, "LOC"]], "type": "multi_entity"}
+{"text": "No useful information was found in the investigation report.", "entities": [], "type": "hard_negative"}
+{"text": "No useful information was found in the Case File.", "entities": [], "type": "hard_negative"}
+{"text": "KS Electronics was named in the CCTV footage reviewed by investigators.", "entities": [[0, 14, "ORG"]], "type": "contrastive_negative"}
+{"text": "Western Freight Solutions maintained an office in Ahmedabad.", "entities": [[0, 25, "ORG"], [50, 59, "GPE"]], "type": "org_context"}
+{"text": "The CCTV records contained references to Md. Arif Khan and DM Trading Services.", "entities": [[41, 54, "PERSON"], [59, 78, "ORG"]], "type": "contrastive_negative"}
+{"text": "The Location Surveillance Record mentioned Rajiv Bansal, Ravi Deshmukh, and BlueLine Transport.", "entities": [[43, 55, "PERSON"], [57, 70, "PERSON"], [76, 94, "ORG"]], "type": "complex"}
+{"text": "Maharashtra State Bank rented space at Vashi Logistics Yard.", "entities": [[0, 22, "ORG"], [39, 59, "FAC"]], "type": "facility_context"}
+{"text": "The CCTV footage showed that Arjun Patel had contacted National Freight Corporation.", "entities": [[29, 40, "PERSON"], [55, 83, "ORG"]], "type": "contrastive_negative"}
+{"text": "The vehicle associated with Md. Arif Khan was found near Turbhe Industrial Area.", "entities": [[28, 41, "PERSON"], [57, 79, "LOC"]], "type": "multi_entity"}

@@ -47,3 +47,20 @@ export async function fetchCrimeTypes() {
   if (!res.ok) throw new Error("Failed to load crime types");
   return res.json();
 }
+
+export async function fetchCriminalRecord(id, { signal } = {}) {
+  const response = await fetch(`${BASE}/${encodeURIComponent(id)}/record`, { signal, credentials: "include" });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error || "Failed to load detailed record");
+  return body;
+}
+
+export async function generateCriminalRecord(id, language, { signal } = {}) {
+  const response = await fetch(`${BASE}/${encodeURIComponent(id)}/record/generate`, {
+    method: "POST", signal, credentials: "include", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ language }),
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error || "Failed to generate detailed record");
+  return body;
+}

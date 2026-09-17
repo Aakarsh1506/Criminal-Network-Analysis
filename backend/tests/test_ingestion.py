@@ -501,6 +501,7 @@ def test_other_models_keep_json_mode_with_local_validation():
 
 
 async def test_extraction_waits_for_review_without_canonical_or_graph_writes(settings, monkeypatch):
+    monkeypatch.setattr(ingestion, "index_document", AsyncMock())
     state = SimpleNamespace(settings=settings, db=AsyncMock(), graph=AsyncMock())
     persist, graph_write = AsyncMock(), AsyncMock()
     monkeypatch.setattr(ingestion, "persist_extraction", persist)
@@ -536,8 +537,8 @@ async def test_confirmation_scopes_owner_and_exact_snapshot(officer_client, db):
     sql, params = db.query.call_args.args
     assert "officer_id=%s" in sql and "extraction=%s" in sql
     assert "processing_status='awaiting_review'" in sql
-    assert (params[0], params[2], params[3]) == (7, 3, 7)
-    assert params[1].obj == params[4].obj == sample().model_dump()
+    assert (params[0], params[3], params[4]) == (7, 3, 7)
+    assert params[1].obj == params[5].obj == sample().model_dump()
 
 
 def test_relationship_resolves_only_unique_exact_names_or_identifiers():
@@ -914,7 +915,7 @@ async def test_rejection_keeps_original_snapshot_check_and_audit(officer_client,
     )
     assert response.status_code == 200
     sql, params = db.query.call_args.args
-    assert params[4].obj == original
+    assert params[5].obj == original
     saved = params[1].obj
     assert saved["entities"] == original["entities"]
     assert saved["relationships"] == []
@@ -948,7 +949,7 @@ async def test_entity_rejection_excludes_incident_edges_and_preserves_audit(offi
     )
     assert response.status_code == 200
     _, params = db.query.call_args.args
-    assert params[4].obj == original
+    assert params[5].obj == original
     saved = params[1].obj
     assert len(saved["entities"]) == 2 - len(indices)
     assert saved["relationships"] == []

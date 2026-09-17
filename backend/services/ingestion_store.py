@@ -7,6 +7,7 @@ from psycopg.types.json import Jsonb
 
 from ..errors import APIError
 from .crime_terms import is_explicit_crime_field
+from .entity_resolution import find_existing, normalized
 from .extraction import RELATION_RULES, stable_id
 
 NODE_KEYS = {
@@ -64,8 +65,16 @@ def properties_for(entity):
     return props
 
 
-async def canonical_entity(tx, entity, entity_id, props):
+async def canonical_entity(tx, entity, entity_id, props, person_match=None):
     kind, identifier = entity.kind, entity.identifier
+    if person_match:
+        rows = await tx.query("SELECT * FROM persons WHERE person_id=%s", (person_match,))
+        if kind != "Person" or not rows or normalized(rows[0]["name"]) != normalized(entity.name):
+            raise APIError("The reviewed person match is no longer available. No records were saved.", 409)
+        return person_match, rows[0]
+    existing = await find_existing(tx, entity, props)
+    if existing:
+        return existing
     if kind in ("Person", "Case", "Organization", "Vehicle"):
         table = {
             "Person": "persons",
@@ -74,27 +83,6 @@ async def canonical_entity(tx, entity, entity_id, props):
             "Vehicle": "vehicles",
         }[kind]
         key = NODE_KEYS[kind]
-        if identifier:
-            matches = await tx.query(
-                """SELECT DISTINCT canonical_id FROM extracted_entities
-                   WHERE kind=%s AND properties->>'source_identifier'=%s""",
-                (kind, identifier),
-            )
-            if len(matches) == 1:
-                existing = await tx.query(
-                    f"SELECT * FROM {table} WHERE {key}=%s", (matches[0]["canonical_id"],)
-                )
-                if existing and (
-                    kind != "Person" or existing[0]["name"].casefold() == entity.name.casefold()
-                ):
-                    return matches[0]["canonical_id"], existing[0]
-        # Reuse explicit source IDs, never merge people merely because names match.
-        if identifier and len(identifier) <= 20:
-            rows = await tx.query(f"SELECT * FROM {table} WHERE {key} = %s", (identifier,))
-            if rows:
-                if kind == "Person" and rows[0]["name"].casefold() != entity.name.casefold():
-                    raise APIError("An extracted person ID conflicts with an existing name.", 409)
-                return identifier, rows[0]
         canonical = entity_id
         await mark_import_owned(tx, kind, canonical)
         if kind == "Person":
@@ -183,18 +171,22 @@ async def persist_extraction(db, document_id, result):
         # Serialize imports to avoid duplicate shared lookups across server workers.
         await tx.query("SELECT pg_advisory_xact_lock(724013)")
         rows = await tx.query(
-            "SELECT graph_payload, confirmed_at FROM officer_documents WHERE document_id=%s FOR UPDATE",
+            "SELECT graph_payload, confirmed_at, person_matches FROM officer_documents WHERE document_id=%s FOR UPDATE",
             (document_id,),
         )
         if rows[0]["graph_payload"] is not None:
             return rows[0]["graph_payload"]
         if rows[0]["confirmed_at"] is None:
             raise APIError("Review and confirm the extraction before saving records.", 409)
+        person_matches = rows[0].get("person_matches") or {}
         nodes, refs = [], {}
         for entity in result.entities:
+            if entity.kind == "CrimeType":
+                # Source wording is kept; only the saved label starts with a capital.
+                entity = entity.model_copy(update={"name": entity.name[:1].upper() + entity.name[1:]})
             entity_id = stable_id(document_id, entity.ref)
             props = properties_for(entity)
-            canonical, row = await canonical_entity(tx, entity, entity_id, props)
+            canonical, row = await canonical_entity(tx, entity, entity_id, props, person_matches.get(entity.ref))
             # Convert dates and numeric coordinates to graph-compatible scalar values.
             graph_props = {
                 k: (v if isinstance(v, (str, int, float, bool)) else str(v))
