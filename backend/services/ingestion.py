@@ -2,12 +2,14 @@
 
 import asyncio
 import logging
+from pathlib import Path
 
 from psycopg.types.json import Jsonb
 from starlette.concurrency import run_in_threadpool
 
 from ..errors import APIError
-from .document_text import extract_text
+from .document_files import load_document_file
+from .document_text import extract_text_from_bytes
 from .extraction import Extraction, extract_entities
 from .ingestion_store import persist_extraction, sync_graph
 from .rag import index_document
@@ -45,10 +47,19 @@ async def process_document(state, doc):
                 text = doc.get("extracted_text")
                 if text is None:
                     await progress(10, "Reading document and extracting text")
-                    path = (state.settings.upload_dir / doc["stored_name"]).resolve()
-                    if path.parent != state.settings.upload_dir.resolve():
-                        raise APIError("Document path is invalid.", 422)
-                    text = await run_in_threadpool(extract_text, path, state.settings.ocr_language)
+                    # Any backend sharing the database may claim this job, so read the
+                    # contents from the database rather than this computer's disk.
+                    content = await load_document_file(state.db, state.settings.upload_dir, doc)
+                    if content is None:
+                        raise APIError(
+                            "The original file is not in the shared database. Upload it again, or run "
+                            "python -m backend.scripts.migrate_uploads on the computer that uploaded it.",
+                            422,
+                        )
+                    text = await run_in_threadpool(
+                        extract_text_from_bytes, content, Path(doc["stored_name"]).suffix,
+                        state.settings.ocr_language,
+                    )
                     await state.db.query(
                         "UPDATE officer_documents SET extracted_text=%s WHERE document_id=%s",
                         (text, document_id),

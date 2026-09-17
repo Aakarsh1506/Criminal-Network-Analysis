@@ -195,6 +195,21 @@ async def test_same_person_in_three_firs_is_offered_or_reused_not_silently_dupli
 async def _no_rows():
     return []
 
+async def test_any_backend_processes_a_file_stored_in_the_shared_database(real_db, settings, tmp_path):
+    from backend.services.document_files import load_document_file
+    from backend.services.document_text import extract_text_from_bytes
+
+    doc_id = await add_document(real_db, confirmed=False)
+    await real_db.query("INSERT INTO officer_document_files (document_id, content) VALUES (%s, %s)",
+                        (doc_id, b"FIR/2026/1\r\nName: Rohan Mehta"))
+    other_computer_uploads = tmp_path / "empty-uploads"  # This backend never saw the upload.
+    other_computer_uploads.mkdir()
+    doc = (await real_db.query("SELECT * FROM officer_documents WHERE document_id=%s", (doc_id,)))[0]
+    content = await load_document_file(real_db, other_computer_uploads, doc)
+    assert extract_text_from_bytes(content, ".txt") == "FIR/2026/1\nName: Rohan Mehta"
+    await real_db.query("DELETE FROM officer_documents WHERE document_id=%s", (doc_id,))
+    assert await real_db.query("SELECT 1 FROM officer_document_files WHERE document_id=%s", (doc_id,)) == []
+
 async def test_sql_failure_rolls_back_entities_and_outbox(real_db):
     doc_id = await add_document(real_db)
     result = full_extraction()
@@ -280,6 +295,9 @@ async def test_uploaded_text_flows_through_ai_sql_and_graph(real_db, settings, m
     )[0]
     assert saved["processing_status"] == "complete"
     assert saved["extracted_text"] == source
+    # A file saved in uploads/ before database storage is copied in for other backends.
+    stored = await real_db.query("SELECT content FROM officer_document_files WHERE document_id=%s", (doc_id,))
+    assert bytes(stored[0]["content"]) == source.encode()
     assert len(saved["extraction"]["entities"]) == 2
     assert "WITNESS_IN" in tx.run.call_args.args[0]
     profile = await load_profile("P001", real_db, graph)

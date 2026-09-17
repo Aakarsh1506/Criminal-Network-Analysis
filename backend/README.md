@@ -38,7 +38,7 @@ The API reads the existing `persons`, `cases`, `locations`, and `crime_types` ta
 
 If database initialization is unavailable, the server logs the failure and starts in the same degraded mode as the original backend. `/api/health` is a liveness check, not a database-readiness check. Database-dependent requests return the existing error responses.
 
-Uploaded files are stored in `backend/uploads/`, using their stored UUID filenames. This directory must contain the files referenced by `officer_documents` when switching from the other backend. Existing files in this folder are retained. Uploads use multipart field `file` plus a source category and enforce the 20 MB limit. See the extraction section below for the supported formats and processing flow. File listing, download, and deletion remain scoped to the officer ID from the signed cookie.
+Uploaded file contents are stored in PostgreSQL (`officer_document_files`), so every backend connected to the same database can process and open any document. Files uploaded before this change may still be in `backend/uploads/`; they are copied into the database the first time they are opened or processed, or all at once with `python -m backend.scripts.migrate_uploads`. Uploads use multipart field `file` plus a source category and enforce the 20 MB limit. See the extraction section below for the supported formats and processing flow. File listing, download, and deletion remain scoped to the officer ID from the signed cookie.
 
 ## API compatibility
 

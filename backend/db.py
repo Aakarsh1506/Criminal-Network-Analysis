@@ -8,13 +8,19 @@ from .config import BASE_DIR
 
 class Database:
     def __init__(self, settings):
+        # DATABASE_URL (postgresql://user:password@host:port/db?sslmode=require) takes precedence
+        # over the separate PG* settings. libpq tries SSL first by default either way.
+        target = {} if settings.database_url else {
+            "host": settings.pg_host,
+            "port": settings.pg_port,
+            "user": settings.pg_user,
+            "password": settings.pg_password,
+            "dbname": settings.pg_database,
+        }
         self.pool = AsyncConnectionPool(
+            conninfo=settings.database_url,
             kwargs={
-                "host": settings.pg_host,
-                "port": settings.pg_port,
-                "user": settings.pg_user,
-                "password": settings.pg_password,
-                "dbname": settings.pg_database,
+                **target,
                 "connect_timeout": 5,
                 "row_factory": dict_row,
                 "autocommit": True,

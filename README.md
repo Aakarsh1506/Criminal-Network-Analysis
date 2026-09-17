@@ -84,7 +84,9 @@ Run every command from the repository root unless a step says otherwise.
 4. **Copy the custom spaCy model** if you use it:
    `spacy_crime_multientity_ner_package/output/model-best` (about 420 MB, ignored by Git). You can
    also retrain it in Step 7 or use a standard spaCy model instead.
-5. **Copy `backend/uploads/`** if previously uploaded documents should still open.
+5. **Uploaded files are stored in the database**, so they move with the dump. Documents uploaded
+   before that change may exist only in `backend/uploads/`; run
+   `backend/.venv/bin/python -m backend.scripts.migrate_uploads` on the old laptop first to copy them in.
 6. **Neo4j:** if `NEO4J_URI` starts with `neo4j+s://…databases.neo4j.io` (Neo4j Aura, cloud), the new
    laptop uses the same credentials and nothing needs copying.
 
@@ -169,7 +171,8 @@ cp backend/.env.example backend/.env
 ```
 Then check these values:
 ```dotenv
-# PostgreSQL on this laptop
+# PostgreSQL on this laptop — or instead set one URL, e.g. from Render:
+# DATABASE_URL=postgresql://user:password@host:5432/criminal_network
 PGHOST=localhost
 PGPORT=5432
 PGUSER=your_mac_or_postgres_user
@@ -394,7 +397,7 @@ ADMIN_PASSWORD=change_this_admin_password
 
 **Deploying frontend/backend on different domains?** Set `NODE_ENV=production` so cookies get `secure: true`, and make sure `sameSite` is set to `"none"` in `express-backend/routes/auth.js`'s `COOKIE_OPTIONS` for the cross-site cookie to survive — `"lax"` (the local-dev default) gets silently dropped cross-domain. Also point `FRONTEND_ORIGIN` at your exact deployed frontend URL; CORS needs it to match exactly.
 
-**Deploying with a managed Postgres provider?** Most give you a single `DATABASE_URL` connection string requiring SSL rather than discrete `PGHOST`/`PGUSER`/etc. — `express-backend/db.js` (or `backend/db.py`) can be extended to prefer `DATABASE_URL` (with SSL enabled, e.g. `ssl: { rejectUnauthorized: false }` in Node) when it's present, falling back to the discrete vars for local dev.
+**Deploying with a managed Postgres provider (e.g. Render)?** The FastAPI backend accepts a single `DATABASE_URL` in `backend/.env`; when set, it replaces `PGHOST`/`PGPORT`/`PGUSER`/`PGPASSWORD`/`PGDATABASE`. Use Render's **External Database URL** when the backend runs elsewhere, or the **Internal Database URL** when the backend is a Render service in the same region. SSL is tried first by default; append `?sslmode=require` to insist on it. To move existing data, dump with the `pg_dump` matching your local server's major version and restore with `pg_restore --no-owner --no-acl -d "$DATABASE_URL" criminal_network.dump`.
 
 **Deploying Neo4j by raw IP instead of a domain?** Public CAs won't issue certificates for bare IPs, so you'll be stuck with a self-signed certificate. Node's TLS stack may tolerate that as-is, but Python's `ssl` module won't — `backend`'s driver needs its URI scheme rewritten from `neo4j+s://`/`bolt+s://` to `neo4j+ssc://`/`bolt+ssc://` to skip certificate verification. Prefer a real domain + CA-signed cert (or Neo4j Aura, which provides one automatically) wherever possible instead.
 

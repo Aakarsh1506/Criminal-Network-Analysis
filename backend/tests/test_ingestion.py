@@ -172,7 +172,7 @@ async def test_graph_sync_retry_does_not_repeat_ocr_ai_or_postgres(settings, mon
         AsyncMock(),
         AsyncMock(side_effect=RuntimeError("secret")),
     )
-    monkeypatch.setattr(ingestion, "extract_text", ocr)
+    monkeypatch.setattr(ingestion, "extract_text_from_bytes", ocr)
     monkeypatch.setattr(ingestion, "extract_entities", ai)
     monkeypatch.setattr(ingestion, "persist_extraction", persist)
     monkeypatch.setattr(ingestion, "sync_graph", graph_write)
@@ -251,7 +251,8 @@ async def test_seven_source_categories_queue_on_upload(officer_client, db, sourc
     assert response.status_code == 201
     assert response.json()["sourceType"] == source_type
     assert response.json()["status"] == "queued"
-    assert db.query.call_args.args[1][-1] == source_type
+    params = db.query.call_args.args[1]
+    assert params[5] == source_type and params[6] == b"name\nAlice"
 
 
 async def test_document_details_and_retry_require_owner(officer_client, db):

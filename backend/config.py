@@ -20,6 +20,8 @@ class Settings:
     pg_user: str = "postgres"
     pg_password: str = ""
     pg_database: str = "criminal_network"
+    # A full connection URL (e.g. Render's) replaces the PG* fields when set.
+    database_url: str = ""
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = ""
@@ -44,6 +46,11 @@ class Settings:
     def from_env(cls):
         # Environment variables override the backend's local .env file.
         env = {**dotenv_values(BASE_DIR / ".env"), **os.environ}
+        # A full connection URL pasted into PGHOST is treated as DATABASE_URL.
+        database_url = (env.get("DATABASE_URL") or "").strip()
+        pg_host = (env.get("PGHOST") or "localhost").strip()
+        if not database_url and "://" in pg_host:
+            database_url, pg_host = pg_host, "localhost"
         secret = env.get("JWT_SECRET")
         if not secret:
             raise RuntimeError("JWT_SECRET is not set — add it to backend/.env")
@@ -54,11 +61,12 @@ class Settings:
             production=env.get("NODE_ENV") == "production",
             frontend_origin=env.get("FRONTEND_ORIGIN") or "http://localhost:3000",
             port=int(env.get("PORT") or 5050),
-            pg_host=env.get("PGHOST") or "localhost",
+            pg_host=pg_host,
             pg_port=int(env.get("PGPORT") or 5432),
             pg_user=env.get("PGUSER") or "postgres",
             pg_password=env.get("PGPASSWORD") or "",
             pg_database=env.get("PGDATABASE") or "criminal_network",
+            database_url=database_url,
             neo4j_uri=env.get("NEO4J_URI") or "bolt://localhost:7687",
             neo4j_user=env.get("NEO4J_USER") or "neo4j",
             neo4j_password=env.get("NEO4J_PASSWORD") or "",

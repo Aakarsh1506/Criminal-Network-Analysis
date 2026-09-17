@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from urllib.parse import quote
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Request
@@ -7,10 +8,11 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field, StrictInt
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
-from starlette.responses import FileResponse
+from starlette.responses import Response
 
 from ..errors import APIError, api_errors
 from ..security import require_auth
+from ..services.document_files import legacy_path, load_document_file
 from ..services.document_removal import remove_document_records
 from ..services.document_text import FORMATS
 from ..services.entity_resolution import person_suggestions
@@ -36,35 +38,25 @@ def map_document(row):
     }
 
 
-def document_path(directory, filename):
-    # Resolved paths must stay directly inside the upload directory.
-    path = (directory / filename).resolve()
-    if path.parent != directory.resolve():
-        raise APIError("Document not found", 404)
-    return path
-
-
-def remove_file(path):
+def remove_legacy_file(directory, filename):
+    """Delete a copy saved in uploads/ before contents moved to the database, if any."""
+    path = legacy_path(directory, filename)
     try:
-        path.unlink(missing_ok=True)
+        if path is not None:
+            path.unlink(missing_ok=True)
     except OSError:
         logger.warning("Could not remove uploaded file %s", path.name)
 
 
-def save_upload(source, path):
-    size = 0
-    try:
-        with path.open("xb") as destination:
-            # Copy in chunks and enforce the limit as bytes are written.
-            while chunk := source.read(64 * 1024):
-                size += len(chunk)
-                if size > MAX_FILE_SIZE:
-                    raise APIError("File too large", 400)
-                destination.write(chunk)
-    except BaseException:
-        remove_file(path)
-        raise
-    return size
+def read_upload(source):
+    # Read in chunks and enforce the limit before the whole file is held in memory.
+    chunks, size = [], 0
+    while chunk := source.read(64 * 1024):
+        size += len(chunk)
+        if size > MAX_FILE_SIZE:
+            raise APIError("File too large", 400)
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 @router.get("/source-types")
@@ -129,31 +121,33 @@ async def upload_document(request: Request, officer=Depends(require_auth)):
             raise APIError("An officer account is required to upload documents", 403)
         if file.size is not None and file.size > MAX_FILE_SIZE:
             raise APIError("File too large", 400)
-        directory = request.app.state.settings.upload_dir
         filename = f"{uuid4()}{suffix}"
-        path = document_path(directory, filename)
         with api_errors("Failed to save document"):
-            size = await run_in_threadpool(save_upload, file.file, path)
-            try:
-                rows = await request.app.state.db.query(
-                    """INSERT INTO officer_documents
+            content = await run_in_threadpool(read_upload, file.file)
+            # One statement stores metadata and contents together: every backend sharing this
+            # database can process and serve the file, and neither is saved without the other.
+            rows = await request.app.state.db.query(
+                """WITH document AS (
+                     INSERT INTO officer_documents
                        (officer_id, original_name, stored_name, mime_type, size_bytes,
                         source_type, processing_status)
-                       VALUES (%s, %s, %s, %s, %s, %s, 'queued') RETURNING *""",
-                    (
-                        officer["officerId"],
-                        file.filename,
-                        filename,
-                        FORMATS[suffix],
-                        size,
-                        source_type,
-                    ),
-                )
-                return map_document(rows[0])
-            except BaseException:
-                # Remove the file if its metadata could not be stored.
-                await run_in_threadpool(remove_file, path)
-                raise
+                     VALUES (%s, %s, %s, %s, %s, %s, 'queued') RETURNING *
+                   ), stored AS (
+                     INSERT INTO officer_document_files (document_id, content)
+                     SELECT document_id, %s FROM document
+                   )
+                   SELECT * FROM document""",
+                (
+                    officer["officerId"],
+                    file.filename,
+                    filename,
+                    FORMATS[suffix],
+                    len(content),
+                    source_type,
+                    content,
+                ),
+            )
+            return map_document(rows[0])
 
 
 @router.get("/{document_id}")
@@ -320,24 +314,27 @@ async def get_document(document_id: int, request: Request, officer=Depends(requi
     with api_errors("Failed to load document"):
         # Check ownership in the query before serving any file.
         rows = await request.app.state.db.query(
-            """SELECT stored_name, mime_type, original_name FROM officer_documents
+            """SELECT document_id, stored_name, mime_type, original_name FROM officer_documents
                WHERE document_id = %s AND officer_id = %s""",
             (document_id, officer["officerId"]),
         )
         if not rows:
             raise APIError("Document not found", 404)
         doc = rows[0]
-        path = document_path(request.app.state.settings.upload_dir, doc["stored_name"])
-        if not await run_in_threadpool(path.is_file):
+        content = await load_document_file(request.app.state.db, request.app.state.settings.upload_dir, doc)
+        if content is None:
             raise APIError("Document not found", 404)
-        return FileResponse(
-            path,
+        disposition = "inline" if doc["mime_type"] in ("application/pdf", "image/png", "image/jpeg") else "attachment"
+        name = doc["original_name"]
+        encoded = quote(name)
+        return Response(
+            content,
             media_type=doc["mime_type"],
-            filename=doc["original_name"],
-            content_disposition_type="inline"
-            if doc["mime_type"] in ("application/pdf", "image/png", "image/jpeg")
-            else "attachment",
-            headers={"X-Content-Type-Options": "nosniff"},
+            headers={
+                "Content-Disposition": f"{disposition}; filename*=utf-8''{encoded}" if encoded != name
+                else f'{disposition}; filename="{name}"',
+                "X-Content-Type-Options": "nosniff",
+            },
         )
 
 
@@ -347,6 +344,6 @@ async def delete_document(document_id: int, request: Request, officer=Depends(re
         stored_name = await remove_document_records(
             request.app.state.db, request.app.state.graph, document_id, officer["officerId"],
         )
-        path = document_path(request.app.state.settings.upload_dir, stored_name)
-        await run_in_threadpool(remove_file, path)
+        # Database contents are removed with the document row; also tidy any old local copy.
+        await run_in_threadpool(remove_legacy_file, request.app.state.settings.upload_dir, stored_name)
         return {"ok": True}

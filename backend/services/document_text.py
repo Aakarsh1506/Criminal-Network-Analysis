@@ -51,6 +51,18 @@ def bounded_text(parts):
     return text
 
 
+def extract_text_from_bytes(content, suffix, language="eng"):
+    """Extract text from stored file contents; format detection uses the original suffix."""
+    import tempfile
+
+    if suffix.lower() not in FORMATS:
+        raise APIError("Unsupported document format.", 400)
+    with tempfile.TemporaryDirectory(prefix="cna-document-") as directory:
+        path = Path(directory) / f"source{suffix.lower()}"
+        path.write_bytes(content)
+        return extract_text(path, language)
+
+
 def extract_text(path, language="eng"):
     from PIL import Image, ImageOps
 

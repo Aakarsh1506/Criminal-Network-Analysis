@@ -81,3 +81,39 @@ def test_server_entrypoint_uses_configured_port(monkeypatch):
     monkeypatch.setattr(uvicorn, "run", run)
     namespace = runpy.run_module("backend.server", run_name="__main__")
     run.assert_called_once_with(namespace["app"], host="0.0.0.0", port=6080)
+
+
+
+def test_database_url_replaces_separate_connection_settings(settings):
+    from dataclasses import replace
+
+    from backend.db import Database
+
+    url = "postgresql://render_user:secret@dpg-example-a.oregon-postgres.render.com/criminal_network?sslmode=require"
+    database = Database(replace(settings, database_url=url, pg_host="localhost"))
+    assert database.pool.conninfo == url
+    assert "host" not in database.pool.kwargs and "dbname" not in database.pool.kwargs
+    local = Database(settings)
+    assert local.pool.conninfo == "" and local.pool.kwargs["host"] == settings.pg_host
+
+
+def test_database_url_is_read_from_environment(tmp_path, monkeypatch):
+    from backend import config
+
+    monkeypatch.setattr(config, "BASE_DIR", tmp_path)
+    monkeypatch.setenv("JWT_SECRET", "secret")
+    monkeypatch.setenv("DATABASE_URL", " postgresql://u:p@host/db ")
+    assert Settings.from_env().database_url == "postgresql://u:p@host/db"
+
+
+
+def test_connection_url_pasted_into_pghost_is_used_as_database_url(tmp_path, monkeypatch):
+    from backend import config
+
+    monkeypatch.setattr(config, "BASE_DIR", tmp_path)
+    monkeypatch.setenv("JWT_SECRET", "secret")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("PGHOST", "postgresql://u:p@dpg-example-a.singapore-postgres.render.com/db")
+    settings = Settings.from_env()
+    assert settings.database_url == "postgresql://u:p@dpg-example-a.singapore-postgres.render.com/db"
+    assert settings.pg_host == "localhost"

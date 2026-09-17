@@ -15,15 +15,17 @@ def document_transactions(db):
 
 
 async def test_upload_list_download_delete_preserves_contract(officer_client, db, settings):
-    files = {}
+    files, contents = {}, {}
     now = datetime(2026, 9, 8, 12, tzinfo=timezone.utc)
 
     async def query(sql, params=()):
         if "pg_advisory_xact_lock" in sql or "extracted_entities" in sql or "extracted_relationships" in sql:
             return []
-        if sql.lstrip().startswith("INSERT"):
-            officer_id, original, stored, mime, size, source_type = params
-            assert officer_id == 7
+        if "FROM officer_document_files" in sql:
+            return [{"content": contents[params[0]]}] if params[0] in contents else []
+        if sql.lstrip().startswith("WITH document AS"):
+            officer_id, original, stored, mime, size, source_type, content = params
+            assert officer_id == 7 and "INSERT INTO officer_document_files" in sql
             files[1] = {
                 "document_id": 1,
                 "officer_id": officer_id,
@@ -35,6 +37,7 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
                 "source_type": source_type,
                 "processing_status": "queued",
             }
+            contents[1] = content
             return [files[1]]
         if "ORDER BY uploaded_at" in sql:
             assert params == (7,)
@@ -42,6 +45,7 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
         assert params == (1, 7)
         assert "officer_id = %s" in sql
         if sql.lstrip().startswith("DELETE"):
+            contents.pop(1, None)  # ON DELETE CASCADE
             return [files.pop(1)] if 1 in files else []
         return [files[1]] if 1 in files else []
 
@@ -69,15 +73,18 @@ async def test_upload_list_download_delete_preserves_contract(officer_client, db
     assert document["type"] == "application/pdf"
     stored = files[1]["stored_name"]
     assert stored != document["name"] and stored.endswith(".pdf")
-    assert (settings.upload_dir / stored).read_bytes() == content
+    # Contents are stored in the shared database, not on this computer's disk.
+    assert contents[1] == content
+    assert list(settings.upload_dir.iterdir()) == []
     assert (await officer_client.get("/api/documents")).json() == [document]
     download = await officer_client.get("/api/documents/1/file")
     assert download.status_code == 200 and download.content == content
     assert download.headers["content-type"] == "application/pdf"
     assert download.headers["content-disposition"].startswith("inline;")
+    assert download.headers["x-content-type-options"] == "nosniff"
     files[1]["processing_status"] = "awaiting_review"
     assert (await officer_client.delete("/api/documents/1")).json() == {"ok": True}
-    assert not (settings.upload_dir / stored).exists()
+    assert 1 not in contents
     assert (await officer_client.get("/api/documents/1/file")).status_code == 404
 
 
@@ -175,13 +182,22 @@ async def test_failed_insert_removes_saved_pdf(officer_client, db, settings):
 
 
 async def test_missing_file_and_path_escape(officer_client, db, settings):
-    db.query.return_value = [
-        {
-            "stored_name": "missing.pdf",
-            "mime_type": "application/pdf",
-            "original_name": "missing.pdf",
-        }
-    ]
+    document = {"document_id": 1, "stored_name": "missing.pdf", "mime_type": "application/pdf",
+                "original_name": "missing.pdf"}
+    db.query.side_effect = lambda sql, params=(): [] if "officer_document_files" in sql else [document]
     assert (await officer_client.get("/api/documents/1/file")).status_code == 404
-    db.query.return_value[0]["stored_name"] = "../outside.pdf"
+    document["stored_name"] = "../outside.pdf"
+    (settings.upload_dir.parent / "outside.pdf").write_bytes(b"outside the upload folder")
     assert (await officer_client.get("/api/documents/1/file")).status_code == 404
+
+
+async def test_file_saved_before_database_storage_is_served_and_shared(officer_client, db, settings):
+    (settings.upload_dir / "legacy.pdf").write_bytes(b"%PDF legacy")
+    document = {"document_id": 4, "stored_name": "legacy.pdf", "mime_type": "application/pdf",
+                "original_name": "Old FIR.pdf"}
+    db.query.side_effect = lambda sql, params=(): [] if "officer_document_files" in sql else [document]
+    download = await officer_client.get("/api/documents/4/file")
+    assert download.status_code == 200 and download.content == b"%PDF legacy"
+    assert "filename*=utf-8''Old%20FIR.pdf" in download.headers["content-disposition"]
+    copy = next(call for call in db.query.call_args_list if call.args[0].lstrip().startswith("INSERT INTO officer_document_files"))
+    assert copy.args[1] == (4, b"%PDF legacy")
