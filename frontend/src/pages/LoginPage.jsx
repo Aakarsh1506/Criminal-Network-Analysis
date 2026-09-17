@@ -57,6 +57,17 @@ function LoginPage() {
         ? "VERIFYING..."
         : `AWAITING ${step.label.toUpperCase()}`;
 
+  // The hint line shown below the input — echoes the officer ID as it's
+  // typed, or a character count while entering the password.
+  const inputHint =
+    step.key === "username"
+      ? value
+        ? `ID LOGGED: ${value.toUpperCase()}`
+        : "Awaiting input..."
+      : value
+        ? `${value.length} character${value.length === 1 ? "" : "s"} entered`
+        : "Awaiting input...";
+
   return (
     <div className="login-page">
       <button type="button" className="back-btn" onClick={handleBack}>
@@ -125,9 +136,13 @@ function LoginPage() {
                 />
               </label>
 
-              <button type="submit" className="unlock-btn" disabled={status === "checking"}>
-                {status === "checking" ? "Verifying..." : isLastStep ? "Unlock file" : "Continue"}
-              </button>
+              <p className="input-hint">{inputHint}</p>
+
+              <div className="button-row">
+                <button type="submit" className="unlock-btn" disabled={status === "checking"}>
+                  {status === "checking" ? "Verifying..." : isLastStep ? "Unlock file" : "Continue"}
+                </button>
+              </div>
 
               {status === "denied" && <p className="denied-text">Access denied. Check your ID and password.</p>}
             </form>
@@ -158,9 +173,11 @@ function LoginPage() {
               <div className="summary-row"><span>Role</span><span>{officer?.role}</span></div>
             </div>
 
-            <button type="button" className="enter-btn" onClick={handleEnter}>
-              Enter
-            </button>
+            <div className="button-row">
+              <button type="button" className="enter-btn" onClick={handleEnter}>
+                Enter
+              </button>
+            </div>
           </div>
 
         </div>

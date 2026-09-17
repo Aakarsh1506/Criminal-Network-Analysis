@@ -6,6 +6,7 @@
   --panel-edge: #262421;
   --ink: #f4efe2;      
   --ink-dim: #b5ad9b;  
+  --red: #d1453c;
 }
 
 body {
@@ -273,7 +274,29 @@ em.pending {
   border-bottom: 2px solid var(--red);
 }
 
+/* Hint line shown beneath the input — echoes what's been typed so far. */
+.input-hint {
+  margin: 0;
+  font-family: "Courier Prime", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+/* Bordered action-row layout wrapping the submit buttons, so they read as
+   a distinct control panel rather than floating loosely in the form. */
+.button-row {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .unlock-btn {
+  width: 100%;
   padding: 12px;
   border: 1px solid var(--red);
   border-radius: 2px;
