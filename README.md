@@ -1,6 +1,6 @@
-# Criminal Network Analysis
+# 🕸️ Criminal Network Analysis
 
-React/Vite frontend with an API backed by PostgreSQL and Neo4j — available as either an **Express** backend or a **FastAPI** backend (same routes, same databases, pick one). Officer accounts are cookie/JWT authenticated, and an admin panel is used to provision new officer accounts.
+React/Vite frontend with an API backed by **PostgreSQL** and **Neo4j** — available as either an **Express** backend or a **FastAPI** backend (same routes, same databases, pick one). Officer accounts are cookie/JWT authenticated, and an admin panel is used to provision new officer accounts.
 
 ![Node](https://img.shields.io/badge/node-%3E%3D22.12-brightgreen)
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61DAFB)
@@ -9,9 +9,23 @@ React/Vite frontend with an API backed by PostgreSQL and Neo4j — available as 
 
 ---
 
+## 📚 Table of contents
+
+- [Project structure](#-project-structure)
+- [Set up — step by step (new machine, full stack)](#️-set-up--step-by-step)
+- [Run locally — quick start](#-run-locally)
+- [Authentication & accounts](#-authentication--accounts)
+- [Per-officer data](#️-per-officer-data)
+- [Groq AI summaries](#-groq-ai-summaries)
+- [Environment variables](#️-environment-variables-express-backendenvexample)
+- [Checks](#-checks)
+- [FastAPI alternative](#fastapi-alternative)
+
+---
+
 ## 📁 Project structure
 
-```
+```text
 Criminal Network Analysis/
 ├── express-backend/
 │   ├── middleware/     # Auth guards (requireAuth, requireAdmin)
@@ -58,50 +72,44 @@ Criminal Network Analysis/
 └── README.md
 ```
 
-- `frontend/`: React source (`src/`), static assets (`public/`), HTML entry point, and Vite configuration. Builds output to `frontend/dist/`.
-- `express-backend/`: Express server, routes, middleware, services, utilities, database connections, and Neo4j scripts (`neo4j/`).
-- `backend/`: FastAPI equivalent of the above, same API routes and database schemas. See [`backend/README.md`](backend/README.md) for its own setup/run/verify instructions.
-- Shared npm dependencies, scripts, and lint configuration remain at the repository root. Run all commands below from the root.
+| Folder | What's in it |
+|---|---|
+| `frontend/` | React source (`src/`), static assets (`public/`), HTML entry point, and Vite configuration. Builds output to `frontend/dist/`. |
+| `express-backend/` | Express server, routes, middleware, services, utilities, database connections, and Neo4j scripts (`neo4j/`). |
+| `backend/` | FastAPI equivalent of the above, same API routes and database schemas. See [`backend/README.md`](backend/README.md) for its own setup/run/verify instructions. |
+
+Shared npm dependencies, scripts, and lint configuration live at the **repository root**. Run all commands below from the root unless noted otherwise.
 
 ---
 
-##  Set up  (step by step)
+## 🛠️ Set up — step by step
 
-These steps run the **FastAPI backend** (`backend/`), the React frontend, and the local AI
-pipeline (spaCy + Ollama). Commands are for macOS; Windows and Linux differences are noted.
-Run every command from the repository root unless a step says otherwise.
+> Full walkthrough for a **new machine**: FastAPI backend (`backend/`), React frontend, and the local AI pipeline (spaCy + Ollama). Commands are for macOS; Windows/Linux differences are called out inline. Run every command from the repository root unless a step says otherwise.
 
-### Step 0 — On the current laptop: gather what Git does not carry
+### Step 0 — Gather what Git doesn't carry (on the *old* laptop)
 
-1. **Commit and push the code**, or copy the whole project folder. Uncommitted work is not in Git.
-2. **Copy `backend/.env`** privately (USB drive, password manager). It holds passwords and the JWT
-   secret. Never commit it.
-3. **Export the PostgreSQL database.** The app needs the existing `persons`, `cases`, `locations`
-   and `crime_types` tables; the backend does not create them.
-   ```bash
-   pg_dump -Fc -d criminal_network -f criminal_network.dump
-   ```
-4. **Copy the custom spaCy model** if you use it:
-   `spacy_crime_multientity_ner_package/output/model-best` (about 420 MB, ignored by Git). You can
-   also retrain it in Step 7 or use a standard spaCy model instead.
-5. **Uploaded files are stored in the database**, so they move with the dump. Documents uploaded
-   before that change may exist only in `backend/uploads/`; run
-   `backend/.venv/bin/python -m backend.scripts.migrate_uploads` on the old laptop first to copy them in.
-6. **Neo4j:** if `NEO4J_URI` starts with `neo4j+s://…databases.neo4j.io` (Neo4j Aura, cloud), the new
-   laptop uses the same credentials and nothing needs copying.
+| # | Task | Command |
+|---|---|---|
+| 1 | Commit & push the code, or copy the whole project folder — uncommitted work isn't in Git. | — |
+| 2 | Copy `backend/.env` privately (USB drive, password manager). It holds passwords and the JWT secret. **Never commit it.** | — |
+| 3 | Export the PostgreSQL database. The app needs the existing `persons`, `cases`, `locations` and `crime_types` tables; the backend does not create them. | `pg_dump -Fc -d criminal_network -f criminal_network.dump` |
+| 4 | Copy the custom spaCy model if you use it — `spacy_crime_multientity_ner_package/output/model-best` (~420 MB, gitignored). You can also retrain it in Step 7, or use a standard spaCy model instead. | — |
+| 5 | Uploaded files are stored **in the database**, so they move with the dump. Documents uploaded *before* that change may exist only in `backend/uploads/` — copy those in first. | `backend/.venv/bin/python -m backend.scripts.migrate_uploads` |
+| 6 | **Neo4j:** if `NEO4J_URI` starts with `neo4j+s://…databases.neo4j.io` (Neo4j Aura, cloud), the new laptop reuses the same credentials — nothing to copy. | — |
 
 ### Step 1 — Install the prerequisites
 
 | Tool | Version | macOS (Homebrew) | Windows / Linux |
 |---|---|---|---|
 | Git | any | `brew install git` | git-scm.com / package manager |
-| Node.js | 22.12 or newer | `brew install node` | nodejs.org installer |
-| Python | 3.11–3.13 (tested on 3.13) | `brew install python@3.13` | python.org (tick “Add to PATH”) |
-| PostgreSQL | 16 or newer | `brew install postgresql@16 && brew services start postgresql@16` | postgresql.org installer / `apt install postgresql` |
+| Node.js | 22.12+ | `brew install node` | nodejs.org installer |
+| Python | 3.11–3.13 (tested on 3.13) | `brew install python@3.13` | python.org (tick "Add to PATH") |
+| PostgreSQL | 16+ | `brew install postgresql@16 && brew services start postgresql@16` | postgresql.org installer / `apt install postgresql` |
 | Tesseract OCR | any | `brew install tesseract` | UB Mannheim build (Windows) / `apt install tesseract-ocr` |
 | Ollama | latest | download from ollama.com | ollama.com |
 
-Check them:
+Verify everything installed correctly:
+
 ```bash
 node --version && python3 --version && psql --version && tesseract --version && ollama --version
 ```
@@ -122,8 +130,8 @@ source backend/.venv/bin/activate          # Windows: backend\.venv\Scripts\acti
 python -m pip install --upgrade pip
 python -m pip install -r backend/requirements.txt
 ```
-This installs FastAPI, spaCy and the small English model `en_core_web_sm`. Keep this terminal's
-environment activated for the backend steps below.
+
+This installs FastAPI, spaCy, and the small English model `en_core_web_sm`. **Keep this terminal's environment activated** for the backend steps below.
 
 ### Step 4 — Restore the PostgreSQL database
 
@@ -131,45 +139,51 @@ environment activated for the backend steps below.
 createdb criminal_network
 pg_restore --no-owner -d criminal_network criminal_network.dump
 ```
-If the restore reports a missing `postgis` extension or `geometry` type, install PostGIS
-(`brew install postgis`) and run `psql -d criminal_network -c "CREATE EXTENSION postgis;"`, then repeat
-the restore into a freshly created database. On first start the backend adds its own tables
-(officers, documents, extraction and workspace tables) from `backend/sql/`.
+
+> **Missing `postgis` extension or `geometry` type?** Install PostGIS (`brew install postgis`), run `psql -d criminal_network -c "CREATE EXTENSION postgis;"`, then repeat the restore into a freshly created database. On first start, the backend adds its own tables (officers, documents, extraction and workspace tables) from `backend/sql/`.
 
 ### Step 5 — Set up Neo4j
 
-- **Aura (cloud):** nothing to do; reuse the URI, user and password from the old `backend/.env`.
-- **New empty Neo4j database:** in Neo4j Browser run, in order, `backend/neo4j/schema.cypher`,
-  `backend/neo4j/import_data.cypher` and, for demo links only,
-  `backend/neo4j/synthetic_relationships.cypher`. The account must be allowed to create constraints.
+- **Aura (cloud):** nothing to do — reuse the URI, user, and password from the old `backend/.env`.
+- **New empty Neo4j database:** in Neo4j Browser, run **in this order**:
+  1. `backend/neo4j/schema.cypher`
+  2. `backend/neo4j/import_data.cypher`
+  3. `backend/neo4j/synthetic_relationships.cypher` *(demo links only)*
+
+  The account must be allowed to create constraints.
 
 ### Step 6 — Install the local AI models (Ollama)
 
 Start the Ollama app (or run `ollama serve`), then:
+
 ```bash
 ollama pull qwen3:1.7b        # relationship extraction and investigator answers
 ollama pull embeddinggemma    # document search for the AI investigator
 ```
-`qwen3:4b` gives better answers but is slower; pull it and set `OLLAMA_MODEL=qwen3:4b` if the laptop
-has 16 GB of RAM or more.
+
+> 💡 `qwen3:4b` gives better answers but is slower. If your laptop has **16 GB+ RAM**, pull it instead and set `OLLAMA_MODEL=qwen3:4b`.
 
 ### Step 7 — Choose the spaCy entity model
 
-Pick one:
-- **Copied custom model:** place the folder at
-  `spacy_crime_multientity_ner_package/output/model-best`.
-- **Retrain it** (about 10–30 minutes on CPU; downloads `en_core_web_lg`):
-  `bash spacy_crime_multientity_ner_package/train_model.sh`
-- **Standard model, no training:** `python -m spacy download en_core_web_lg` (more accurate) or keep
-  the bundled `en_core_web_sm`.
+Pick **one**:
+
+| Option | How |
+|---|---|
+| Copied custom model | Place the folder at `spacy_crime_multientity_ner_package/output/model-best` |
+| Retrain it (~10–30 min on CPU, downloads `en_core_web_lg`) | `bash spacy_crime_multientity_ner_package/train_model.sh` |
+| Standard model, no training (more accurate) | `python -m spacy download en_core_web_lg` |
+| Standard model, no training (already bundled) | keep `en_core_web_sm` |
 
 ### Step 8 — Create `backend/.env`
 
 Copy the old laptop's `backend/.env`, or start from the template:
+
 ```bash
 cp backend/.env.example backend/.env
 ```
+
 Then check these values:
+
 ```dotenv
 # PostgreSQL on this laptop — or instead set one URL, e.g. from Render:
 # DATABASE_URL=postgresql://user:password@host:5432/criminal_network
@@ -205,31 +219,35 @@ PORT=5050
 FRONTEND_ORIGIN=http://localhost:3000
 NODE_ENV=development
 ```
-`SPACY_MODEL` is the setting most often wrong after a move: the old laptop's absolute path does not
-exist on the new one.
+
+> ⚠️ **`SPACY_MODEL` is the setting most often wrong after a move** — the old laptop's absolute path does not exist on the new one.
 
 ### Step 9 — Create an officer login
 
-The admin account (`ADMIN_USERNAME` / `ADMIN_PASSWORD`) can create officers from `/admin`. Or, with
-the virtual environment active:
+The admin account (`ADMIN_USERNAME` / `ADMIN_PASSWORD`) can create officers from `/admin`. Or, with the virtual environment active:
+
 ```bash
 python -m backend.scripts.add_officer --username jdoe --name "Jane Doe" --org "Nandipur Police" --dob 1990-05-14
 ```
+
 It prompts for the password.
 
 ### Step 10 — Start everything
 
-Use two terminals, both in the repository root, with Ollama running:
+Use **two terminals**, both in the repository root, with Ollama running:
+
 ```bash
 # Terminal 1 — backend (port 5050)
 source backend/.venv/bin/activate          # Windows: backend\.venv\Scripts\activate
 python -m backend.server
+```
 
+```bash
 # Terminal 2 — frontend (port 3000)
 npm run dev
 ```
-Open **http://localhost:3000** and log in. The first document extraction is slower while spaCy and
-the Ollama model load.
+
+Open **http://localhost:3000** and log in. The first document extraction is slower while spaCy and the Ollama model load.
 
 ### Step 11 — Check that it works
 
@@ -238,23 +256,25 @@ curl http://localhost:5050/api/health     # {"ok":true}
 python -m pytest backend/tests -q         # backend tests; no database or AI provider needed
 ```
 
-### Troubleshooting
+### 🧩 Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| `Hybrid extraction needs spaCy and its model` | `SPACY_MODEL` path is wrong or the model is not installed (Step 7–8). Restart the backend. |
+| `Hybrid extraction needs spaCy and its model` | `SPACY_MODEL` path is wrong or the model isn't installed (Step 7–8). Restart the backend. |
 | `Ollama model not found` | Run `ollama pull` for the model named in `OLLAMA_MODEL`. |
 | `Unable to reach Ollama` | Open the Ollama app or run `ollama serve`. |
 | `Install Tesseract on the server` | Install Tesseract (Step 1) and restart the backend. |
 | `Document embeddings are unavailable` | `ollama pull embeddinggemma`, or leave `RAG_EMBEDDING_MODEL` empty to use keyword search only. |
 | Login fails for everyone | Wrong database or `JWT_SECRET`; check `backend/.env` and restart. |
 | Port 5050 or 3000 already in use | Stop the other process (`lsof -i :5050`) or change `PORT` in `backend/.env` and the proxy target in `frontend/vite.config.js`. |
-| Graph pages show connection errors | Check `NEO4J_URI`, user and password; Aura instances pause when idle and must be resumed in the Aura console. |
+| Graph pages show connection errors | Check `NEO4J_URI`, user, and password; Aura instances pause when idle and must be resumed in the Aura console. |
 | `.env` changes have no effect | The backend reads `.env` only at start; stop and restart it. |
 
 ---
 
 ## 🚀 Run locally
+
+> Quick-start version of the setup above — use this if you already have prerequisites and databases in place.
 
 Use **Node.js 22.12 or newer**. Install dependencies with:
 
@@ -262,12 +282,15 @@ Use **Node.js 22.12 or newer**. Install dependencies with:
 npm install
 ```
 
-Create `express-backend/.env` using `express-backend/.env.example` if you do not already have it, then configure your PostgreSQL and Neo4j connections (see below for the full list of variables).
+Create `express-backend/.env` using `express-backend/.env.example` if you don't already have it, then configure your PostgreSQL and Neo4j connections (see [Environment variables](#️-environment-variables-express-backendenvexample) for the full list).
 
-Run the frontend and backend in separate terminals:
+Run the frontend and backend in **separate terminals**:
 
 ```bash
 npm run server   # starts the Express API
+```
+
+```bash
 npm run dev      # starts the Vite dev server
 ```
 
@@ -283,10 +306,12 @@ Same frontend, same port, same databases — only the backend terminal command c
    source backend/.venv/bin/activate   # Windows: backend\.venv\Scripts\activate
    python -m pip install -r backend/requirements.txt
    ```
-2. Create `backend/.env` using `backend/.env.example` if you do not already have it, then configure it — this is a **separate file** from `express-backend/.env`, even if you're pointing both at the same databases.
+2. Create `backend/.env` using `backend/.env.example` if you don't already have it, then configure it — this is a **separate file** from `express-backend/.env`, even if you're pointing both at the same databases.
 3. With the virtual environment still active, start the API:
    ```bash
    npm run server:fastapi   # starts the FastAPI API (python3 -m backend.server)
+   ```
+   ```bash
    npm run dev               # starts the Vite dev server, same as above
    ```
 
@@ -299,23 +324,27 @@ Open **http://localhost:3000** — same URL either way. See [`backend/README.md`
 Every API route except `/api/auth/login` and `/api/health` requires a valid session cookie (`requireAuth`). There are two kinds of accounts:
 
 ### Officer accounts
+
 Stored in the `officers` table, password hashed with bcrypt. Created either:
+
 - **Through the admin panel** (`/admin`, see below) — the normal path for a real org.
 - **Via the CLI script**, useful for bootstrapping the very first account on a fresh deployment:
   ```bash
   npm run add-officer -- --username jdoe --password "SomeStrongPass!" --name "Jane Doe" --org "Delhi Police"
   ```
 
-An officer's session is scoped to their `officer_id` everywhere it matters — pinned criminal, working list, and uploaded documents are all private to that officer (see below).
+An officer's session is scoped to their `officer_id` everywhere it matters — pinned criminal, working list, and uploaded documents are all private to that officer (see [Per-officer data](#️-per-officer-data)).
 
 ### Admin account
+
 A single hardcoded account, checked against `ADMIN_USERNAME` / `ADMIN_PASSWORD` in your backend's `.env` (`express-backend/.env` or `backend/.env`, depending which backend you're running) — **not** a row in the `officers` table. Logging in with these credentials on the normal login page redirects to `/admin` instead of `/dashboard`.
 
 From `/admin` you can:
+
 - Create new officer accounts (username, password, name, DOB, org).
 - View all existing officers and deactivate one (soft-delete via `is_active`, not a hard delete — keeps history intact).
 
-> ⚠️ This is a stopgap for one deployment/demo. It's a single shared password with no rotation and no audit trail. Before a real multi-org deployment, this should become a proper `role = 'admin'` row in `officers` (bcrypt-hashed like everyone else), ideally with a separate "platform" tier above it that provisions each org's first admin — see project notes for the fuller plan.
+> ⚠️ **This is a stopgap for one deployment/demo.** It's a single shared password with no rotation and no audit trail. Before a real multi-org deployment, this should become a proper `role = 'admin'` row in `officers` (bcrypt-hashed like everyone else), ideally with a separate "platform" tier above it that provisions each org's first admin — see project notes for the fuller plan.
 
 ---
 
@@ -342,19 +371,21 @@ None of this is shared across officers — each of these used to be `localStorag
 
 The optional `GROQ_MODEL` setting defaults to `openai/gpt-oss-20b`. The Express backend calls the [Groq Chat Completions API](https://console.groq.com/docs/api-reference) using Node's built-in `fetch`; the FastAPI backend uses `httpx`. Neither needs an additional SDK.
 
-> ⚠️ Never place the key in frontend code or a `VITE_` variable. Backend `.env` files are ignored by Git.
+> ⚠️ **Never place the key in frontend code or a `VITE_` variable.** Backend `.env` files are ignored by Git.
 
-**`POST /api/criminals/:id/explain`**
+### `POST /api/criminals/:id/explain`
+
 - Requires a valid officer/admin session, same as the rest of the API.
 - Reads records from the databases and sends the profile ID/name/status, up to 50 cases, and 25 graph overlap rows to Groq.
 - Returns `{ explanation }`.
 - Photos and demographic fields are excluded.
 - Generation happens only on a button click.
-- The response explains shared attributes, **not** proven personal associations or guilt.
+- The response explains **shared attributes**, not proven personal associations or guilt.
 - Empty overlap results may mean Neo4j was unavailable. Summaries require source verification.
 
 **Limits & safety:**
-- Requests have a 30-second Groq timeout and a process-wide limit of three concurrent summaries.
+
+- Requests have a 30-second Groq timeout and a process-wide limit of **three concurrent summaries**.
 - Missing keys, provider failures, and usage limits produce actionable UI errors.
 
 ---
@@ -363,7 +394,7 @@ The optional `GROQ_MODEL` setting defaults to `openai/gpt-oss-20b`. The Express 
 
 The FastAPI backend (`backend/.env.example`) uses the same variable names — copy whichever backend's example file you're running to a real `.env` in that same folder. **Each backend reads its own `.env`; they don't share one.**
 
-```bash
+```dotenv
 PGHOST=localhost
 PGPORT=5432
 PGUSER=postgres
@@ -395,11 +426,13 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=change_this_admin_password
 ```
 
-**Deploying frontend/backend on different domains?** Set `NODE_ENV=production` so cookies get `secure: true`, and make sure `sameSite` is set to `"none"` in `express-backend/routes/auth.js`'s `COOKIE_OPTIONS` for the cross-site cookie to survive — `"lax"` (the local-dev default) gets silently dropped cross-domain. Also point `FRONTEND_ORIGIN` at your exact deployed frontend URL; CORS needs it to match exactly.
+### Deployment notes
 
-**Deploying with a managed Postgres provider (e.g. Render)?** The FastAPI backend accepts a single `DATABASE_URL` in `backend/.env`; when set, it replaces `PGHOST`/`PGPORT`/`PGUSER`/`PGPASSWORD`/`PGDATABASE`. Use Render's **External Database URL** when the backend runs elsewhere, or the **Internal Database URL** when the backend is a Render service in the same region. SSL is tried first by default; append `?sslmode=require` to insist on it. To move existing data, dump with the `pg_dump` matching your local server's major version and restore with `pg_restore --no-owner --no-acl -d "$DATABASE_URL" criminal_network.dump`.
-
-**Deploying Neo4j by raw IP instead of a domain?** Public CAs won't issue certificates for bare IPs, so you'll be stuck with a self-signed certificate. Node's TLS stack may tolerate that as-is, but Python's `ssl` module won't — `backend`'s driver needs its URI scheme rewritten from `neo4j+s://`/`bolt+s://` to `neo4j+ssc://`/`bolt+ssc://` to skip certificate verification. Prefer a real domain + CA-signed cert (or Neo4j Aura, which provides one automatically) wherever possible instead.
+| Scenario | What to do |
+|---|---|
+| **Frontend/backend on different domains** | Set `NODE_ENV=production` so cookies get `secure: true`, and set `sameSite` to `"none"` in `express-backend/routes/auth.js`'s `COOKIE_OPTIONS` — `"lax"` (the local-dev default) gets silently dropped cross-domain. Point `FRONTEND_ORIGIN` at your exact deployed frontend URL; CORS needs it to match exactly. |
+| **Managed Postgres provider (e.g. Render)** | The FastAPI backend accepts a single `DATABASE_URL` in `backend/.env`; when set, it replaces `PGHOST`/`PGPORT`/`PGUSER`/`PGPASSWORD`/`PGDATABASE`. Use Render's **External Database URL** when the backend runs elsewhere, or the **Internal Database URL** when the backend is a Render service in the same region. SSL is tried first by default; append `?sslmode=require` to insist on it. To move existing data: `pg_dump` (matching your local server's major version) then `pg_restore --no-owner --no-acl -d "$DATABASE_URL" criminal_network.dump`. |
+| **Neo4j by raw IP instead of a domain** | Public CAs won't issue certificates for bare IPs, so you'll be stuck with a self-signed certificate. Node's TLS stack may tolerate that as-is, but Python's `ssl` module won't — `backend`'s driver needs its URI scheme rewritten from `neo4j+s://`/`bolt+s://` to `neo4j+ssc://`/`bolt+ssc://` to skip certificate verification. Prefer a real domain + CA-signed cert (or Neo4j Aura, which provides one automatically) wherever possible instead. |
 
 ---
 
