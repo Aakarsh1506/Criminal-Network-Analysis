@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from ..errors import APIError
+from .crime_terms import CRIME_MENTION
 from .entity_review import verify_entities
 from .extraction import (
     Attribute,
@@ -52,6 +53,8 @@ A quote about Arjun cannot support a relationship for Anita. Include preceding s
 lines when needed to resolve a pronoun. For a single FIR, its header can identify the
 case, but the evidence must still identify the person and support any claimed role.
 If no supporting span exists, omit the relationship instead of using unrelated lines.
+An explicitly named alleged or suspected offence can support Case -> OF_TYPE -> CrimeType.
+Retain the allegation wording in evidence; this does not mean any person committed it.
 """
 
 PATTERNS = [
@@ -151,9 +154,17 @@ def extract_local(text, model):
             ent.start_char < end and start < ent.end_char for start, end in explicit_spans
         ):
             candidates.append((ent.start_char, ent.end_char, kind, False))
+    # Generic NER has no CrimeType label. Find literal offence phrases throughout
+    # the source, including unlabelled complaint narratives, for the AI to check.
+    # Add these after NER so a word like "Fraud" cannot suppress an organization
+    # candidate such as "Fraud Prevention Unit".
+    for match in CRIME_MENTION.finditer(text):
+        candidates.append((match.start(), match.end(), "CrimeType", False))
     entities = {}
     for start, end, kind, identifier in sorted(candidates):
         name = text[start:end].strip()
+        if kind == "CrimeType":
+            name = " ".join(name.split())
         if not name or len(name) > 100:
             continue
         key = (kind, name.casefold())
@@ -166,7 +177,7 @@ def extract_local(text, model):
                 identifier=name if identifier else None,
                 attributes=[],
                 evidence=location_context(text, start, end, sentences)
-                if kind == "Location"
+                if kind in {"Location", "CrimeType"}
                 else name,
             ),
         )

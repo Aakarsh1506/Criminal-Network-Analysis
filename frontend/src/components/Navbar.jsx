@@ -6,10 +6,10 @@ import { useTranslation } from "../i18n";
 import LanguageToggle from "./LanguageToggle";
 
 const NAV_LINKS = [
-  { key: "investigatorAnalysis", path: "/analysis" },
   { key: "home", path: "/dashboard" },
   { key: "criminalList", path: "/criminal-list" },
   { key: "uploadDoc", path: "/upload" },
+  { key: "investigatorAnalysis", path: "/analysis" },
 ];
 
 function Navbar() {

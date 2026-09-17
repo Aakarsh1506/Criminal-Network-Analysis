@@ -3,6 +3,7 @@
 import re
 from functools import lru_cache
 
+from .crime_terms import CRIME_MENTION
 from .extraction import RELATION_RULES, evidence_names_entity
 
 # Cues select text to review, never assert a relationship. Keep negations intact.
@@ -48,7 +49,7 @@ def relationship_batches(text, entities, output_budget=None, *, max_sentences=No
     seen = set()
     for index, (start, end) in enumerate(spans):
         sentence = text[start:end]
-        if not RELATIONSHIP_CUES.search(sentence):
+        if not (RELATIONSHIP_CUES.search(sentence) or CRIME_MENTION.search(sentence)):
             continue
         if index and PRONOUN.search(sentence):
             start = spans[index - 1][0]

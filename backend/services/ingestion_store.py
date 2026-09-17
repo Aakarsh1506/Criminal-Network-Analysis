@@ -6,6 +6,7 @@ from datetime import date
 from psycopg.types.json import Jsonb
 
 from ..errors import APIError
+from .crime_terms import is_explicit_crime_field
 from .extraction import RELATION_RULES, stable_id
 
 NODE_KEYS = {
@@ -262,7 +263,7 @@ async def persist_extraction(db, document_id, result):
         crime_types = [
             entity for entity in result.entities
             if entity.kind == "CrimeType"
-            and any(word in entity.evidence.casefold() for word in ("crime", "offence", "offense"))
+            and is_explicit_crime_field(entity.evidence, entity.name)
         ]
         if len(cases) == 1 and len(crime_types) == 1:
             case_ref, crime_ref = refs[cases[0].ref], refs[crime_types[0].ref]

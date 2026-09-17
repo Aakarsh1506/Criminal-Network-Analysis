@@ -93,6 +93,10 @@ spaCy and regex, then sends every candidate's name, type, ref, and source contex
 configured AI provider for checking. The AI may correct a type or flag an invalid candidate;
 flagged candidates remain visible in the review screen. Every candidate must receive one
 check, including entities without relationships. Names are not rewritten or invented.
+Crime candidates also come from literal offence phrases in narratives (for example,
+“suspected financial fraud”), not just `Crime type:` fields. Vocabulary lives in
+`backend/services/crime_terms.py`. The source wording and qualifiers are retained for
+AI checking; a crime mention alone does not assign that crime to a case or person.
 Next, relationship cues such as “contacted”, “mentioned”, “witness”, “resides”, and “seen”
 select complete source sentences for relationship extraction. A cue is not proof of a link:
 the AI checks the sentence, negations, endpoint types, and source evidence before returning

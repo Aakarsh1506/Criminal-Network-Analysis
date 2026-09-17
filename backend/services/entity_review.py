@@ -38,6 +38,8 @@ exactly one check with its original ref, the correct kind, and valid=true or fal
 Kinds: Person, Organization, Vehicle, Case, Location, CrimeType, PhoneNumber.
 Keep valid candidates even when they have no relationships. Correct a wrong type only
 when source context supports it. Set valid=false only for non-entities or malformed names.
+CrimeType includes explicitly named alleged/suspected offences (e.g. financial fraud).
+Keep allegation qualifiers in context; an offence term alone does not establish guilt.
 Do not create, rename, merge or omit candidates. Do not infer guilt or suspect status.
 Return compact JSON: {"checks":[{"ref":"e1","kind":"Person","valid":true}]}.
 """
