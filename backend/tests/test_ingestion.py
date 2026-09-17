@@ -962,3 +962,23 @@ async def test_entity_rejection_excludes_incident_edges_and_preserves_audit(offi
     )
     assert Extraction.model_validate(saved).model_dump() == saved
     assert response.json()["extraction"] == saved
+
+
+async def test_database_export_is_imported_for_review_without_calling_the_ai(settings, monkeypatch):
+    dump = b"INSERT INTO persons (person_id, name, city) VALUES ('P1', 'Rohan Mehta', 'Nandipur');\n"
+    doc = {"document_id": 5, "source_type": "database", "stored_name": "5.sql",
+           "original_name": "export.sql", "graph_payload": None, "extracted_text": None,
+           "extraction": None, "confirmed_at": None}
+    state = SimpleNamespace(settings=settings, db=AsyncMock(), graph=AsyncMock(), http_client=AsyncMock())
+    state.db.query.return_value = []
+    ai = AsyncMock()
+    monkeypatch.setattr(ingestion, "extract_entities", ai)
+    monkeypatch.setattr(ingestion, "index_document", AsyncMock())
+    monkeypatch.setattr(ingestion, "load_document_file", AsyncMock(return_value=dump))
+    await ingestion.process_document(state, doc)
+    ai.assert_not_awaited()
+    stored = [call.args for call in state.db.query.call_args_list if "extraction=%s" in call.args[0]][0]
+    text, extraction = stored[1][0], stored[1][1].obj
+    assert text == "persons: person_id=P1 | name=Rohan Mehta | city=Nandipur"
+    assert [(e["kind"], e["name"]) for e in extraction["entities"]] == [("Person", "Rohan Mehta")]
+    assert "awaiting_review" in state.db.query.call_args.args[0]

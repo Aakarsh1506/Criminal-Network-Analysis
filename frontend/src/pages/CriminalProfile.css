@@ -93,10 +93,35 @@
 .dossier-page .stamp-btn.full-width { color: var(--accent); border-color: var(--accent); border-radius: 7px; }
 .dossier-page .stamp-btn.full-width:hover { background: var(--accent); color: #101010; }
 
+/* Row above the graph: view toggle on the left, investigator hand-off on the right. */
+.graph-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.graph-analysis-btn {
+  font-family: var(--font-type);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.graph-analysis-btn:hover { background: var(--accent); color: #101010; }
+
 .graph-toggle {
   display: inline-flex;
   gap: 4px;
-  margin-bottom: 12px;
   padding: 4px;
   background: linear-gradient(180deg, #161616 0%, #101010 100%);
   border: 1px solid var(--card-border);

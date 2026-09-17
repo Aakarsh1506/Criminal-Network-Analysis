@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import RelationGraph from "../components/RelationGraph";
 import BackButton from "../components/BackButton";
 import { fetchAllCriminals, fetchCriminalNetwork } from "../api/criminals";
-import { mergeNetworks, searchPeople } from "../utils/investigatorWorkspace";
+import { mergeNetworks, readWorkspace, saveWorkspace, searchPeople } from "../utils/investigatorWorkspace";
 import { useTranslation } from "../i18n";
 import formatInsight from "../utils/formatInsight";
 import "./InvestigatorAnalysis.css";
@@ -24,12 +24,13 @@ export default function InvestigatorAnalysis() {
   const [graphError, setGraphError] = useState("");
   const [selection, setSelection] = useState(null);
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => readWorkspace().messages);
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState("analysisThinking");
   const request = useRef(null);
   const graphRequest = useRef(null);
   const legacyLoaded = useRef(null);
+  const restored = useRef(false);
   const messagesRef = useRef(null);
   const inputRef = useRef(null);
   const results = useMemo(() => searchPeople(people, query), [people, query]);
@@ -44,6 +45,21 @@ export default function InvestigatorAnalysis() {
   }, [catalogRetry]);
 
   useEffect(() => () => { request.current?.abort(); graphRequest.current?.abort(); }, []);
+
+  // Restore the people added earlier in this browser session, then keep the session in step.
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    void (async () => {
+      for (const person of readWorkspace().people) await addPerson(person);
+    })();
+    // Restoring runs once per mount; addPerson is stable enough for this one-shot replay.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    saveWorkspace(entries.map((entry) => entry.person), messages);
+  }, [entries, messages]);
   useEffect(() => {
     const panel = messagesRef.current;
     if (panel) panel.scrollTop = panel.scrollHeight;
@@ -68,7 +84,8 @@ export default function InvestigatorAnalysis() {
   }
 
   useEffect(() => {
-    if (!id || !people.length || legacyLoaded.current === id) return;
+    // Wait for a restore or another add to finish; this effect runs again on the next render.
+    if (!id || !people.length || graphRequest.current || legacyLoaded.current === id) return;
     legacyLoaded.current = id;
     const person = people.find((item) => String(item.id) === id);
     if (person) void addPerson(person);
@@ -77,9 +94,11 @@ export default function InvestigatorAnalysis() {
   async function ask(event) {
     event?.preventDefault();
     const text = question.trim();
-    if (!text || !selection || request.current) return;
-    const target = { ...selection };
-    const contextKey = JSON.stringify([target.personId, target.type, target.id]);
+    // Without a selection the question is answered from the whole workspace network.
+    if (!text || request.current || (!selection && !entries.length)) return;
+    const target = selection ? { ...selection }
+      : { personId: entries[0].person.id, label: t("analysisWholeNetwork"), whole: true };
+    const contextKey = JSON.stringify([target.personId, target.type ?? "network", target.id ?? entries.length]);
     const history = messages.filter((message) => message.contextKey === contextKey
       && ["user", "assistant"].includes(message.role)).slice(-6)
       .map((message) => ({ role: message.role, content: message.text.slice(0, 4000) }));
@@ -91,7 +110,10 @@ export default function InvestigatorAnalysis() {
     try {
       const response = await fetch(`/api/criminals/${encodeURIComponent(target.personId)}/explain`, {
         method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selection: { type: target.type, id: target.id }, question: text, history }),
+        body: JSON.stringify({
+          selection: target.whole ? null : { type: target.type, id: target.id },
+          question: text, history,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || t("analysisFailed"));
@@ -160,17 +182,19 @@ export default function InvestigatorAnalysis() {
       </section>
       <section className="analysis-chat" aria-label={t("aiInvestigator")}>
         <div className="analysis-panel-heading"><h2>{t("aiInvestigator")}</h2><button type="button" disabled={loading || !messages.length} onClick={() => setMessages([])}>{t("analysisClearChat")}</button></div>
-        <p className="analysis-selected">{selection ? `${t("analysisSelected")}: ${selection.label}` : t("analysisSelect")}</p>
+        <p className="analysis-selected">{selection
+          ? `${t("analysisSelected")}: ${selection.label}`
+          : entries.length ? t("analysisWholeNetworkHint") : t("analysisSelect")}</p>
         <div ref={messagesRef} className="analysis-messages" role="log" aria-live="polite" aria-label={t("analysisMessages")} tabIndex={0}>
-          {!messages.length && <div className="analysis-empty"><h3>{t("analysisChatWelcome")}</h3><p>{t("analysisChatHint")}</p>{["analysisPrompt1", "analysisPrompt2"].map((key) => <button className="analysis-prompt" key={key} disabled={!selection} onClick={() => { setQuestion(t(key)); inputRef.current?.focus(); }}>{t(key)}</button>)}</div>}
-          {messages.map((message, index) => <article key={index} className={`analysis-message ${message.role}`}><strong>{message.role === "user" ? t("analysisYou") : t("aiInvestigator")}</strong>{message.context && <small>{message.context}</small>}{message.role === "assistant" ? <div className="analysis-answer">{formatInsight(message.text)}</div> : <p>{message.text}</p>}{message.retryQuestion && <button disabled={loading} onClick={() => { const present = network.nodes.concat(network.edges).find((item) => item.id === message.target.id); if (present) setSelection({ ...message.target, personId: present.originPersonId }); setQuestion(message.retryQuestion); inputRef.current?.focus(); }}>{t("analysisRetryQuestion")}</button>}</article>)}
+          {!messages.length && <div className="analysis-empty"><h3>{t("analysisChatWelcome")}</h3><p>{t("analysisChatHint")}</p>{["analysisPrompt1", "analysisPrompt2"].map((key) => <button className="analysis-prompt" key={key} disabled={!selection && !entries.length} onClick={() => { setQuestion(t(key)); inputRef.current?.focus(); }}>{t(key)}</button>)}</div>}
+          {messages.map((message, index) => <article key={index} className={`analysis-message ${message.role}`}><strong>{message.role === "user" ? t("analysisYou") : t("aiInvestigator")}</strong>{message.context && <small>{message.context}</small>}{message.role === "assistant" ? <div className="analysis-answer">{formatInsight(message.text)}</div> : <p>{message.text}</p>}{message.retryQuestion && <button disabled={loading} onClick={() => { const present = message.target.id && network.nodes.concat(network.edges).find((item) => item.id === message.target.id); if (present) setSelection({ ...message.target, personId: present.originPersonId }); setQuestion(message.retryQuestion); inputRef.current?.focus(); }}>{t("analysisRetryQuestion")}</button>}</article>)}
           {loading && <p className="analysis-thinking" role="status"><span aria-hidden="true">•••</span> {t(phase)}</p>}
         </div>
         <form className="analysis-form" onSubmit={ask}>
           <label className="analysis-compose-label" htmlFor="analysis-question">{t("analysisQuestion")}</label>
-          <textarea ref={inputRef} id="analysis-question" value={question} maxLength={2000} rows={3} disabled={!selection} onChange={(event) => setQuestion(event.target.value)} placeholder={t(selection ? "analysisQuestionHint" : "analysisSelect")}
+          <textarea ref={inputRef} id="analysis-question" value={question} maxLength={2000} rows={3} disabled={!selection && !entries.length} onChange={(event) => setQuestion(event.target.value)} placeholder={t(selection || entries.length ? "analysisQuestionHint" : "analysisSelect")}
             onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void ask(); } }} />
-          <div className="analysis-compose-footer"><small>{t("analysisEnterHint")}</small><button className="stamp-btn" disabled={!selection || !question.trim() || loading}>{loading ? t("analysisReviewing") : t("askAI")}</button></div>
+          <div className="analysis-compose-footer"><small>{t("analysisEnterHint")}</small><button className="stamp-btn" disabled={(!selection && !entries.length) || !question.trim() || loading}>{loading ? t("analysisReviewing") : t("askAI")}</button></div>
         </form>
       </section>
     </div>

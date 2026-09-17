@@ -116,7 +116,9 @@ async def explain(person_id: str, request: Request, officer=Depends(require_auth
     if not isinstance(question, str) or len(question) > 2000:
         raise APIError("Question must be 2,000 characters or fewer.", 400)
     history = validate_history(body.get("history", []) if isinstance(body, dict) else [])
-    validate_selection(selection)
+    # A question may be asked about the whole network; an insight still needs a selected record.
+    if selection is not None or not question.strip():
+        validate_selection(selection)
     state = request.app.state
     use_ollama = state.settings.extraction_provider == "ollama"
     if not use_ollama and not state.settings.groq_api_key.strip():

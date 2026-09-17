@@ -25,6 +25,11 @@ FORMATS = {
     ".csv": "text/csv",
     ".json": "application/json",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    # Database exports; read as data by services/database_import.py, never executed.
+    ".sql": "application/sql",
+    ".sqlite": "application/vnd.sqlite3",
+    ".sqlite3": "application/vnd.sqlite3",
+    ".db": "application/vnd.sqlite3",
 }
 
 
@@ -69,7 +74,9 @@ def extract_text(path, language="eng"):
     suffix = Path(path).suffix.lower()
     parts = []
     try:
-        if suffix in (".txt", ".csv", ".json"):
+        if suffix in (".sqlite", ".sqlite3", ".db"):
+            raise APIError("Select the Database export source type for this file.", 400)
+        if suffix in (".txt", ".csv", ".json", ".sql"):
             text = Path(path).read_text(encoding="utf-8-sig")
             if suffix == ".json":
                 json.loads(text)

@@ -1,3 +1,35 @@
+// The workspace survives navigation and reloads within a browser session (per tab),
+// and is cleared on logout. Networks are re-fetched; only the people and chat are stored.
+export const WORKSPACE_KEY = "cna.investigator.workspace";
+
+export function readWorkspace() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(WORKSPACE_KEY) || "{}");
+    return {
+      people: Array.isArray(saved.people) ? saved.people.filter((person) => person?.id) : [],
+      messages: Array.isArray(saved.messages) ? saved.messages.filter((message) => message?.text) : [],
+    };
+  } catch {
+    return { people: [], messages: [] };
+  }
+}
+
+export function saveWorkspace(people, messages) {
+  try {
+    sessionStorage.setItem(WORKSPACE_KEY, JSON.stringify({ people, messages: messages.slice(-20) }));
+  } catch {
+    // A full or unavailable session store only costs persistence, never the workspace itself.
+  }
+}
+
+export function clearWorkspace() {
+  try {
+    sessionStorage.removeItem(WORKSPACE_KEY);
+  } catch {
+    // Nothing to clear when the session store is unavailable.
+  }
+}
+
 const normalize = (value) => String(value || "").normalize("NFKC").toLocaleLowerCase().trim();
 
 function distance(a, b) {

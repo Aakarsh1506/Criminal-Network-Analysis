@@ -87,6 +87,17 @@ surveillance reports, social media intelligence, criminal history, and intellige
 Supported file formats are PDF, PNG/JPEG/TIFF, UTF-8 TXT/CSV/JSON, and DOCX. CSV and JSON are
 read as text for extraction; this is not a raw SQL importer or a transaction anomaly detector.
 
+A **Database export** source type imports an existing database instead of a document. Plain-text
+PostgreSQL/MySQL dumps (`INSERT` and `COPY`), SQLite files, CSV and JSON exports are read as data by
+`services/database_import.py`: statements in the file are never executed against this database.
+Rows become entity candidates (people, cases, locations, crime types, organizations, vehicles,
+phones), foreign keys and join tables such as `case_people` become relationships, and each record
+cites the row it came from. The result is staged for the same officer review as any other upload;
+nothing is saved until it is confirmed. Custom-format `pg_dump` files are rejected with instructions
+to export plain SQL (`pg_dump --format=plain --data-only --inserts`). Limits: 2,000 rows per table,
+60 tables and 200 records per import. A ready-made example to try is `docs/sample_database_export.sql`
+(synthetic records: 5 people, 2 cases, places, an organization and a vehicle).
+
 Scanned PDFs and images use local Tesseract OCR. Digital PDFs and Word/text files use their
 embedded text. The default hybrid mode extracts entity candidates across the document with
 spaCy and regex. Candidates are retained with source context and sent to the AI only for

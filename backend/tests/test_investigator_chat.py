@@ -131,3 +131,38 @@ def test_computed_patterns_are_shown_even_if_the_model_blurs_them():
     assert "**Patterns in linked records (leads, not proof)**\n- Sameer Qureshi appears with Rohan Mehta" in answer
     assert answer.index("Patterns in linked records") < answer.index("Investigator insight")
     assert "Patterns in linked records" not in format_answer(json.dumps(ANSWER), [])
+
+
+def test_whole_network_context_when_nothing_is_selected():
+    from backend.services.insight import build_insight_context
+
+    network = {"nodes": [{"id": "p1", "kind": "Person", "label": "Rohan Mehta"},
+                         {"id": "c1", "kind": "Case", "label": "FIR-1"}],
+               "edges": [{"id": "e1", "source": "p1", "target": "c1", "label": "SUSPECT IN"}]}
+    context = build_insight_context(network, None)
+    assert context["selection"] == {"type": "network", "record": None}
+    assert [node["label"] for node in context["nodes"]] == ["Rohan Mehta", "FIR-1"]
+    assert len(context["relationships"]) == 1
+    assert context["analysis"]["records_in_network"] == {"Case": 1, "Person": 1}
+    assert "No single record is selected" in context["limitations"]["scope"]
+
+
+def test_whole_network_patterns_name_hubs_pairs_and_gaps():
+    from backend.services.insight import build_insight_context
+
+    def node(id, kind, label):
+        return {"id": id, "kind": kind, "label": label}
+
+    def edge(id, source, label, target, **extra):
+        return {"id": id, "source": source, "target": target, "label": label, **extra}
+
+    network = {"nodes": [node("a", "Person", "Rohan Mehta"), node("b", "Person", "Sameer Qureshi"),
+                         node("c", "Person", "Kavita Rao"), node("c1", "Case", "FIR-1"), node("c2", "Case", "FIR-2")],
+               "edges": [edge("e1", "a", "SUSPECT IN", "c1", evidence="Accused"),
+                         edge("e2", "b", "SUSPECT IN", "c1", evidence="Accused"),
+                         edge("e3", "c", "WITNESS IN", "c1", evidence="Witness"),
+                         edge("e4", "a", "SUSPECT IN", "c2"), edge("e5", "b", "MENTIONED IN", "c2")]}
+    observations = build_insight_context(network, None)["analysis"]["key_observations"]
+    assert observations[0] == "FIR-1 (Case) links 3 people: Kavita Rao, Rohan Mehta, Sameer Qureshi."
+    assert any("Rohan Mehta and Sameer Qureshi appear together in 2 record(s)" in line for line in observations)
+    assert any("5 relationships are unverified; 2 have no recorded evidence" in line for line in observations)

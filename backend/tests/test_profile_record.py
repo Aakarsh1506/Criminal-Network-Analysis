@@ -43,3 +43,63 @@ async def test_generation_releases_capacity_on_failure(officer_client, app, monk
 async def test_generation_rejects_invalid_language(officer_client, body):
     response = await officer_client.post('/api/criminals/P1/record/generate', json=body)
     assert response.status_code == 400
+
+
+def record_for_generation():
+    return {'personId': 'P1', 'name': 'Alice', 'location': None, 'index': {},
+            'sources': [{'id': 'document-1', 'label': 'FIR.docx', 'documentId': 1}],
+            'facts': [{'id': 'f1', 'category': 'identity', 'label': 'name', 'text': 'Alice',
+                       'evidence': 'Alice', 'source': 'document-1', 'needsReview': False}]}
+
+
+def reply(payload, done_reason='stop'):
+    import json as _json
+
+    import httpx
+    content = payload if isinstance(payload, str) else _json.dumps(payload)
+    return httpx.Response(200, json={'message': {'content': content}, 'done_reason': done_reason})
+
+
+async def generate(client, settings, monkeypatch):
+    from dataclasses import replace
+    monkeypatch.setattr(profile_record, 'retrieve_context', AsyncMock(return_value=[]))
+    return await profile_record.generate_record(
+        record_for_generation(), AsyncMock(), client, replace(settings, extraction_provider='ollama'), 7)
+
+
+async def test_unusable_items_are_dropped_but_a_valid_record_is_kept(settings, monkeypatch):
+    client = AsyncMock()
+    client.post.return_value = reply({'sections': [
+        {'category': 'identity', 'items': [
+            {'text': 'Alice is named in FIR.docx.', 'sources': ['document-1'], 'confidence': 'high'},
+            {'text': 'Invented claim', 'sources': ['document-9']},
+            {'text': '   ', 'sources': ['document-1']},
+        ]},
+        {'category': 'invented-category', 'items': [{'text': 'x', 'sources': ['document-1']}]},
+    ]})
+    result = await generate(client, settings, monkeypatch)
+    assert result['sections'] == [{'category': 'identity', 'items': [
+        {'text': 'Alice is named in FIR.docx.', 'sources': ['document-1']}]}]
+    assert client.post.await_count == 1
+
+
+async def test_truncated_output_retries_once_with_more_room(settings, monkeypatch):
+    client = AsyncMock()
+    good = {'sections': [{'category': 'identity', 'items': [{'text': 'Alice.', 'sources': ['document-1']}]}]}
+    client.post.side_effect = [reply(good, done_reason='length'), reply(good)]
+    result = await generate(client, settings, monkeypatch)
+    assert result['sections'][0]['items'][0]['text'] == 'Alice.'
+    budgets = [call.kwargs['json']['options']['num_predict'] for call in client.post.call_args_list]
+    assert budgets == [1200, 2400]
+    assert 'under 250 words' in client.post.call_args.kwargs['json']['messages'][0]['content']
+
+
+@pytest.mark.parametrize('payload', ['not json', {'sections': []}, {'sections': [
+    {'category': 'identity', 'items': [{'text': 'Claim', 'sources': ['document-9']}]}]}])
+async def test_unusable_answers_fail_after_one_retry(settings, monkeypatch, payload):
+    from backend.errors import APIError
+    client = AsyncMock()
+    client.post.return_value = reply(payload)
+    with pytest.raises(APIError, match='invalid citations'):
+        await generate(client, settings, monkeypatch)
+    assert client.post.await_count == 2

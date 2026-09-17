@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../api/auth";
+import { clearWorkspace } from "../utils/investigatorWorkspace";
 import logo from "../assets/evidex-logo.png";
 import "./Navbar.css";
 import { useTranslation } from "../i18n";
@@ -18,6 +19,7 @@ function Navbar() {
 
   const handleLogout = async () => {
     await logout();
+    clearWorkspace();
     navigate("/login");
   };
 

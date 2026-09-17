@@ -231,6 +231,12 @@ npm run dev
 Open **http://localhost:3000** and log in. The first document extraction is slower while spaCy and
 the Ollama model load.
 
+### Try the database import
+
+Upload `docs/sample_database_export.sql` on the Upload page with source **Database export**. Its
+synthetic rows become 15 records and 10 relationships in the review screen; nothing is saved until
+you confirm. Statements in an uploaded file are read as data and never executed.
+
 ### Step 11 — Check that it works
 
 ```bash

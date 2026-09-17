@@ -1,6 +1,7 @@
 """Detailed stored records and an optional, cited synthesis of retrieved evidence."""
 
 import json
+import logging
 from copy import deepcopy
 
 from ..errors import APIError
@@ -9,6 +10,7 @@ from .extraction import evidence_names_entity
 from .profile_activity import load_activity
 from .rag import retrieve_context
 
+logger = logging.getLogger("uvicorn.error.profile_record")
 CATEGORIES = ['identity', 'cases', 'locations', 'connections', 'sourceDetails']
 RECORD_SCHEMA = {
     'type': 'object', 'additionalProperties': False, 'required': ['sections'],
@@ -130,58 +132,83 @@ async def generate_record(record, db, client, settings, officer_id, language='en
         schema['properties']['sections']['maxItems'] = len(section_schema['category']['enum'])
         section_schema['items']['maxItems'] = max(1, min(12, len(content)))
     output_budget = 1200 if len(content) < 6 and not excerpts else 4096
-    if settings.extraction_provider == 'ollama':
-        response = await client.post(settings.ollama_base_url.rstrip('/') + '/api/chat', json={
-            'model': settings.ollama_model, 'messages': messages, 'stream': False, 'think': False,
-            'format': schema, 'options': {'temperature': .1, 'num_predict': output_budget, 'num_ctx': 16384},
-        }, timeout=settings.ollama_timeout)
-    else:
-        if not settings.groq_api_key:
-            raise APIError('Groq API key is not configured.', 503)
-        response = await client.post('https://api.groq.com/openai/v1/chat/completions',
-            headers={'Authorization': f'Bearer {settings.groq_api_key}'}, json={
-                'model': settings.groq_model, 'messages': messages, 'temperature': .1,
-                'max_completion_tokens': output_budget, 'response_format': {'type': 'json_object'},
-            }, timeout=60)
-    if not response.is_success:
-        raise APIError('The AI record could not be generated. Stored information remains available.', 502)
-    try:
-        body = response.json()
-        if settings.extraction_provider == 'ollama':
-            if body.get('done_reason') == 'length':
-                raise ValueError
-            raw = body['message']['content']
-        else:
-            choice = body['choices'][0]
-            if choice.get('finish_reason') != 'stop':
-                raise ValueError
-            raw = choice['message']['content']
-        sections = validate_sections(json.loads(raw), allowed_sources)
-    except (ValueError, KeyError, TypeError, IndexError):
-        raise APIError('The AI record was incomplete or contained invalid citations. Retry generation.', 502) from None
+    response = await request_record(client, settings, messages, schema, output_budget)
+    sections, reason = read_sections(response, settings, allowed_sources)
+    if sections is None:
+        # Truncated or unusable output gets one retry with more room and a shorter target.
+        logger.warning('AI record attempt failed (%s); retrying with a larger budget', reason)
+        messages[0]['content'] = prompt + ' Keep the whole record under 250 words.'
+        retry = await request_record(client, settings, messages, schema, min(output_budget * 2, 8192))
+        sections, reason = read_sections(retry, settings, allowed_sources)
+    if sections is None:
+        logger.warning('AI record generation failed after a retry: %s', reason)
+        raise APIError('The AI record was incomplete or contained invalid citations. Retry generation.', 502)
     return {'sections': sections, 'sources': list(sources.values()),
             'coverage': {'includedFacts': len(content), 'totalFacts': len(record['facts']), 'passages': len(excerpts)},
             'retrievalMode': passages[0]['retrieval_mode'] if passages else 'stored_records'}
 
 
+async def request_record(client, settings, messages, schema, output_budget):
+    if settings.extraction_provider == 'ollama':
+        return await client.post(settings.ollama_base_url.rstrip('/') + '/api/chat', json={
+            'model': settings.ollama_model, 'messages': messages, 'stream': False, 'think': False,
+            'format': schema, 'options': {'temperature': .1, 'num_predict': output_budget, 'num_ctx': 16384},
+        }, timeout=settings.ollama_timeout)
+    if not settings.groq_api_key:
+        raise APIError('Groq API key is not configured.', 503)
+    return await client.post('https://api.groq.com/openai/v1/chat/completions',
+        headers={'Authorization': f'Bearer {settings.groq_api_key}'}, json={
+            'model': settings.groq_model, 'messages': messages, 'temperature': .1,
+            'max_completion_tokens': output_budget, 'response_format': {'type': 'json_object'},
+        }, timeout=60)
+
+
+def read_sections(response, settings, allowed_sources):
+    """Return (sections, reason); sections is None when the answer cannot be used."""
+    if not response.is_success:
+        return None, f'provider HTTP {response.status_code}'
+    try:
+        body = response.json()
+        if settings.extraction_provider == 'ollama':
+            finish = body.get('done_reason')
+            raw = body['message']['content']
+        else:
+            choice = body['choices'][0]
+            finish = choice.get('finish_reason')
+            raw = choice['message']['content']
+        if finish not in (None, 'stop'):
+            return None, f'output stopped early ({finish})'
+        return validate_sections(json.loads(raw), allowed_sources), 'ok'
+    except ValueError as exc:
+        return None, str(exc) or 'invalid JSON'
+    except (KeyError, TypeError, IndexError) as exc:
+        return None, f'unexpected response shape ({type(exc).__name__})'
+
+
 def validate_sections(result, sources):
     if not isinstance(result, dict) or set(result) != {'sections'} or not isinstance(result['sections'], list) or not result['sections']:
-        raise ValueError('Missing sections')
-    grouped, seen_text = {}, set()
+        raise ValueError('no sections returned')
+    grouped, seen_text, dropped = {}, set(), 0
     for section in result['sections']:
-        if not isinstance(section, dict) or set(section) != {'category', 'items'} or section['category'] not in CATEGORIES:
-            raise ValueError('Invalid section')
-        if not isinstance(section['items'], list):
-            raise ValueError('Missing items')
+        # A model may add fields or one bad citation; keep every usable item and drop the rest.
+        if not isinstance(section, dict) or section.get('category') not in CATEGORIES \
+                or not isinstance(section.get('items'), list):
+            dropped += 1
+            continue
         for item in section['items']:
-            if (not isinstance(item, dict) or set(item) != {'text', 'sources'} or not isinstance(item['text'], str)
-                    or not item['text'].strip() or not isinstance(item['sources'], list) or not item['sources']
-                    or any(not isinstance(source, str) or source not in sources for source in item['sources'])):
-                raise ValueError('Invalid citation')
-            key = ' '.join(item['text'].split()).casefold()
+            text = item.get('text') if isinstance(item, dict) else None
+            cited = item.get('sources') if isinstance(item, dict) else None
+            if (not isinstance(text, str) or not text.strip() or not isinstance(cited, list) or not cited
+                    or any(not isinstance(source, str) or source not in sources for source in cited)):
+                dropped += 1
+                continue
+            key = ' '.join(text.split()).casefold()
             if key not in seen_text:
-                grouped.setdefault(section['category'], []).append(item)
+                grouped.setdefault(section['category'], []).append({'text': text, 'sources': cited})
                 seen_text.add(key)
     if not grouped:
-        raise ValueError('No supported record items')
+        raise ValueError('no item cited a supplied source')
+    if dropped:
+        logger.info('AI record: kept %d item(s), dropped %d unusable one(s)',
+                    sum(len(items) for items in grouped.values()), dropped)
     return [{'category': category, 'items': grouped[category]} for category in CATEGORIES if category in grouped]

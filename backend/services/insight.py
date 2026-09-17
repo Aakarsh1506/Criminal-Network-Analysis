@@ -9,7 +9,34 @@ def validate_selection(selection):
         raise APIError("Select a node or relationship to generate AI insight.", 400)
 
 
+NETWORK_LIMIT = 40
+
+
+def build_network_context(network):
+    """Whole-network context: used when a question is asked without selecting a record."""
+    network = network or {"nodes": [], "edges": []}
+    nodes = network["nodes"][:NETWORK_LIMIT]
+    ids = {node["id"] for node in nodes}
+    edges = [edge for edge in network["edges"]
+             if edge["source"] in ids and edge["target"] in ids][:NETWORK_LIMIT + 20]
+    return {
+        "selection": {"type": "network", "record": None},
+        "nodes": nodes,
+        "relationships": edges,
+        "analysis": network_analysis(network, None),
+        "limitations": {
+            "networkTruncated": bool(network.get("truncated")),
+            "connectionsOmitted": len(network["edges"]) > len(edges) or len(network["nodes"]) > len(nodes),
+            "scope": f"The whole displayed network, up to {NETWORK_LIMIT} records and their links. "
+                     "No single record is selected. Graph steps do not prove personal association. "
+                     "Evidence and review status may be missing; recorded claims are not automatically verified.",
+        },
+    }
+
+
 def build_insight_context(network, selection):
+    if selection is None:
+        return build_network_context(network)
     validate_selection(selection)
     network = network or {"nodes": [], "edges": []}
     kind, record_id = selection["type"], selection["id"]
@@ -71,7 +98,27 @@ def network_analysis(network, selected, limit=5):
         "relationships_without_evidence": missing_evidence,
     }
     if selected is None:
-        return summary
+        # Whole-network questions: the same patterns, computed across every record shown.
+        pairs, hubs = {}, []
+        for node_id, node in nodes.items():
+            people = sorted(nodes[item]["label"] for item in neighbours.get(node_id, set())
+                            if nodes[item]["kind"] == "Person")
+            if node["kind"] != "Person" and len(people) >= 2:
+                hubs.append({"record": name(node_id), "people": people[:8], "count": len(people)})
+            for first in people:
+                for second in people:
+                    if first < second:
+                        pairs.setdefault((first, second), []).append(name(node_id))
+        hubs.sort(key=lambda item: -item["count"])
+        observations = [f"{item['record']} links {item['count']} people: {', '.join(item['people'])}."
+                        for item in hubs[:4]]
+        observations += [f"{first} and {second} appear together in {len(records)} record(s): {', '.join(sorted(records))}."
+                         for (first, second), records in
+                         sorted(pairs.items(), key=lambda item: -len(item[1]))[:3] if len(records) > 1]
+        if unverified or missing_evidence:
+            observations.append(f"{unverified} of {len(labelled)} relationships are unverified; "
+                                f"{missing_evidence} have no recorded evidence.")
+        return {**summary, "key_observations": observations[:7]}
     me = selected["id"]
     if me not in nodes:
         return summary

@@ -13,7 +13,7 @@ import "./UploadDoc.css";
 const STATUS = {
   awaiting_review: "Ready to review · confirmation needed",
   stored: "Stored · ready to process", queued: "Queued", processing: "Extracting text and entities",
-  syncing: "Saving Relationships", complete: "Relations Saved",
+  syncing: "Saving Relationships" , complete: "Relations Saved",
   failed: "Processing failed", sync_failed: "Sync Failed",
   cancelled: "Processing stopped",
 };
@@ -30,7 +30,7 @@ export default function UploadDoc() {
   const [extensions, setExtensions] = useState([]);
   const [sourceType, setSourceType] = useState("fir");
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -65,16 +65,30 @@ export default function UploadDoc() {
   }, [selected, selectedStatus, selectedProgress]);
 
   async function upload(event) {
-    const file = event.target.files?.[0];
+    const files = [...(event.target.files || [])];
     event.target.value = "";
-    if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { setError("Files must be 20 MB or smaller."); return; }
-    setUploading(true); setError(null);
-    try {
-      const doc = await uploadDocument(file, sourceType);
-      setDocuments((prev) => [doc, ...prev]); navigate(`/documents/${doc.id}/review`);
-    } catch (err) { setError(err.message); }
-    finally { setUploading(false); }
+    if (!files.length) return;
+    setError(null);
+    // Upload one at a time: each document is queued and reviewed on its own.
+    const added = [], failed = [];
+    for (const [index, file] of files.entries()) {
+      setUploading({ done: index, total: files.length, name: file.name });
+      if (file.size > 20 * 1024 * 1024) {
+        failed.push(`${file.name}: ${t("uploadTooLarge")}`);
+        continue;
+      }
+      try {
+        const doc = await uploadDocument(file, sourceType);
+        added.push(doc);
+        setDocuments((prev) => [doc, ...prev]);
+      } catch (err) {
+        failed.push(`${file.name}: ${err.message}`);
+      }
+    }
+    setUploading(null);
+    if (failed.length) setError(`${failed.length}/${files.length} ${t("uploadFailedSome")} ${failed.join(" · ")}`);
+    // A single upload opens its review; a batch keeps the list in view while they process.
+    if (added.length === 1 && !failed.length) navigate(`/documents/${added[0].id}/review`);
   }
 
   function updatedDocument(doc) {
@@ -101,11 +115,19 @@ export default function UploadDoc() {
         onChange={(event) => setSourceType(event.target.value)}>
         {Object.entries(types).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select>
-      <input ref={input} className="upload-input-hidden" type="file" accept={extensions.join(",")}
+      {sourceType === "database" && <p className="upload-hint">{t("databaseHint")}</p>}
+      <input ref={input} className="upload-input-hidden" type="file" multiple accept={extensions.join(",")}
         onChange={upload} />
-      <button className="stamp-btn upload-btn-center" disabled={uploading || loading || !extensions.length}
-        onClick={() => input.current?.click()}>{uploading ? `${t("upload")}…` : `${t("upload")} and extract`}</button>
-      {uploading && <DocumentProgress uploading />}
+      <button className="stamp-btn upload-btn-center" disabled={!!uploading || loading || !extensions.length}
+        onClick={() => input.current?.click()}>
+        {uploading ? `${t("upload")}… ${uploading.done + 1}/${uploading.total}` : `${t("upload")} and extract`}
+      </button>
+      {uploading && <>
+        <p className="upload-hint" role="status">{uploading.total > 1
+          ? `${t("uploadingFile")} ${uploading.done + 1} / ${uploading.total}: ${uploading.name}`
+          : uploading.name}</p>
+        <DocumentProgress uploading />
+      </>}
     </section>
     {error && <p role="alert" className="upload-error">{error}</p>}
     {loading ? <p role="status" className="empty-note">{t("loadingRecords")}</p> :

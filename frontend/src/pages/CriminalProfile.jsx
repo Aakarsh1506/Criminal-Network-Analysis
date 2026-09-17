@@ -5,7 +5,6 @@ import {
   fetchWorkspace, pinCriminal, unpinCriminal,
   addToWorkingList, removeFromWorkingList,
 } from "../api/workspace";
-import DetailedRecord from "../components/DetailedRecord";
 import NetworkGraph from "../components/NetworkGraph";
 import BackButton from "../components/BackButton";
 import "./CriminalProfile.css";
@@ -17,7 +16,6 @@ function CriminalProfile() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [connectedLocation, setConnectedLocation] = useState(null);
   const [selection, setSelection] = useState(null);
   const [criminal, setCriminal] = useState(null);
   const [relations, setRelations] = useState([]);
@@ -72,7 +70,7 @@ function CriminalProfile() {
   }
 
   const isPinned = pinnedId === criminal.id;
-  const location = (connectedLocation?.id === id && connectedLocation.location) || criminal.location;
+  const location = criminal.location;
   const profileLocation = [location?.city, location?.state].filter(Boolean).join(", ");
   const displayedCriminal = { ...criminal, location };
 
@@ -166,20 +164,25 @@ function CriminalProfile() {
 
         <div className="dossier-right">
 
-          <div className="graph-toggle" role="tablist" aria-label="Graph view">
-            <button
-              type="button"
-              className={`graph-toggle-btn ${graphMode === "network" ? "graph-toggle-active" : ""}`}
-              onClick={() => { setSelection(null); setGraphMode("network"); }}
-            >
-              Network
-            </button>
-            <button
-              type="button"
-              className={`graph-toggle-btn ${graphMode === "map" ? "graph-toggle-active" : ""}`}
-              onClick={() => { setSelection(null); setGraphMode("map"); }}
-            >
-              Map
+          <div className="graph-toolbar">
+            <div className="graph-toggle" role="tablist" aria-label="Graph view">
+              <button
+                type="button"
+                className={`graph-toggle-btn ${graphMode === "network" ? "graph-toggle-active" : ""}`}
+                onClick={() => { setSelection(null); setGraphMode("network"); }}
+              >
+                {t("network")}
+              </button>
+              <button
+                type="button"
+                className={`graph-toggle-btn ${graphMode === "map" ? "graph-toggle-active" : ""}`}
+                onClick={() => { setSelection(null); setGraphMode("map"); }}
+              >
+                {t("map")}
+              </button>
+            </div>
+            <button type="button" className="graph-analysis-btn" onClick={() => navigate(`/analysis/${id}`)}>
+              {t("addToAnalysis")}
             </button>
           </div>
 
@@ -205,7 +208,6 @@ function CriminalProfile() {
               />
             )}
           </div>
-          <DetailedRecord key={id} personId={id} onLocationChange={setConnectedLocation} />
         </div>
       </div>
     </div>

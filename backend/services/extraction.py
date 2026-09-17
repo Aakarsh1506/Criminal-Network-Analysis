@@ -27,6 +27,7 @@ SOURCE_TYPES = {
     "social_media": "Social media intelligence",
     "criminal_history": "Criminal history databases",
     "intelligence": "Intelligence agency reports",
+    "database": "Database export (SQL dump, SQLite, CSV, JSON)",
 }
 Kind = Literal["Person", "Organization", "Vehicle", "Case", "Location", "CrimeType", "PhoneNumber"]
 Predicate = Literal[

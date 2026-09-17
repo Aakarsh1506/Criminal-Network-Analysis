@@ -8,6 +8,7 @@ from psycopg.types.json import Jsonb
 from starlette.concurrency import run_in_threadpool
 
 from ..errors import APIError
+from .database_import import import_database
 from .document_files import load_document_file
 from .document_text import extract_text_from_bytes
 from .extraction import Extraction, extract_entities
@@ -56,14 +57,25 @@ async def process_document(state, doc):
                             "python -m backend.scripts.migrate_uploads on the computer that uploaded it.",
                             422,
                         )
-                    text = await run_in_threadpool(
-                        extract_text_from_bytes, content, Path(doc["stored_name"]).suffix,
-                        state.settings.ocr_language,
-                    )
-                    await state.db.query(
-                        "UPDATE officer_documents SET extracted_text=%s WHERE document_id=%s",
-                        (text, document_id),
-                    )
+                    suffix = Path(doc["stored_name"]).suffix
+                    if doc["source_type"] == "database":
+                        # Rows become reviewable records; no statement from the export is run.
+                        text, imported = await run_in_threadpool(
+                            import_database, content, suffix, Path(doc["original_name"]).stem,
+                        )
+                        doc = {**doc, "extraction": imported.model_dump()}
+                        await state.db.query(
+                            "UPDATE officer_documents SET extracted_text=%s, extraction=%s WHERE document_id=%s",
+                            (text, Jsonb(doc["extraction"]), document_id),
+                        )
+                    else:
+                        text = await run_in_threadpool(
+                            extract_text_from_bytes, content, suffix, state.settings.ocr_language,
+                        )
+                        await state.db.query(
+                            "UPDATE officer_documents SET extracted_text=%s WHERE document_id=%s",
+                            (text, document_id),
+                        )
                 await index_document(state.db, document_id, text)
                 if doc.get("extraction") is not None:
                     result = Extraction.model_validate(doc["extraction"])

@@ -168,3 +168,20 @@ async def test_insight_uses_selected_relationship_server_evidence(officer_client
     assert context["selection"]["record"] == edge
     assert {node["id"] for node in context["nodes"]} == {"n1", "n2"}
     assert "fabricated" not in json.dumps(context)
+
+
+async def test_question_without_a_selection_is_allowed_but_insight_still_needs_one(officer_client, app, db, monkeypatch):
+    from dataclasses import replace
+    from unittest.mock import AsyncMock
+
+    from backend.routes import criminals
+    app.state.settings = replace(app.state.settings, groq_api_key="test-api-key")
+    monkeypatch.setattr(criminals, "load_profile", AsyncMock(return_value={"criminal": {}, "relations": []}))
+    monkeypatch.setattr(criminals, "fetch_network", AsyncMock(return_value=NETWORK))
+    monkeypatch.setattr(criminals, "explain_network", AsyncMock(return_value="Answer"))
+    db.query.return_value = []
+    asked = await officer_client.post("/api/criminals/P1/explain",
+                                      json={"question": "How are these people connected?", "history": []})
+    assert asked.status_code == 200 and asked.json() == {"explanation": "Answer"}
+    insight = await officer_client.post("/api/criminals/P1/explain", json={})
+    assert insight.status_code == 400
