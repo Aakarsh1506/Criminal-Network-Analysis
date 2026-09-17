@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import RelationGraph from "../components/RelationGraph";
+import BackButton from "../components/BackButton";
 import { fetchAllCriminals, fetchCriminalNetwork } from "../api/criminals";
 import { mergeNetworks, searchPeople } from "../utils/investigatorWorkspace";
 import { useTranslation } from "../i18n";
@@ -66,7 +67,6 @@ export default function InvestigatorAnalysis() {
     }
   }
 
-  // Keep existing bookmarked /analysis/:id links useful.
   useEffect(() => {
     if (!id || !people.length || legacyLoaded.current === id) return;
     legacyLoaded.current = id;
@@ -107,6 +107,7 @@ export default function InvestigatorAnalysis() {
   }
 
   return <main className="analysis-page">
+    <BackButton />
     <header className="analysis-header"><p className="form-number">{t("investigatorWorkspace")}</p><h1>{t("investigatorAnalysis")}</h1><p>{t("analysisIntro")}</p></header>
     <section className="analysis-search" aria-label={t("analysisFind")}>
       <label htmlFor="analysis-search-input">{t("analysisFind")}</label>
@@ -144,7 +145,18 @@ export default function InvestigatorAnalysis() {
         <div className="analysis-panel-heading"><h2>{t("connections")}</h2><span>{network.nodes.length} {t("analysisNodes")} · {network.edges.length} {t("analysisLinks")}</span></div>
         <div className="analysis-people">{entries.map(({ person }) => <span className="analysis-person" key={person.id}>{person.name}<button type="button" aria-label={`${t("analysisRemove")} ${person.name}`} onClick={() => { setEntries((current) => current.filter((entry) => entry.person.id !== person.id)); setSelection(null); }}>×</button></span>)}</div>
         {entries.length ? <RelationGraph key={entries.map((entry) => entry.person.id).join(":")} mainCriminal={{ id: "workspace", name: t("investigatorWorkspace") }} network={network} onSelectionChange={setSelection} onNodeClick={(personId) => navigate(`/criminal/${personId}`)} height={480} />
-          : <div className="analysis-empty-workspace"><span aria-hidden="true">◎</span><h3>{t("analysisStart")}</h3><p>{t("analysisStartHint")}</p></div>}
+          : <div className="analysis-empty-workspace">
+            <svg className="analysis-empty-icon" aria-hidden="true" viewBox="0 0 96 96" width="64" height="64" fill="none">
+              <line x1="48" y1="18" x2="24" y2="62" stroke="var(--accent-dim)" strokeWidth="2" />
+              <line x1="48" y1="18" x2="72" y2="62" stroke="var(--accent-dim)" strokeWidth="2" />
+              <line x1="24" y1="62" x2="72" y2="62" stroke="var(--accent-dim)" strokeWidth="2" />
+              <circle cx="48" cy="18" r="9" stroke="var(--btn)" strokeWidth="3" />
+              <circle cx="24" cy="62" r="7" stroke="var(--accent-dim)" strokeWidth="3" />
+              <circle cx="72" cy="62" r="7" stroke="var(--accent-dim)" strokeWidth="3" />
+            </svg>
+            <h3>{t("analysisStart")}</h3>
+            <p>{t("analysisStartHint")}</p>
+          </div>}
       </section>
       <section className="analysis-chat" aria-label={t("aiInvestigator")}>
         <div className="analysis-panel-heading"><h2>{t("aiInvestigator")}</h2><button type="button" disabled={loading || !messages.length} onClick={() => setMessages([])}>{t("analysisClearChat")}</button></div>
