@@ -1,4 +1,4 @@
-# 🕸️ Criminal Network Analysis
+# 🕸️ EVIDEX
 
 React/Vite frontend with an API backed by **PostgreSQL** and **Neo4j** — available as either an **Express** backend or a **FastAPI** backend (same routes, same databases, pick one). Officer accounts are cookie/JWT authenticated, and an admin panel is used to provision new officer accounts.
 
