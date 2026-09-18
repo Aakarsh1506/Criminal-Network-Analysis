@@ -92,6 +92,36 @@ Object.assign(messages.hi, {
   record_locations: "पते और संबंधित स्थान", record_connections: "दर्ज संबंध", record_sourceDetails: "स्रोतों के अतिरिक्त विवरण", recordNoDetails: "इस श्रेणी में कोई जानकारी दर्ज नहीं है।",
   recordSources: "स्रोत रिकॉर्ड और साक्ष्य", recordCharacters: "स्रोत अक्षर"
 });
+Object.assign(messages.en, {
+  uploadAndExtract: "Upload and extract",
+  status_awaiting_review: "Ready to review · confirmation needed",
+  status_stored: "Stored · ready to process", status_queued: "Queued",
+  status_processing: "Extracting text and entities", status_syncing: "Saving Relationships",
+  status_complete: "Relations Saved", status_failed: "Processing failed",
+  status_sync_failed: "Sync Failed", status_cancelled: "Processing stopped",
+  documentFallback: "Document", loadingExtracted: "Loading extracted information…",
+  openFullReview: "Open full entity review →",
+  sourceAssertionsWarning: "Source assertions may contain errors or allegations. Witnesses and mentioned people are not automatically suspects.",
+  noEntitiesFound: "No supported entities were found in this source.",
+  extractedSourceText: "Extracted source text", sourceIdentifier: "Source identifier",
+  sourceType_fir: "FIRs and police reports", sourceType_witness: "Witness statements",
+  sourceType_database: "Database export", sourceType_other: "Other records"
+});
+Object.assign(messages.hi, {
+  uploadAndExtract: "अपलोड करें और निष्कर्षण करें",
+  status_awaiting_review: "समीक्षा के लिए तैयार · पुष्टि आवश्यक",
+  status_stored: "संग्रहीत · प्रोसेसिंग हेतु तैयार", status_queued: "कतार में",
+  status_processing: "टेक्स्ट और इकाइयाँ निकाली जा रही हैं", status_syncing: "संबंध सहेजे जा रहे हैं",
+  status_complete: "संबंध सहेजे गए", status_failed: "प्रोसेसिंग विफल",
+  status_sync_failed: "सिंक विफल", status_cancelled: "प्रोसेसिंग रोकी गई",
+  documentFallback: "दस्तावेज़", loadingExtracted: "निष्कर्षित जानकारी लोड हो रही है…",
+  openFullReview: "पूरी इकाई समीक्षा खोलें →",
+  sourceAssertionsWarning: "स्रोत में दर्ज कथन गलत या आरोपात्मक हो सकते हैं। गवाह और उल्लेखित व्यक्ति स्वतः संदिग्ध नहीं माने जाते।",
+  noEntitiesFound: "इस स्रोत में कोई समर्थित इकाई नहीं मिली।",
+  extractedSourceText: "निष्कर्षित स्रोत पाठ", sourceIdentifier: "स्रोत पहचानकर्ता",
+  sourceType_fir: "एफआईआर और पुलिस रिपोर्ट", sourceType_witness: "गवाह के बयान",
+  sourceType_database: "डेटाबेस निर्यात", sourceType_other: "अन्य रिकॉर्ड"
+});
 const LanguageContext = createContext(null);
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
